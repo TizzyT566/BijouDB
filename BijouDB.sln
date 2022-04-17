@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32407.343
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BijouDB", "BijouDB\BijouDB.csproj", "{60CA780D-7B5D-4820-A040-14E1FB6B7BF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BijouDB_Test", "BijouDB_Test\BijouDB_Test.csproj", "{E0162F35-540F-4C69-8B3E-10F07BF64C4E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{60CA780D-7B5D-4820-A040-14E1FB6B7BF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60CA780D-7B5D-4820-A040-14E1FB6B7BF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60CA780D-7B5D-4820-A040-14E1FB6B7BF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60CA780D-7B5D-4820-A040-14E1FB6B7BF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0162F35-540F-4C69-8B3E-10F07BF64C4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0162F35-540F-4C69-8B3E-10F07BF64C4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0162F35-540F-4C69-8B3E-10F07BF64C4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0162F35-540F-4C69-8B3E-10F07BF64C4E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FD45F37C-9183-4E07-B14B-90F63824DD3E}
+	EndGlobalSection
+EndGlobal
