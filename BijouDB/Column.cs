@@ -1,5 +1,4 @@
-﻿using BijouDB.Components;
-using BijouDB.Exceptions;
+﻿using BijouDB.Exceptions;
 
 namespace BijouDB;
 
