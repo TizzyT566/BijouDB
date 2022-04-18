@@ -1,26 +1,29 @@
 ﻿#pragma warning disable IDE1006 // Naming Styles
 
 using BijouDB.Exceptions;
+using static BijouDB.Tables;
 
 namespace BijouDB.Primitives;
 
-public struct table<T> : IDataType where T : Table, new()
+public struct @record<T> : IDataType where T : Tables, new()
 {
     public static long Length => 16;
 
     private Guid _value;
 
-    private table(Guid id) => _value = id;
+    private @record(Guid id) => _value = id;
 
     public void Deserialize(Stream stream)
     {
         byte[] bytes = new byte[16];
         if (stream.TryFill(bytes)) _value = new Guid(bytes);
-        else throw new CorruptedException<table<T>>();
+        else throw new CorruptedException<record<T>>();
     }
 
     public void Serialize(Stream stream) => stream.Write(_value.ToByteArray());
 
-    public static implicit operator T(table<T> value) => Table.Load<T>(value._value);
-    public static implicit operator table<T>(T value) => new(value.Id);
+    public static implicit operator T(@record<T> value) =>
+        TryGet(value._value, out T? record) ? record! : (new());
+
+    public static implicit operator @record<T>(T value) => new(value.Id);
 }

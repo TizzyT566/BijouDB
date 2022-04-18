@@ -10,7 +10,7 @@ public interface IEmployee
     public long Age { get; set; }
     public Employees Manager { get; set; }
 }
-public class Employees : Table, IEmployee
+public class Employees : Tables, IEmployee
 {
     // Name Column
     public static readonly Column<@string> Name;
@@ -25,14 +25,14 @@ public class Employees : Table, IEmployee
     long IEmployee.Age { get => Age.Get(this); set => Age.Set(this, value); }
 
     // Manager Column
-    public static readonly Column<table<Employees>> Manager;
+    public static readonly Column<record<Employees>> Manager;
     Employees IEmployee.Manager { get => Manager.Get(this); set => Manager.Set(this, value); }
 
     static Employees()
     {
         // Instantiate user defined columns
         new TableBuilder().
-            Add(out Name).
+            Add(out Name, ColumnType.Indexed).
             Add(out Number).
             Add(out Age).
             Add(out Manager);

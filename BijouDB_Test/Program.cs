@@ -1,9 +1,25 @@
 ﻿using BijouDB_Test;
-using static BijouDB.Table;
+using System.Diagnostics;
+using static BijouDB.Tables;
 
-IEmployee employee = Load<Employees>(new Guid("41b7296d-dfba-3e72-7d31-baa8efae4f43"));
 
-Console.WriteLine(employee.Name);
-Console.WriteLine(employee.Number);
-Console.WriteLine(employee.Age);
-Console.WriteLine();
+//Employees newEmployee = new();
+//IEmployee employeeInfo = newEmployee;
+//employeeInfo.Name = "Bob the builder";
+
+//Console.WriteLine(employeeInfo.Name);
+
+
+if (TryGet(Guid.Parse("9756ed96-134b-abb9-743c-b72beba4bc38"), out Employees? employee))
+{
+    IEmployee employeeInfo = employee!;
+    //long start = Stopwatch.GetTimestamp();
+    //Console.WriteLine(employeeInfo.Name);
+    employeeInfo.Name = "TizzyT";
+    //start = Stopwatch.GetTimestamp() - start;
+    //Console.WriteLine(new TimeSpan(start).TotalMilliseconds);
+}
+else
+{
+    Console.WriteLine("Failed");
+}

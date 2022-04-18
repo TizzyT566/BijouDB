@@ -11,6 +11,7 @@ public static class IncrementalGuid
 
     static IncrementalGuid()
     {
+        Directory.CreateDirectory(Globals.DB_Path);
         if (File.Exists(SAVE_PATH))
         {
             _saveStream = new(SAVE_PATH, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);

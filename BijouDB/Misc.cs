@@ -14,6 +14,70 @@ public static class Misc
         return new(chars);
     }
 
+    public static bool FileCompare(Stream s1, Stream s2)
+    {
+        long? s1Length = null, s2Length = null;
+
+        try { s1Length = s1.Length; }
+        catch (Exception) { }
+
+        try { s2Length = s2.Length; }
+        catch (Exception) { }
+
+        if (s1Length != s2Length || s1Length is null) return false;
+
+        int bufferLength = 8192;
+        byte[] s1Buffer = new byte[bufferLength], s2Buffer = new byte[bufferLength];
+
+        long s1Total = 0, s2Total = 0;
+        int s1Read = 0, s2Read = 0;
+
+        while (true)
+        {
+            while (((s1Total += s1Read = s1.Read(s1Buffer, s1Read, bufferLength - s1Read)) < bufferLength) && s1Read != 0) ;
+            while (((s2Total += s2Read = s2.Read(s2Buffer, s2Read, bufferLength - s2Read)) < bufferLength) && s2Read != 0) ;
+            if (s1Total != s2Total) return false;
+            for (int i = 0; i < s1Length; i++) if (s1Buffer[i] != s2Buffer[i]) return false;
+            if (s1Read == 0 && s2Read == 0) break;
+        }
+
+        return true;
+    }
+
+    public static Guid Hash(this IDataType value)
+    {
+        using MemoryStream ms = new();
+        return Hash(value, ms);
+    }
+
+    public static Guid Hash(this IDataType value, Stream stream)
+    {
+        value.Serialize(stream);
+        stream.Position = 0;
+        return stream.GetSkipHash();
+    }
+
+    public static bool ReadHashValue(this Stream @this, out Guid oldHash, out Guid oldValue)
+    {
+        byte[] prevHashBytes = new byte[16];
+        byte[] prevValueBytes = new byte[16];
+        if (@this.TryFill(prevHashBytes) && @this.TryFill(prevValueBytes))
+        {
+            oldHash = new(prevHashBytes);
+            oldValue = new(prevValueBytes);
+            return true;
+        }
+        oldHash = default;
+        oldValue = default;
+        return false;
+    }
+
+    public static void WriteHashValue(this Stream @this, in Guid newHash, in Guid newValue)
+    {
+        @this.Write(newHash.ToByteArray());
+        @this.Write(newValue.ToByteArray());
+    }
+
     public static bool TryFill(this Stream @this, byte[] buffer, int offset = 0, int length = -1)
     {
         if (length < 1) length = buffer.Length;

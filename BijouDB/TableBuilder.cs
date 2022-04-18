@@ -1,5 +1,4 @@
 ﻿using BijouDB.Exceptions;
-using BijouDB.Primitives;
 
 namespace BijouDB;
 
@@ -17,7 +16,12 @@ public class TableBuilder
         columnName = $"{Globals.ColName}_{columnName ?? _count.ToString()}";
         if (!_columnNames.Add(columnName)) throw new DuplicateColumnException(columnName);
         column = new(columnName, _offset, type);
-        _offset += T.Length;
+        _offset += type switch
+        {
+            ColumnType.Indexed => 32,
+            ColumnType.Unique => 32,
+            _ => T.Length
+        };
         _count++;
         return this;
     }

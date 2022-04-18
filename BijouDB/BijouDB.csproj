@@ -8,4 +8,8 @@
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 	</PropertyGroup>
 
+	<ItemGroup>
+	  <Compile Remove="Exceptions\OperationStatus.cs" />
+	</ItemGroup>
+
 </Project>

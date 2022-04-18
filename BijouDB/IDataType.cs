@@ -1,4 +1,4 @@
-﻿namespace BijouDB.Primitives;
+﻿namespace BijouDB;
 
 public interface IDataType
 {
