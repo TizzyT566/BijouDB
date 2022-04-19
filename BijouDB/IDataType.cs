@@ -1,4 +1,6 @@
-﻿namespace BijouDB;
+﻿using BijouDB.DataTypes;
+
+namespace BijouDB;
 
 public interface IDataType
 {

@@ -1,8 +1,8 @@
-﻿using BijouDB.Primitives;
+﻿using BijouDB.DataTypes;
 
 namespace BijouDB.Exceptions;
 
 public class CorruptedException<D> : Exception where D : IDataType
 {
-    public CorruptedException() : base($"{nameof(D)} data is missing or corrupted.") { }
+    public CorruptedException() : base($"{typeof(D).Name} data is missing or corrupted.") { }
 }

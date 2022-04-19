@@ -19,11 +19,11 @@ public sealed class Column<D> where D : IDataType, new()
     public long Offset { get; }
     public ColumnType Type { get; }
 
-    internal Column(string columnName, long offset, ColumnType type)
+    internal Column(ColumnType type, long offset, string columnName)
     {
-        Name = columnName;
-        Offset = offset;
         Type = type;
+        Offset = offset;
+        Name = columnName;
     }
 
     public D Get<T>(T record) where T : Tables
@@ -39,12 +39,13 @@ public sealed class Column<D> where D : IDataType, new()
                         if (File.Exists(crntBinPath))
                         {
                             using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            if (fs.Length - Offset < D.Length) break;
                             D newType = new();
                             newType.Deserialize(fs2);
                             return newType;
                         }
                     }
-                    throw new CorruptedException<D>();
+                    break;
                 }
             case ColumnType.Unique:
                 {
@@ -62,7 +63,8 @@ public sealed class Column<D> where D : IDataType, new()
                 {
                     if (D.Length > 0)
                     {
-                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Row, $"{record.Id}.{Globals.Rec}"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        if (fs.Length - Offset < D.Length) break;
                         fs.Position = Offset;
                         D obj = new();
                         obj.Deserialize(fs);
@@ -70,14 +72,15 @@ public sealed class Column<D> where D : IDataType, new()
                     }
                     else // Is reference
                     {
-                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Row, $"{record.Id}.{Name}"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{record.Id}.{Name}"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                        if (fs.Length - Offset < D.Length) break;
                         D obj = new();
                         obj.Deserialize(fs);
                         return obj;
                     }
                 }
         }
-        return default;
+        return new();
     }
 
     public void Set<T>(T table, D value) where T : Tables
@@ -102,8 +105,8 @@ public sealed class Column<D> where D : IDataType, new()
                         // check if old hash/value is valid
                         if (oldValue != Guid.Empty)
                         {
-                                string oldBinDir = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, oldHash.ToString(), oldValue.ToString());
-                                string oldBinPath = Path.Combine(oldBinDir, Globals.BinFile);
+                            string oldBinDir = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, oldHash.ToString(), oldValue.ToString());
+                            string oldBinPath = Path.Combine(oldBinDir, Globals.BinFile);
 
                             // Hash matches, check with value
                             if (oldHash == newHash)
@@ -182,16 +185,29 @@ public sealed class Column<D> where D : IDataType, new()
                 {
                     if (D.Length > 0)
                     {
-                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Row, $"{table.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+                        Directory.CreateDirectory(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec));
+                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{table.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
                         fs.Position = Offset;
-                        value.Serialize(fs);
+                        if (value is null)
+                        {
+                            byte[] bytes = new byte[D.Length];
+                            fs.Write(bytes, 0, bytes.Length);
+                        }
+                        else
+                            value.Serialize(fs);
                         fs.Flush();
                     }
                     else // Is reference
                     {
-                        Directory.CreateDirectory(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Row));
-                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Row, $"{table.Id}.{Name}"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
-                        value.Serialize(fs);
+                        Directory.CreateDirectory(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec));
+                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{table.Id}.{Name}"), FileMode.Create, FileAccess.Write, FileShare.None);
+                        if (value is null)
+                        {
+                            byte[] bytes = new byte[D.Length];
+                            fs.Write(bytes, 0, bytes.Length);
+                        }
+                        else
+                            value.Serialize(fs);
                         fs.Flush();
                     }
                     break;

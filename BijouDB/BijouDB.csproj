@@ -9,6 +9,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="DataTypes\NotNull\**" />
+	  <EmbeddedResource Remove="DataTypes\NotNull\**" />
+	  <None Remove="DataTypes\NotNull\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Compile Remove="Exceptions\OperationStatus.cs" />
 	</ItemGroup>
 

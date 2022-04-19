@@ -1,4 +1,4 @@
-﻿using BijouDB.Primitives;
+﻿using BijouDB.DataTypes;
 
 namespace BijouDB.Exceptions;
 
