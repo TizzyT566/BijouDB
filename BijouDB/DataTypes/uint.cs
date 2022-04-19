@@ -33,28 +33,51 @@ public struct @uint : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => 4;
+        public static long Length => @uint.Length + 1;
 
-        private uint _value = default;
+        private uint? _value;
 
-        private nullable(uint value) => _value = value;
+        private nullable(uint? value) => _value = value;
 
-        public nullable() { }
+        public nullable() => _value = null;
 
         public void Deserialize(Stream stream)
         {
-            byte[] bytes = new byte[4];
-            if (stream.TryFill(bytes)) _value = BitConverter.ToUInt32(bytes, 0);
-            else throw new CorruptedException<@uint>();
+            switch (stream.ReadByte())
+            {
+                case < 0:
+                    {
+                        throw new CorruptedException<nullable>();
+                    }
+                case 0:
+                    {
+                        _value = null;
+                        break;
+                    }
+                default:
+                    {
+                        byte[] bytes = new byte[4];
+                        if (stream.TryFill(bytes)) _value = BitConverter.ToUInt32(bytes, 0);
+                        else throw new CorruptedException<nullable>();
+                        break;
+                    }
+            }
         }
 
         public void Serialize(Stream stream)
         {
-            byte[] bytes = BitConverter.GetBytes(_value);
-            stream.Write(bytes);
+            if (_value is null)
+            {
+                stream.WriteByte(byte.MinValue);
+            }
+            else
+            {
+                stream.WriteByte(byte.MaxValue);
+                stream.Write(BitConverter.GetBytes((uint)_value));
+            }
         }
 
-        public static implicit operator uint(nullable value) => value._value;
-        public static implicit operator nullable(uint value) => new(value);
+        public static implicit operator uint?(nullable value) => value._value;
+        public static implicit operator nullable(uint? value) => new(value);
     }
 }

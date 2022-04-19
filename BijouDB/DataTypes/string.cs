@@ -31,21 +31,48 @@ public struct @string : IDataType
     {
         public static long Length => 0;
 
-        private string _value = "";
+        private string? _value;
 
-        private nullable(string value) => _value = value ?? "";
+        private nullable(string? value) => _value = value;
 
-        public nullable() { }
+        public nullable() => _value = null;
 
         public void Deserialize(Stream stream)
         {
-            if (stream.TryReadDynamicData(out byte[] data)) _value = Encoding.UTF8.GetString(data);
-            else throw new CorruptedException<@string>();
+            switch (stream.ReadByte())
+            {
+                case < 0:
+                    {
+                        throw new CorruptedException<nullable>();
+                    }
+                case 0:
+                    {
+                        _value = null;
+                        break;
+                    }
+                default:
+                    {
+                        if (stream.TryReadDynamicData(out byte[] data)) _value = Encoding.UTF8.GetString(data);
+                        else throw new CorruptedException<nullable>();
+                        break;
+                    }
+            }
         }
 
-        public void Serialize(Stream stream) => stream.WriteDynamicData(Encoding.UTF8.GetBytes(_value ?? ""));
+        public void Serialize(Stream stream)
+        {
+            if (_value is null)
+            {
+                stream.WriteByte(byte.MinValue);
+            }
+            else
+            {
+                stream.WriteByte(byte.MaxValue);
+                stream.WriteDynamicData(Encoding.UTF8.GetBytes(_value));
+            }
+        }
 
-        public static implicit operator string(nullable value) => value._value ?? "";
-        public static implicit operator nullable(string value) => new(value);
+        public static implicit operator string?(nullable value) => value._value;
+        public static implicit operator nullable(string? value) => new(value);
     }
 }

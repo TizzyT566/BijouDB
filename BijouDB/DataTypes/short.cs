@@ -33,28 +33,51 @@ public struct @short : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => 2;
+        public static long Length => @short.Length + 1;
 
-        private short _value = default;
+        private short? _value;
 
-        private nullable(short value) => _value = value;
+        private nullable(short? value) => _value = value;
 
-        public nullable() { }
+        public nullable() => _value = null;
 
         public void Deserialize(Stream stream)
         {
-            byte[] bytes = new byte[2];
-            if (stream.TryFill(bytes)) _value = BitConverter.ToInt16(bytes, 0);
-            else throw new CorruptedException<@short>();
+            switch (stream.ReadByte())
+            {
+                case < 0:
+                    {
+                        throw new CorruptedException<nullable>();
+                    }
+                case 0:
+                    {
+                        _value = null;
+                        break;
+                    }
+                default:
+                    {
+                        byte[] bytes = new byte[2];
+                        if (stream.TryFill(bytes)) _value = BitConverter.ToInt16(bytes, 0);
+                        else throw new CorruptedException<nullable>();
+                        break;
+                    }
+            }
         }
 
         public void Serialize(Stream stream)
         {
-            byte[] bytes = BitConverter.GetBytes(_value);
-            stream.Write(bytes);
+            if (_value is null)
+            {
+                stream.WriteByte(byte.MinValue);
+            }
+            else
+            {
+                stream.WriteByte(byte.MaxValue);
+                stream.Write(BitConverter.GetBytes((short)_value));
+            }
         }
 
-        public static implicit operator short(nullable value) => value._value;
-        public static implicit operator nullable(short value) => new(value);
+        public static implicit operator short?(nullable value) => value._value;
+        public static implicit operator nullable(short? value) => new(value);
     }
 }

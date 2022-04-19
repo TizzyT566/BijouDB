@@ -33,28 +33,51 @@ public struct @ushort : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => 2;
+        public static long Length => @ushort.Length + 1;
 
-        private ushort _value = default;
+        private ushort? _value;
 
-        private nullable(ushort value) => _value = value;
+        private nullable(ushort? value) => _value = value;
 
-        public nullable() { }
+        public nullable() => _value = null;
 
         public void Deserialize(Stream stream)
         {
-            byte[] bytes = new byte[2];
-            if (stream.TryFill(bytes)) _value = BitConverter.ToUInt16(bytes, 0);
-            else throw new CorruptedException<@ushort>();
+            switch (stream.ReadByte())
+            {
+                case < 0:
+                    {
+                        throw new CorruptedException<nullable>();
+                    }
+                case 0:
+                    {
+                        _value = null;
+                        break;
+                    }
+                default:
+                    {
+                        byte[] bytes = new byte[2];
+                        if (stream.TryFill(bytes)) _value = BitConverter.ToUInt16(bytes, 0);
+                        else throw new CorruptedException<nullable>();
+                        break;
+                    }
+            }
         }
 
         public void Serialize(Stream stream)
         {
-            byte[] bytes = BitConverter.GetBytes(_value);
-            stream.Write(bytes);
+            if (_value is null)
+            {
+                stream.WriteByte(byte.MinValue);
+            }
+            else
+            {
+                stream.WriteByte(byte.MaxValue);
+                stream.Write(BitConverter.GetBytes((ushort)_value));
+            }
         }
 
-        public static implicit operator ushort(nullable value) => value._value;
-        public static implicit operator nullable(ushort value) => new(value);
+        public static implicit operator ushort?(nullable value) => value._value;
+        public static implicit operator nullable(ushort? value) => new(value);
     }
 }

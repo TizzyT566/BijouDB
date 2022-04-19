@@ -8,7 +8,7 @@ public struct @byte : IDataType
 {
     public static long Length => 1;
 
-    private byte _value = default;
+    private byte _value;
 
     private @byte(byte value) => _value = value;
 
@@ -32,27 +32,51 @@ public struct @byte : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => 1;
+        public static long Length => @byte.Length + 1;
 
-        private byte _value = default;
+        private byte? _value;
 
-        private nullable(byte value) => _value = value;
+        private nullable(byte? value) => _value = value;
 
-        public nullable() { }
+        public nullable() => _value = null;
 
         public void Deserialize(Stream stream)
         {
-            byte[] bytes = new byte[1];
-            if (stream.TryFill(bytes)) _value = bytes[0];
-            else throw new CorruptedException<@byte>();
+            switch (stream.ReadByte())
+            {
+                case < 0:
+                    {
+                        throw new CorruptedException<nullable>();
+                    }
+                case 0:
+                    {
+                        _value = null;
+                        break;
+                    }
+                default:
+                    {
+                        byte[] bytes = new byte[1];
+                        if (stream.TryFill(bytes)) _value = bytes[0];
+                        else throw new CorruptedException<nullable>();
+                        break;
+                    }
+            }
         }
 
         public void Serialize(Stream stream)
         {
-            stream.WriteByte(_value);
+            if (_value is null)
+            {
+                stream.WriteByte(byte.MinValue);
+            }
+            else
+            {
+                stream.WriteByte(byte.MaxValue);
+                stream.WriteByte((byte)_value);
+            }
         }
 
-        public static implicit operator byte(nullable value) => value._value;
-        public static implicit operator nullable(byte value) => new(value);
+        public static implicit operator byte?(nullable value) => value._value;
+        public static implicit operator nullable(byte? value) => new(value);
     }
 }

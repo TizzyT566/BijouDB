@@ -28,64 +28,49 @@ public sealed class Column<D> where D : IDataType, new()
 
     public D Get<T>(T record) where T : Tables
     {
-        switch (Type)
+        if (Type == ColumnType.None)
         {
-            case ColumnType.Indexed:
+            if (D.Length > 0)
+            {
+                using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                if (fs.Length - Offset < D.Length) throw new CorruptedException<D>();
+                fs.Position = Offset;
+                D obj = new();
+                obj.Deserialize(fs);
+                return obj;
+            }
+            else // Is reference
+            {
+                using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{record.Id}.{Name}"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                if (fs.Length - Offset < D.Length) throw new CorruptedException<D>();
+                D obj = new();
+                obj.Deserialize(fs);
+                return obj;
+            }
+        }
+        else
+        {
+            using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}"), FileMode.Open, FileAccess.Read, FileShare.Read);
+            if (fs.ReadHashValue(out Guid crntHash, out Guid crntValue))
+            {
+                string crntBinPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
+                if (File.Exists(crntBinPath))
                 {
-                    using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}"), FileMode.Open, FileAccess.Read, FileShare.Read);
-                    if (fs.ReadHashValue(out Guid crntHash, out Guid crntValue))
-                    {
-                        string crntBinPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
-                        if (File.Exists(crntBinPath))
-                        {
-                            using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                            if (fs.Length - Offset < D.Length) break;
-                            D newType = new();
-                            newType.Deserialize(fs2);
-                            return newType;
-                        }
-                    }
-                    break;
+                    using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    if (fs.Length - Offset < D.Length) throw new CorruptedException<D>();
+                    D newType = new();
+                    newType.Deserialize(fs2);
+                    return newType;
                 }
-            case ColumnType.Unique:
-                {
-                    if (D.Length > 0)
-                    {
-
-                    }
-                    else // Is reference
-                    {
-
-                    }
-                    break;
-                }
-            default: // None
-                {
-                    if (D.Length > 0)
-                    {
-                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-                        if (fs.Length - Offset < D.Length) break;
-                        fs.Position = Offset;
-                        D obj = new();
-                        obj.Deserialize(fs);
-                        return obj;
-                    }
-                    else // Is reference
-                    {
-                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{record.Id}.{Name}"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-                        if (fs.Length - Offset < D.Length) break;
-                        D obj = new();
-                        obj.Deserialize(fs);
-                        return obj;
-                    }
-                }
+            }
         }
         return new();
     }
 
     public void Set<T>(T table, D value) where T : Tables
     {
-        if (table.Id == Guid.Empty) table.Assign();
+        if (table.Id == Guid.Empty) throw new IncompleteRecordException<T>();
+
         switch (Type)
         {
             case ColumnType.Indexed:

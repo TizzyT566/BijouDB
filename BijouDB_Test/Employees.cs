@@ -8,13 +8,13 @@ public interface IEmployee
     public string? Name { get; set; }
     public int Number { get; set; }
     public long Age { get; set; }
-    public bool? Alive { get; set; }
     public Employees Manager { get; set; }
+    public bool? Alive { get; set; }
 }
 public class Employees : Tables, IEmployee
 {
     // Name Column
-    public static readonly Column<@string> Name;
+    public static readonly Column<@string.nullable> Name;
     string? IEmployee.Name { get => Name.Get(this); set => Name.Set(this, value!); }
 
     // Number Column
@@ -29,18 +29,18 @@ public class Employees : Tables, IEmployee
     public static readonly Column<record<Employees>> Manager;
     Employees IEmployee.Manager { get => Manager.Get(this); set => Manager.Set(this, value); }
 
-    // Views Column
+    // Alive Column
     public static readonly Column<@bool.nullable> Alive;
     bool? IEmployee.Alive { get => Alive.Get(this); set => Alive.Set(this, value!); }
 
     static Employees()
     {
         // Instantiate user defined columns
-        new TableBuilder().
-            Add(out Name, ColumnType.Indexed).
-            Add(out Number, ColumnType.Indexed).
-            Add(out Age).
-            Add(out Manager).
-            Add(out Alive);
+        _ = new TableBuilder()
+            .Add(out Name, ColumnType.Indexed)
+            .Add(out Number, ColumnType.Indexed)
+            .Add(out Age)
+            .Add(out Manager)
+            .Add(out Alive);
     }
 }

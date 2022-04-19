@@ -5,8 +5,6 @@ public abstract class Tables
     private Guid? _guid;
     public Guid Id => _guid ?? Guid.Empty;
 
-    public static long Length { get; }
-
     public void Assign() => _guid ??= IncrementalGuid.NextGuid();
 
     public static bool TryGet<T>(Guid id, out T? record) where T : Tables, new()
