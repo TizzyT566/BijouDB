@@ -27,7 +27,8 @@ public struct @record<T> : IDataType where T : Tables, new()
     }
 
     public static implicit operator T(@record<T> value) => value._value;
-    public static implicit operator @record<T>(T value) => new(value);
+    public static implicit operator @record<T>(T value) =>
+        value is null ? throw new ArgumentNullException(nameof(value), $"Null not allowed for type '{typeof(@record<T>).Name}', maybe change column type to '{typeof(nullable).Name}'.") : new(value);
 
 
 
