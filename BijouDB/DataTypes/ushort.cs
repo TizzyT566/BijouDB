@@ -8,7 +8,7 @@ public struct @ushort : IDataType
 {
     public static long Length => 2;
 
-    private ushort _value = default;
+    private ushort _value;
 
     private @ushort(ushort value) => _value = value;
 

@@ -4,40 +4,40 @@ using BijouDB.Exceptions;
 
 namespace BijouDB.DataTypes;
 
-public struct @float : IDataType
+public struct @date : IDataType
 {
-    public static long Length => 4;
+    public static long Length => 8;
 
-    private float _value;
+    private DateTime _value;
 
-    private @float(float value) => _value = value;
+    private @date(DateTime value) => _value = value;
 
     public void Deserialize(Stream stream)
     {
-        byte[] bytes = new byte[4];
-        if (stream.TryFill(bytes)) _value = BitConverter.ToSingle(bytes, 0);
-        else throw new CorruptedException<@float>();
+        byte[] bytes = new byte[8];
+        if (stream.TryFill(bytes)) _value = new DateTime(BitConverter.ToInt64(bytes, 0));
+        else throw new CorruptedException<@date>();
     }
 
     public void Serialize(Stream stream)
     {
-        byte[] bytes = BitConverter.GetBytes(_value);
+        byte[] bytes = BitConverter.GetBytes(_value.Ticks);
         stream.Write(bytes);
     }
 
-    public static implicit operator float(@float value) => value._value;
-    public static implicit operator @float(float value) => new(value);
+    public static implicit operator DateTime(@date value) => value._value;
+    public static implicit operator @date(DateTime value) => new(value);
 
 
 
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => @float.Length + 1;
+        public static long Length => date.Length + 1;
 
-        private float? _value;
+        private DateTime? _value;
 
-        private nullable(float? value) => _value = value;
+        private nullable(DateTime? value) => _value = value;
 
         public nullable() => _value = null;
 
@@ -56,8 +56,8 @@ public struct @float : IDataType
                     }
                 default:
                     {
-                        byte[] bytes = new byte[4];
-                        if (stream.TryFill(bytes)) _value = BitConverter.ToSingle(bytes, 0);
+                        byte[] bytes = new byte[8];
+                        if (stream.TryFill(bytes)) _value = new(BitConverter.ToInt64(bytes, 0));
                         else throw new CorruptedException<nullable>();
                         break;
                     }
@@ -73,11 +73,11 @@ public struct @float : IDataType
             else
             {
                 stream.WriteByte(byte.MaxValue);
-                stream.Write(BitConverter.GetBytes((float)_value));
+                stream.Write(BitConverter.GetBytes(((DateTime)_value).Ticks));
             }
         }
 
-        public static implicit operator float?(nullable value) => value._value;
-        public static implicit operator nullable(float? value) => new(value);
+        public static implicit operator DateTime?(nullable value) => value._value;
+        public static implicit operator nullable(DateTime? value) => new(value);
     }
 }

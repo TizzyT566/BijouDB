@@ -8,7 +8,7 @@ public struct @sbyte : IDataType
 {
     public static long Length => 1;
 
-    private sbyte _value = default;
+    private sbyte _value;
 
     private @sbyte(sbyte value) => _value = value;
 

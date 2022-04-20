@@ -8,7 +8,7 @@ public struct @long : IDataType
 {
     public static long Length => 8;
 
-    private long _value = default;
+    private long _value;
 
     private @long(long value) => _value = value;
 

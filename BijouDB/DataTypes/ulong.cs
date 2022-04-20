@@ -8,7 +8,7 @@ public struct @ulong : IDataType
 {
     public static long Length => 8;
 
-    private ulong _value = default;
+    private ulong _value;
 
     private @ulong(ulong value) => _value = value;
 

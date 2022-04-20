@@ -4,7 +4,6 @@ using BijouDB.Exceptions;
 
 namespace BijouDB.DataTypes;
 
-// Not null version
 public struct @bool : IDataType
 {
     public static long Length => 1;

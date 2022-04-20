@@ -8,7 +8,7 @@ public struct @decimal : IDataType
 {
     public static long Length => 16;
 
-    private decimal _value = default;
+    private decimal _value;
 
     private @decimal(decimal value) => _value = value;
 
