@@ -22,8 +22,7 @@ public struct @string : IDataType
     public void Serialize(Stream stream) => stream.WriteDynamicData(Encoding.UTF8.GetBytes(_value ?? ""));
 
     public static implicit operator string(@string value) => value._value ?? "";
-    public static implicit operator @string(string value) =>
-        value is null ? throw new ArgumentNullException(nameof(value), $"Null not allowed for type '{typeof(@string).FullName}', maybe change column type to '{typeof(nullable).FullName}'.") : new(value);
+    public static implicit operator @string(string value) => value is null ? throw new NotNullableException(typeof(@string).Name) : new(value);
 
 
 
