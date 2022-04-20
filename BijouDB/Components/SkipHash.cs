@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using BijouDB.Components;
+using System.Security.Cryptography;
 
 namespace BijouDB;
 
@@ -23,7 +24,7 @@ public static class SkipHash
 
         double position = 0, offset = (hashingSize - 16.0) / (_samples - 1.0);
         byte[] buffer = new byte[16];
-        using MemoryStream ms = new();
+        using FileBackedStream ms = new();
 
         while (@this.Position < hashingSize)
         {

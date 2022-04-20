@@ -1,4 +1,5 @@
-﻿using BijouDB.Exceptions;
+﻿using BijouDB.Components;
+using BijouDB.Exceptions;
 using System.Collections.ObjectModel;
 using static BijouDB.ColumnBuilder;
 
@@ -41,7 +42,7 @@ public sealed class Column<T, D> where T : Tables, new() where D : IDataType, ne
         if (Type == ColumnType.None) throw new InvalidOperationException("Indexed lookups only valid on indexed columns.");
 
         // Generate hash for new value
-        using MemoryStream ms = new();
+        using FileBackedStream ms = new();
         hash = data.Hash(ms);
 
         // hash lookup
@@ -156,7 +157,7 @@ public sealed class Column<T, D> where T : Tables, new() where D : IDataType, ne
         else
         {
             // Generate hash for new value
-            using MemoryStream ms = new();
+            using FileBackedStream ms = new();
             Guid newHash = value.Hash(ms);
 
             // Read previous value

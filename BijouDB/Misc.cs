@@ -63,12 +63,6 @@ public static class Misc
         return true;
     }
 
-    public static Guid Hash(this IDataType value)
-    {
-        using MemoryStream ms = new();
-        return Hash(value, ms);
-    }
-
     public static Guid Hash(this IDataType value, Stream stream)
     {
         value.Serialize(stream);

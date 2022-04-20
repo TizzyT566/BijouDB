@@ -20,8 +20,7 @@ public struct @bool : IDataType
         else throw new CorruptedException<@bool>();
     }
 
-    public void Serialize(Stream stream) =>
-        stream.WriteByte(_value ? byte.MaxValue : byte.MinValue);
+    public void Serialize(Stream stream) => stream.WriteByte(_value ? byte.MaxValue : byte.MinValue);
 
     public static implicit operator bool(@bool value) => value._value;
     public static implicit operator @bool(bool value) => new(value);

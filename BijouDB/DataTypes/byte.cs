@@ -19,10 +19,7 @@ public struct @byte : IDataType
         else throw new CorruptedException<@byte>();
     }
 
-    public void Serialize(Stream stream)
-    {
-        stream.WriteByte(_value);
-    }
+    public void Serialize(Stream stream) => stream.WriteByte(_value);
 
     public static implicit operator byte(@byte value) => value._value;
     public static implicit operator @byte(byte value) => new(value);

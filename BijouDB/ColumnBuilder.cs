@@ -9,7 +9,7 @@ public class ColumnBuilder
 
     private readonly HashSet<string> _columnNames = new();
 
-    public ColumnBuilder Add<T, D>(out Column<T, D> column, ColumnType type = ColumnType.None, string? columnName = null) where T : Tables where D : IDataType, new()
+    public ColumnBuilder Add<T, D>(out Column<T, D> column, ColumnType type = ColumnType.None, string? columnName = null) where T : Tables, new() where D : IDataType, new()
     {
         if (columnName is not null) Misc.EnsureAlphaNumeric(columnName);
         columnName = $"{Globals.ColName}_{columnName ?? _count.ToString()}";
