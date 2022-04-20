@@ -71,132 +71,156 @@ public sealed class Column<D> where D : IDataType, new()
     {
         if (table.Id == Guid.Empty) throw new IncompleteRecordException<T>();
 
-        switch (Type)
+        if (Type == ColumnType.None)
         {
-            case ColumnType.Indexed:
+            if (D.Length > 0)
+            {
+                Directory.CreateDirectory(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec));
+                using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{table.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+                fs.Position = Offset;
+                if (value is null)
                 {
-                    // Generate hash for new value
-                    using MemoryStream ms = new();
-                    Guid newHash = value.Hash(ms);
+                    byte[] bytes = new byte[D.Length];
+                    fs.Write(bytes, 0, bytes.Length);
+                }
+                else
+                    value.Serialize(fs);
+                fs.Flush();
+            }
+            else // Is reference
+            {
+                Directory.CreateDirectory(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec));
+                using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{table.Id}.{Name}"), FileMode.Create, FileAccess.Write, FileShare.None);
+                if (value is null)
+                {
+                    byte[] bytes = new byte[D.Length];
+                    fs.Write(bytes, 0, bytes.Length);
+                }
+                else
+                    value.Serialize(fs);
+                fs.Flush();
+            }
+        }
+        else
+        {
+            // Generate hash for new value
+            using MemoryStream ms = new();
+            Guid newHash = value.Hash(ms);
 
-                    // Read previous value
-                    Directory.CreateDirectory(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec));
-                    using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{table.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            // Read previous value
+            Directory.CreateDirectory(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec));
+            using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{table.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
 
-                    // Old hash/value exists, read it and delete its reference
-                    fs.Position = Offset;
-                    if (fs.Length - Offset >= 32 && fs.ReadHashValue(out Guid oldHash, out Guid oldValue))
+            // Old hash/value exists, read it and delete its reference
+            fs.Position = Offset;
+            if (fs.Length - Offset >= 32 && fs.ReadHashValue(out Guid oldHash, out Guid oldValue))
+            {
+                // check if old hash/value is valid
+                if (oldValue != Guid.Empty)
+                {
+                    string hashFolder = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, oldHash.ToString());
+                    string oldBinDir = Path.Combine(hashFolder, oldValue.ToString());
+                    string oldBinPath = Path.Combine(oldBinDir, Globals.BinFile);
+
+                    // Hash matches, check with value
+                    if (oldHash == newHash)
                     {
-                        // check if old hash/value is valid
-                        if (oldValue != Guid.Empty)
+                        if (File.Exists(oldBinPath))
                         {
-                            string oldBinDir = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, oldHash.ToString(), oldValue.ToString());
-                            string oldBinPath = Path.Combine(oldBinDir, Globals.BinFile);
-
-                            // Hash matches, check with value
-                            if (oldHash == newHash)
+                            using FileStream fs2 = new(oldBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            ms.Position = 0;
+                            if (Misc.FileCompare(ms, fs2))
                             {
-                                if (File.Exists(oldBinPath))
-                                {
-                                    using FileStream fs2 = new(oldBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                                    ms.Position = 0;
-                                    if (Misc.FileCompare(ms, fs2))
-                                    {
-                                        // values match so no need to continue
-                                        return;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // values differ, delete reference
-                                File.Delete(Path.Combine(oldBinDir, $"{table.Id}.{Globals.Ref}"));
-                            }
-                        }
-                    }
-
-                    // check if hash already exist
-                    string hashDir = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, newHash.ToString());
-                    if (Directory.Exists(hashDir))
-                    {
-                        string[] hashCollisions = Directory.GetDirectories(hashDir);
-                        foreach (string hashCollision in hashCollisions)
-                        {
-                            string crntBinPath = Path.Combine(hashCollision, Globals.BinFile);
-                            if (File.Exists(crntBinPath))
-                            {
-                                using FileStream fsCollision = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                                ms.Position = 0;
-                                if (Misc.FileCompare(ms, fsCollision))
-                                {
-                                    File.Create(Path.Combine(hashCollision, $"{table.Id}.{Globals.Ref}"));
-                                    string crntValue = Path.GetFileName(hashCollision);
-                                    fs.Position = Offset;
-                                    fs.WriteHashValue(newHash, Guid.Parse(crntValue));
-                                    fs.Flush();
-                                    return;
-                                }
+                                // values match so no need to continue
+                                if (Globals.Logging) Console.WriteLine("value is the same, skipping.");
+                                return;
                             }
                         }
                     }
-
-                    Guid newValue = IncrementalGuid.NextGuid();
-
-                    // write bin file
-                    string newBinDir = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, newHash.ToString(), newValue.ToString());
-                    Directory.CreateDirectory(newBinDir);
-                    string newBinPath = Path.Combine(newBinDir, Globals.BinFile);
-                    using FileStream fs3 = new(newBinPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
-                    ms.Position = 0;
-                    ms.CopyTo(fs3);
-                    fs3.Flush();
-
-                    // write new info to record
-                    fs.Position = Offset;
-                    fs.WriteHashValue(newHash, newValue);
-                    fs.Flush();
-
-                    // add reference
-                    File.Create(Path.Combine(newBinDir, $"{table.Id}.{Globals.Ref}"));
-
-                    break;
-                }
-            case ColumnType.Unique:
-                {
-
-                    break;
-                }
-            default: // None
-                {
-                    if (D.Length > 0)
+                    else
                     {
-                        Directory.CreateDirectory(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec));
-                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{table.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
-                        fs.Position = Offset;
-                        if (value is null)
+                        // values differ, delete reference
+                        try
                         {
-                            byte[] bytes = new byte[D.Length];
-                            fs.Write(bytes, 0, bytes.Length);
+                            File.Delete(Path.Combine(oldBinDir, $"{table.Id}.{Globals.Ref}"));
                         }
-                        else
-                            value.Serialize(fs);
-                        fs.Flush();
-                    }
-                    else // Is reference
-                    {
-                        Directory.CreateDirectory(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec));
-                        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{table.Id}.{Name}"), FileMode.Create, FileAccess.Write, FileShare.None);
-                        if (value is null)
+                        catch (Exception ex)
                         {
-                            byte[] bytes = new byte[D.Length];
-                            fs.Write(bytes, 0, bytes.Length);
+                            if (Globals.Logging) Console.WriteLine(ex.ToString());
                         }
-                        else
-                            value.Serialize(fs);
-                        fs.Flush();
+
+                        // if value has no more references, delete it
+                        try
+                        {
+                            if (Directory.GetFiles(oldBinDir, $"*.{Globals.Ref}").Length == 0) Directory.Delete(oldBinDir, true);
+                        }
+                        catch (Exception ex)
+                        {
+                            if (Globals.Logging) Console.WriteLine(ex.Message);
+                        }
+
+                        // if hash only has that value left delete hash folder
+                        try
+                        {
+                            if (Directory.GetDirectories(hashFolder).Length == 0) Directory.Delete(hashFolder, true);
+                        }
+                        catch (Exception ex)
+                        {
+                            if (Globals.Logging) Console.WriteLine(ex.Message);
+                        }
                     }
-                    break;
                 }
+            }
+
+            // check if hash already exist
+            string hashDir = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, newHash.ToString());
+            if (Directory.Exists(hashDir))
+            {
+                string[] hashCollisions = Directory.GetDirectories(hashDir);
+                foreach (string hashCollision in hashCollisions)
+                {
+                    string crntBinPath = Path.Combine(hashCollision, Globals.BinFile);
+                    if (File.Exists(crntBinPath))
+                    {
+                        using FileStream fsCollision = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        ms.Position = 0;
+                        if (Misc.FileCompare(ms, fsCollision))
+                        {
+                            // Uniqueness check
+                            if (Type == ColumnType.Unique && Directory.GetFiles(hashCollision, $"*.{Globals.Ref}").Length > 0)
+                                throw new UniquenessConstraintException<D>();
+
+                            File.Create(Path.Combine(hashCollision, $"{table.Id}.{Globals.Ref}"));
+                            string crntValue = Path.GetFileName(hashCollision);
+                            fs.Position = Offset;
+                            fs.WriteHashValue(newHash, Guid.Parse(crntValue));
+                            fs.Flush();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            Guid newValue = IncrementalGuid.NextGuid();
+
+            // write bin file
+            string newBinDir = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, newHash.ToString(), newValue.ToString());
+            Directory.CreateDirectory(newBinDir);
+            string newBinPath = Path.Combine(newBinDir, Globals.BinFile);
+            using FileStream fs3 = new(newBinPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+            ms.Position = 0;
+            ms.CopyTo(fs3);
+            fs3.Flush();
+
+            // write new info to record
+            fs.Position = Offset;
+            fs.WriteHashValue(newHash, newValue);
+            fs.Flush();
+
+            // add reference
+            string newRef = Path.Combine(newBinDir, $"{table.Id}.{Globals.Ref}");
+            File.Create(newRef);
+            if (Globals.Logging) Console.WriteLine($"Created new reference: {newRef}");
         }
     }
 }

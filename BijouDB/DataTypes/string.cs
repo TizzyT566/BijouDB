@@ -23,7 +23,7 @@ public struct @string : IDataType
 
     public static implicit operator string(@string value) => value._value ?? "";
     public static implicit operator @string(string value) =>
-        value is null ? throw new ArgumentNullException(nameof(value), $"Null not allowed for type '{typeof(@string).Name}', maybe change column type to '{typeof(nullable).Name}'.") : new(value);
+        value is null ? throw new ArgumentNullException(nameof(value), $"Null not allowed for type '{typeof(@string).FullName}', maybe change column type to '{typeof(nullable).FullName}'.") : new(value);
 
 
 

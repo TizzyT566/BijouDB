@@ -37,10 +37,15 @@ public class Employees : Tables, IEmployee
     {
         // Instantiate user defined columns
         _ = new TableBuilder()
-            .Add(out Name, ColumnType.Indexed)
+            .Add(out Name, ColumnType.Unique)
             .Add(out Number, ColumnType.Indexed)
             .Add(out Age)
             .Add(out Manager)
             .Add(out Alive);
+    }
+
+    public void Init(string? name, int number, long age, Employees employee, bool? alive)
+    {
+
     }
 }
