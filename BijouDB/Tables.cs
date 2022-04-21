@@ -1,5 +1,10 @@
 ﻿namespace BijouDB;
 
+public interface ITable<T>
+{
+    public T Columns { get; }
+}
+
 public abstract class Tables
 {
     private Guid? _guid;

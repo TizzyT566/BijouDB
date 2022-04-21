@@ -1,5 +1,6 @@
 ﻿using BijouDB;
 using BijouDB.DataTypes;
+using System.Numerics;
 
 namespace BijouDB_Test;
 
@@ -9,10 +10,12 @@ public interface IEmployee
     public int Number { get; set; }
     public long Age { get; set; }
     public Employees Manager { get; set; }
-    public bool? Alive { get; set; }
+    public BigInteger? Points { get; set; }
 }
-public class Employees : Tables, IEmployee
+public class Employees : Tables, IEmployee, ITable<IEmployee>
 {
+    public IEmployee Columns => this;
+
     // Name Column
     public static readonly Column<Employees, @string> Name;
     string IEmployee.Name { get => Name.Get(this); set => Name.Set(this, value!); }
@@ -30,8 +33,8 @@ public class Employees : Tables, IEmployee
     Employees IEmployee.Manager { get => Manager.Get(this); set => Manager.Set(this, value); }
 
     // Alive Column
-    public static readonly Column<Employees, @bool.nullable> Alive;
-    bool? IEmployee.Alive { get => Alive.Get(this); set => Alive.Set(this, value!); }
+    public static readonly Column<Employees, @bint.nullable> Points;
+    BigInteger? IEmployee.Points { get => Points.Get(this); set => Points.Set(this, value!); }
 
     static Employees()
     {
@@ -39,9 +42,9 @@ public class Employees : Tables, IEmployee
         _ = new ColumnBuilder()
             .Add(out Name, ColumnType.Unique)
             .Add(out Number, ColumnType.Indexed)
-            .Add(out Age)
+            .Add(out Age, ColumnType.Protected)
             .Add(out Manager)
-            .Add(out Alive);
+            .Add(out Points);
     }
 
     // Required default constructor

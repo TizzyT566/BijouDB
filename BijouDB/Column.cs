@@ -103,6 +103,7 @@ public sealed class Column<T, D> where T : Tables, new() where D : IDataType, ne
         else
         {
             using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}"), FileMode.Open, FileAccess.Read, FileShare.Read);
+            fs.Position = Offset;
             if (fs.ReadHashValue(out Guid crntHash, out Guid crntValue))
             {
                 string crntBinPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
@@ -143,6 +144,9 @@ public sealed class Column<T, D> where T : Tables, new() where D : IDataType, ne
             }
             else // Is reference
             {
+                FileStream rcrd = new(Path.Combine(baseDir, $"{table.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+                rcrd.Flush(_tableLength);
+                rcrd.Dispose();
                 using FileStream fs = new(Path.Combine(baseDir, $"{table.Id}.{Name}"), FileMode.Create, FileAccess.Write, FileShare.None);
                 if (value is null)
                 {
