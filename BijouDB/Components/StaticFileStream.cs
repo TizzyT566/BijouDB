@@ -39,23 +39,20 @@
             _stream = stream;
         }
 
-        public StaticFileStream this[string path]
+        public static StaticFileStream Get(string path)
         {
-            get
+            string name = Path.GetFullPath(path);
+            if (_pool.TryGetValue(name, out StaticFileStreamNode node))
             {
-                string name = Path.GetFullPath(path);
-                if (_pool.TryGetValue(name, out StaticFileStreamNode node))
-                {
-                    StaticFileStream sfs = new(name, node._stream);
-                    node.Positions.Push(sfs._stream.Position);
-                    return sfs;
-                }
-                else
-                {
-                    FileStream fs = new(name, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-                    _pool.Add(name, new(fs));
-                    return new(name, fs);
-                }
+                StaticFileStream sfs = new(name, node._stream);
+                node.Positions.Push(sfs._stream.Position);
+                return sfs;
+            }
+            else
+            {
+                FileStream fs = new(name, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                _pool.Add(name, new(fs));
+                return new(name, fs);
             }
         }
 
