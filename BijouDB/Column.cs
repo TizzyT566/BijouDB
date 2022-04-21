@@ -1,7 +1,6 @@
 ﻿using BijouDB.Components;
 using BijouDB.Exceptions;
 using System.Collections.ObjectModel;
-using static BijouDB.ColumnBuilder;
 
 namespace BijouDB;
 
@@ -11,18 +10,24 @@ public enum ColumnType
     None = 0,
     Indexed = 1,
     Unique = 3,
-    Protected = 5
+}
+
+public interface IColumn
+{
+    public bool Test { get; }
 }
 
 /// <summary>
 /// A column for adding to custom table implementations.
 /// </summary>
 /// <typeparam name="D">The IDataType.</typeparam>
-public sealed class Column<T, D> where T : Tables, new() where D : IDataType, new()
+public sealed class Column<T, D> : IColumn where T : Tables, new() where D : IDataType, new()
 {
     public string Name { get; }
     public long Offset { get; }
     public ColumnType Type { get; }
+
+    public bool Test { get; }
 
     private readonly LengthRef _tableLength;
 

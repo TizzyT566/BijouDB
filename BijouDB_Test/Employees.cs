@@ -12,9 +12,9 @@ public interface IEmployee
     public Employees Manager { get; set; }
     public BigInteger? Points { get; set; }
 }
-public class Employees : Tables, IEmployee, ITable<IEmployee>
+public class Employees : Tables, IEmployee, ITable<IEmployee, Employees>
 {
-    public IEmployee Columns => this;
+    public IEmployee AsRecord => this;
 
     // Name Column
     public static readonly Column<Employees, @string> Name;
@@ -36,15 +36,19 @@ public class Employees : Tables, IEmployee, ITable<IEmployee>
     public static readonly Column<Employees, @bint.nullable> Points;
     BigInteger? IEmployee.Points { get => Points.Get(this); set => Points.Set(this, value!); }
 
+    // Remover, to delete records
+    private static readonly Func<Employees, bool> _remove;
+
     static Employees()
     {
         // Instantiate user defined columns
-        _ = new ColumnBuilder()
-            .Add(out Name, ColumnType.Unique)
-            .Add(out Number, ColumnType.Indexed)
-            .Add(out Age, ColumnType.Protected)
-            .Add(out Manager)
-            .Add(out Points);
+        new ColumnBuilder()
+            .Column(out Name, ColumnType.Unique)
+            .Column(out Number, ColumnType.Indexed)
+            .Column(out Age)
+            .Column(out Manager)
+            .Column(out Points)
+            .Remove(out _remove);
     }
 
     // Required default constructor
@@ -55,4 +59,6 @@ public class Employees : Tables, IEmployee, ITable<IEmployee>
     {
 
     }
+
+    public override bool Remove() => _remove(this);
 }

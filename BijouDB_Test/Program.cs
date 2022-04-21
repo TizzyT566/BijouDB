@@ -1,5 +1,4 @@
-﻿using BijouDB.DataTypes;
-using BijouDB_Test;
+﻿using BijouDB_Test;
 using static BijouDB.Tables;
 
 
@@ -19,8 +18,9 @@ using static BijouDB.Tables;
 
 if (TryGet(Guid.Parse("97574d4a-134b-abb9-a53c-b72beba4bc38"), out Employees? employee))
 {
+    employee!.Remove();
     //employee!.Columns.Points = 481;
-    Console.WriteLine(employee!.Columns.Age);
+    Console.WriteLine(employee!.AsRecord.Age);
 }
 else
 {

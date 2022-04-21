@@ -1,6 +1,4 @@
-﻿using BijouDB.DataTypes;
-
-namespace BijouDB.Exceptions;
+﻿namespace BijouDB.Exceptions;
 
 public class RecordMissingException<D> : Exception where D : IDataType
 {

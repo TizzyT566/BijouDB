@@ -1,10 +1,11 @@
-﻿namespace BijouDB;
+﻿using BijouDB.Exceptions;
 
-public interface ITable<T>
+namespace BijouDB;
+
+public interface ITable<I, T> where T : Tables
 {
-    public T Columns { get; }
+    public I AsRecord { get; }
 }
-
 public abstract class Tables
 {
     private Guid? _guid;
@@ -29,10 +30,35 @@ public abstract class Tables
         }
     }
 
-    public void Delete() => Delete(this);
+    public abstract bool Remove();
 
-    public static void Delete<T>(T record) where T : Tables
+    public sealed class ColumnBuilder
     {
-        // Delete logic here
+        private LengthRef Length = new();
+        private int _count = 0;
+
+        private readonly HashSet<string> _columnNames = new();
+
+        public ColumnBuilder Column<T, D>(out Column<T, D> column, ColumnType type = ColumnType.None, string? columnName = null) where T : Tables, new() where D : IDataType, new()
+        {
+            //if (type.HasFlag(ColumnType.Protected) && typeof(D).IsValueType)
+            //    throw new InvalidProtectedDataTypeException();
+
+            if (columnName is not null) Misc.EnsureAlphaNumeric(columnName);
+            columnName = $"{Globals.ColName}_{columnName ?? _count.ToString()}";
+            if (!_columnNames.Add(columnName)) throw new DuplicateColumnException(columnName);
+            column = new(type, Length, columnName, Length);
+            Length += type == ColumnType.None ? D.Length : 32;
+            _count++;
+            return this;
+        }
+
+        public void Remove<T>(out Func<T, bool> remover) where T : Tables
+        {
+
+
+
+            remover = (record) => { return false; };
+        }
     }
 }
