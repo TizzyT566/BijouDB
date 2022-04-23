@@ -1,19 +1,17 @@
 ﻿using BijouDB.Exceptions;
+using BijouDB.DataTypes;
 
 namespace BijouDB;
 
-public interface ITable<I, T> where T : Tables
-{
-    public I AsRecord { get; }
-}
-public abstract class Tables
+public abstract class Table
 {
     private Guid? _guid;
     public Guid Id => _guid ?? Guid.Empty;
+    public bool Active => Id != Guid.Empty;
 
     public void Assign() => _guid ??= IncrementalGuid.NextGuid();
 
-    public static bool TryGet<T>(Guid id, out T? record) where T : Tables, new()
+    public static bool TryGet<T>(Guid id, out T? record) where T : Table, new()
     {
         try
         {
@@ -30,7 +28,7 @@ public abstract class Tables
         }
     }
 
-    public abstract bool Remove();
+    //public abstract bool Remove();
 
     public sealed class ColumnBuilder
     {
@@ -39,7 +37,7 @@ public abstract class Tables
 
         private readonly HashSet<string> _columnNames = new();
 
-        public ColumnBuilder Column<T, D>(out Column<T, D> column, ColumnType type = ColumnType.None, string? columnName = null) where T : Tables, new() where D : IDataType, new()
+        public ColumnBuilder Indexs<T, D>(out IndexedColumn<T, D> column, ColumnType type = ColumnType.None, string? columnName = null) where T : Table, new() where D : IDataType, new()
         {
             //if (type.HasFlag(ColumnType.Protected) && typeof(D).IsValueType)
             //    throw new InvalidProtectedDataTypeException();
@@ -53,7 +51,22 @@ public abstract class Tables
             return this;
         }
 
-        public void Remove<T>(out Func<T, bool> remover) where T : Tables
+        public ColumnBuilder Refers<T1, T2>(out ReferencesColumn<T1, T2> column, Func<IndexedColumn<T2, @record<T1>>> referenceColumn) where T1 : Table, new() where T2 : Table, new()
+        {
+            //if (type.HasFlag(ColumnType.Protected) && typeof(D).IsValueType)
+            //    throw new InvalidProtectedDataTypeException();
+
+            //if (columnName is not null) Misc.EnsureAlphaNumeric(columnName);
+            //columnName = $"{Globals.ColName}_{columnName ?? _count.ToString()}";
+            //if (!_columnNames.Add(columnName)) throw new DuplicateColumnException(columnName);
+            //column = new(type, Length, columnName, Length);
+            //Length += type == ColumnType.None ? T2.Length : 32;
+            //_count++;
+            column = new(referenceColumn);
+            return this;
+        }
+
+        public void Remove<T>(out Func<T, bool> remover) where T : Table
         {
 
 

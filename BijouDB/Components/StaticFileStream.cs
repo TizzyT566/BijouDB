@@ -63,7 +63,6 @@
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects)
                     if (_pool.TryGetValue(Name, out StaticFileStreamNode node))
                     {
                         if (node.Positions.TryPop(out long pos)) _stream.Position = pos;

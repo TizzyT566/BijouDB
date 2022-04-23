@@ -12,26 +12,19 @@ public enum ColumnType
     Unique = 3,
 }
 
-public interface IColumn
-{
-    public bool Test { get; }
-}
-
 /// <summary>
 /// A column for adding to custom table implementations.
 /// </summary>
 /// <typeparam name="D">The IDataType.</typeparam>
-public sealed class Column<T, D> : IColumn where T : Tables, new() where D : IDataType, new()
+public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataType, new()
 {
     public string Name { get; }
     public long Offset { get; }
     public ColumnType Type { get; }
 
-    public bool Test { get; }
-
     private readonly LengthRef _tableLength;
 
-    internal Column(ColumnType type, long offset, string columnName, LengthRef tableLengthRef)
+    internal IndexedColumn(ColumnType type, long offset, string columnName, LengthRef tableLengthRef)
     {
         Type = type;
         Offset = offset;
@@ -77,10 +70,38 @@ public sealed class Column<T, D> : IColumn where T : Tables, new() where D : IDa
             string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), value.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
                 if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
-                    if (Tables.TryGet(id, out T? record))
+                    if (Table.TryGet(id, out T? record))
                         records.Add(record!.Id, record!);
         }
         return new(records);
+    }
+
+    public bool HasRecordsWithIndexedValue(D data)
+    {
+        if (IndexedValueExists(data, out Guid hash, out Guid value))
+        {
+            string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), value.ToString());
+            foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
+                if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
+                    if (Table.TryGet<T>(id, out _))
+                        return true;
+        }
+        return false;
+    }
+
+    public IReadOnlyList<D> UniqueValues()
+    {
+        List<D> ds = new();
+        string colDir = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name);
+        string[] uniqueValues = Directory.GetFiles(colDir, Globals.BinFile, SearchOption.AllDirectories);
+        foreach (string uniqueValue in uniqueValues)
+        {
+            using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.Read);
+            D newValue = new();
+            newValue.Deserialize(fs);
+            ds.Add(newValue);
+        }
+        return ds;
     }
 
     public D Get(T record)

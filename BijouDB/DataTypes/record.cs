@@ -1,11 +1,11 @@
 ﻿#pragma warning disable IDE1006 // Naming Styles
 
 using BijouDB.Exceptions;
-using static BijouDB.Tables;
+using static BijouDB.Table;
 
 namespace BijouDB.DataTypes;
 
-public struct @record<T> : IDataType where T : Tables, new()
+public struct @record<T> : IDataType where T : Table, new()
 {
     public static long Length => 16;
 
