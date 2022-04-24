@@ -14,7 +14,6 @@ public static class Misc
         return new(chars);
     }
 
-
     /// <summary>
     /// Ensures a stream's total size.
     /// </summary>

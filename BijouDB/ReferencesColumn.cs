@@ -12,14 +12,7 @@ namespace BijouDB
     {
         private readonly Func<IndexedColumn<TResult, @record<T>>> _sourceColumn;
 
-        public ReferencesColumn(Func<IndexedColumn<TResult, @record<T>>> sourceColumn)
-        {
-            _sourceColumn = sourceColumn;
-        }
-
-        public string Name => throw new NotImplementedException();
-
-        public long Offset => throw new NotImplementedException();
+        public ReferencesColumn(Func<IndexedColumn<TResult, @record<T>>> sourceColumn) => _sourceColumn = sourceColumn;
 
         public ColumnType Type => throw new NotImplementedException();
 
@@ -39,11 +32,6 @@ namespace BijouDB
         }
 
         public ReadOnlyDictionary<Guid, T> RecordsWithIndexedValue(record<T> data)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Set(T table, record<T> value)
         {
             throw new NotImplementedException();
         }

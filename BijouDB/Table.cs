@@ -7,7 +7,7 @@ public abstract class Table
 {
     private Guid? _guid;
     public Guid Id => _guid ?? Guid.Empty;
-    public bool Active => Id != Guid.Empty;
+    public bool OnDisk => Id != Guid.Empty;
 
     public void Assign() => _guid ??= IncrementalGuid.NextGuid();
 
@@ -28,8 +28,6 @@ public abstract class Table
         }
     }
 
-    //public abstract bool Remove();
-
     public sealed class ColumnBuilder
     {
         private LengthRef Length = new();
@@ -39,9 +37,6 @@ public abstract class Table
 
         public ColumnBuilder Indexs<T, D>(out IndexedColumn<T, D> column, ColumnType type = ColumnType.None, string? columnName = null) where T : Table, new() where D : IDataType, new()
         {
-            //if (type.HasFlag(ColumnType.Protected) && typeof(D).IsValueType)
-            //    throw new InvalidProtectedDataTypeException();
-
             if (columnName is not null) Misc.EnsureAlphaNumeric(columnName);
             columnName = $"{Globals.ColName}_{columnName ?? _count.ToString()}";
             if (!_columnNames.Add(columnName)) throw new DuplicateColumnException(columnName);
@@ -53,15 +48,8 @@ public abstract class Table
 
         public ColumnBuilder Refers<T1, T2>(out ReferencesColumn<T1, T2> column, Func<IndexedColumn<T2, @record<T1>>> referenceColumn) where T1 : Table, new() where T2 : Table, new()
         {
-            //if (type.HasFlag(ColumnType.Protected) && typeof(D).IsValueType)
-            //    throw new InvalidProtectedDataTypeException();
 
-            //if (columnName is not null) Misc.EnsureAlphaNumeric(columnName);
-            //columnName = $"{Globals.ColName}_{columnName ?? _count.ToString()}";
-            //if (!_columnNames.Add(columnName)) throw new DuplicateColumnException(columnName);
-            //column = new(type, Length, columnName, Length);
-            //Length += type == ColumnType.None ? T2.Length : 32;
-            //_count++;
+
             column = new(referenceColumn);
             return this;
         }

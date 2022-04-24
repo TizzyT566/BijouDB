@@ -4,14 +4,6 @@ using System.Collections.ObjectModel;
 
 namespace BijouDB;
 
-[Flags]
-public enum ColumnType
-{
-    None = 0,
-    Indexed = 1,
-    Unique = 3,
-}
-
 /// <summary>
 /// A column for adding to custom table implementations.
 /// </summary>
@@ -35,7 +27,7 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
     // Checks if a value is already present in an indexed column,
     // true if found and presents the hash and value of the existing entry.
     // false if the value was not found, the hash and a value candidate is presented.
-    public bool IndexedValueExists(D data, out Guid hash, out Guid value)
+    public bool ValueIndex(D data, out Guid hash, out Guid value)
     {
         if (Type == ColumnType.None) throw new InvalidOperationException("Indexed lookups only valid on indexed columns.");
 
@@ -62,10 +54,10 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
         return false;
     }
 
-    public ReadOnlyDictionary<Guid, T> RecordsWithIndexedValue(D data)
+    public ReadOnlyDictionary<Guid, T> RecordsWithValue(D data)
     {
         Dictionary<Guid, T> records = new();
-        if (IndexedValueExists(data, out Guid hash, out Guid value))
+        if (ValueIndex(data, out Guid hash, out Guid value))
         {
             string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), value.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
@@ -76,9 +68,9 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
         return new(records);
     }
 
-    public bool HasRecordsWithIndexedValue(D data)
+    public bool HasValue(D data)
     {
-        if (IndexedValueExists(data, out Guid hash, out Guid value))
+        if (ValueIndex(data, out Guid hash, out Guid value))
         {
             string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), value.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
@@ -89,7 +81,7 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
         return false;
     }
 
-    public IReadOnlyList<D> UniqueValues()
+    public D[] UniqueValues()
     {
         List<D> ds = new();
         string colDir = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name);
@@ -101,7 +93,7 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
             newValue.Deserialize(fs);
             ds.Add(newValue);
         }
-        return ds;
+        return ds.ToArray();
     }
 
     public D Get(T record)
