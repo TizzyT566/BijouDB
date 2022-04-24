@@ -10,7 +10,7 @@ namespace BijouDB.DataTypes
 
         private byte[] _value;
 
-        private @blob(byte[] value) => _value = value;
+        private @blob(byte[] value) => _value = value ?? Array.Empty<byte>();
 
         public void Deserialize(Stream stream)
         {
@@ -18,7 +18,7 @@ namespace BijouDB.DataTypes
             else throw new CorruptedException<@bint>();
         }
 
-        public void Serialize(Stream stream) => stream.WriteDynamicData(_value);
+        public void Serialize(Stream stream) => stream.WriteDynamicData(_value ?? Array.Empty<byte>());
 
         public static implicit operator byte[](@blob value) => value._value;
         public static implicit operator @blob(byte[] value) => new(value);
