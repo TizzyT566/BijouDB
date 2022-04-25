@@ -24,9 +24,17 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
         _tableLength = tableLengthRef;
     }
 
-    // Checks if a value is already present in an indexed column,
-    // true if found and presents the hash and value of the existing entry.
-    // false if the value was not found, the hash and a value candidate is presented.
+
+    /// <summary>
+    /// Checks if a value is already present in an indexed column,
+    /// true if found and presents the hash and value of the existing entry.
+    /// false if the value was not found, the hash and a value candidate is presented.
+    /// </summary>
+    /// <param name="data">The value to check the index for.</param>
+    /// <param name="hash">The hash of the value.</param>
+    /// <param name="value">The index of the value if found, and a candidate if not.</param>
+    /// <returns>true if the value was found, false otherwise.</returns>
+    /// <exception cref="InvalidOperationException">Indexed lookups only valid on indexed columns.</exception>
     public bool ValueIndex(D data, out Guid hash, out Guid value)
     {
         if (Type == ColumnType.None) throw new InvalidOperationException("Indexed lookups only valid on indexed columns.");
@@ -54,6 +62,11 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
         return false;
     }
 
+    /// <summary>
+    /// Get a list of records with the specified value.
+    /// </summary>
+    /// <param name="data">The value to search records with.</param>
+    /// <returns>A readonly dictionary of all records containing the value specified.</returns>
     public ReadOnlyDictionary<Guid, T> RecordsWithValue(D data)
     {
         Dictionary<Guid, T> records = new();
@@ -68,7 +81,12 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
         return new(records);
     }
 
-    public bool HasValue(D data)
+    /// <summary>
+    /// Checks to see if a record exists that has the specified value.
+    /// </summary>
+    /// <param name="data">The value to check for.</param>
+    /// <returns>true if </returns>
+    public bool IsUnique(D data)
     {
         if (ValueIndex(data, out Guid hash, out Guid value))
         {
@@ -76,9 +94,9 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
                 if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
                     if (Table.TryGet<T>(id, out _))
-                        return true;
+                        return false;
         }
-        return false;
+        return true;
     }
 
     public D[] UniqueValues()
