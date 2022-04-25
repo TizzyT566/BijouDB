@@ -1,9 +1,6 @@
-﻿using BijouDB.Exceptions;
-using BijouDB.DataTypes;
+﻿namespace BijouDB;
 
-namespace BijouDB;
-
-public abstract class Table
+public abstract partial class Table
 {
     private Guid? _guid;
     public Guid Id => _guid ?? Guid.Empty;
@@ -28,38 +25,20 @@ public abstract class Table
         }
     }
 
-    public sealed class ColumnBuilder
+    public static IReadOnlyDictionary<Guid, T> RecordsWithValues<T>(params IReadOnlyDictionary<Guid, T>[] columnMatches) where T : Table, new()
     {
-        private LengthRef Length = new();
-        private int _count = 0;
-
-        private readonly HashSet<string> _columnNames = new();
-
-        public ColumnBuilder Indexs<T, D>(out IndexedColumn<T, D> column, ColumnType type = ColumnType.None, string? columnName = null) where T : Table, new() where D : IDataType, new()
+        if (columnMatches.Length == 1) return columnMatches[0];
+        Dictionary<Guid, T> result = new();
+        Array.Sort(columnMatches, (x, y) => x.Count - y.Count);
+        foreach (KeyValuePair<Guid, T> pair in columnMatches[0])
         {
-            if (columnName is not null) Misc.EnsureAlphaNumeric(columnName);
-            columnName = $"{Globals.ColName}_{columnName ?? _count.ToString()}";
-            if (!_columnNames.Add(columnName)) throw new DuplicateColumnException(columnName);
-            column = new(type, Length, columnName, Length);
-            Length += type == ColumnType.None ? D.Length : 32;
-            _count++;
-            return this;
+            int i = 1;
+            for (; i < columnMatches.Length; i++)
+                if (!columnMatches[i].ContainsKey(pair.Key))
+                    break;
+            if (i == columnMatches.Length)
+                result.Add(pair.Key, pair.Value);
         }
-
-        public ColumnBuilder Refers<T1, T2>(out ReferencesColumn<T1, T2> column, Func<IndexedColumn<T2, @record<T1>>> referenceColumn) where T1 : Table, new() where T2 : Table, new()
-        {
-
-
-            column = new(referenceColumn);
-            return this;
-        }
-
-        public void Remove<T>(out Func<T, bool> remover) where T : Table
-        {
-
-
-
-            remover = (record) => { return false; };
-        }
+        return result;
     }
 }

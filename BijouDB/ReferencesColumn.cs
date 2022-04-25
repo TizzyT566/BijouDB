@@ -1,39 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BijouDB.DataTypes;
+﻿using BijouDB.DataTypes;
 
 namespace BijouDB
 {
     public sealed class ReferencesColumn<T, TResult> where T : Table, new() where TResult : Table, new()
     {
         private readonly Func<IndexedColumn<TResult, @record<T>>> _sourceColumn;
+        
+        /// <summary>
+        /// If this column should prevent a record from being removed if it still holds child references.
+        /// </summary>
+        public bool Persistant { get; }
 
-        public ReferencesColumn(Func<IndexedColumn<TResult, @record<T>>> sourceColumn) => _sourceColumn = sourceColumn;
-
-        public ColumnType Type => throw new NotImplementedException();
-
-        public TResult[] Get(T record)
+        public ReferencesColumn(Func<IndexedColumn<TResult, @record<T>>> sourceColumn, bool persistant)
         {
-            throw new NotImplementedException();
+            _sourceColumn = sourceColumn;
+            Persistant = persistant;
         }
 
-        public bool HasRecordsWithIndexedValue(record<T> data)
-        {
-            throw new NotImplementedException();
-        }
+        /// <summary>
+        /// Gets a collection of all child records referenced by this column.
+        /// </summary>
+        /// <param name="record">The parent record.</param>
+        /// <returns>A collection with all child records.</returns>
+        public IReadOnlySet<Guid> Get(T record) => _sourceColumn().RecordsWithValue(record);
 
-        public bool IndexedValueExists(record<T> data, out Guid hash, out Guid value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ReadOnlyDictionary<Guid, T> RecordsWithIndexedValue(record<T> data)
-        {
-            throw new NotImplementedException();
-        }
+        public bool HasRecords(record<T> data) => _sourceColumn().HasRecords(data);
     }
 }

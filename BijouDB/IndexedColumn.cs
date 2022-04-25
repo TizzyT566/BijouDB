@@ -32,10 +32,10 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
     /// </summary>
     /// <param name="data">The value to check the index for.</param>
     /// <param name="hash">The hash of the value.</param>
-    /// <param name="value">The index of the value if found, and a candidate if not.</param>
+    /// <param name="index">The index of the value if found, and a candidate if not.</param>
     /// <returns>true if the value was found, false otherwise.</returns>
     /// <exception cref="InvalidOperationException">Indexed lookups only valid on indexed columns.</exception>
-    public bool ValueIndex(D data, out Guid hash, out Guid value)
+    public bool ValueIndex(D data, out Guid hash, out Guid index)
     {
         if (Type == ColumnType.None) throw new InvalidOperationException("Indexed lookups only valid on indexed columns.");
 
@@ -50,7 +50,7 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
             foreach (string hashCollision in Directory.EnumerateDirectories(hashDir))
             {
                 string binFilePath = Path.Combine(hashCollision, Globals.BinFile);
-                if (Guid.TryParse(hashCollision, out value) && File.Exists(binFilePath))
+                if (Guid.TryParse(hashCollision, out index) && File.Exists(binFilePath))
                 {
                     using FileStream fs = new(binFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                     ms.Position = 0;
@@ -58,7 +58,7 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
                 }
             }
         }
-        value = IncrementalGuid.NextGuid();
+        index = IncrementalGuid.NextGuid();
         return false;
     }
 
@@ -67,38 +67,42 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
     /// </summary>
     /// <param name="data">The value to search records with.</param>
     /// <returns>A readonly dictionary of all records containing the value specified.</returns>
-    public ReadOnlyDictionary<Guid, T> RecordsWithValue(D data)
+    public IReadOnlySet<Guid> RecordsWithValue(D data)
     {
-        Dictionary<Guid, T> records = new();
-        if (ValueIndex(data, out Guid hash, out Guid value))
+        HashSet<Guid> records = new();
+        if (ValueIndex(data, out Guid hash, out Guid index))
         {
-            string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), value.ToString());
+            string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
                 if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
-                    if (Table.TryGet(id, out T? record))
-                        records.Add(record!.Id, record!);
+                    if (Table.TryGet(id, out T? _))
+                        records.Add(id);
         }
-        return new(records);
+        return records;
     }
 
     /// <summary>
     /// Checks to see if a record exists that has the specified value.
     /// </summary>
     /// <param name="data">The value to check for.</param>
-    /// <returns>true if </returns>
-    public bool IsUnique(D data)
+    /// <returns>true if a record exists with the value specified, false otherwise.</returns>
+    public bool HasRecords(D data)
     {
-        if (ValueIndex(data, out Guid hash, out Guid value))
+        if (ValueIndex(data, out Guid hash, out Guid index))
         {
-            string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), value.ToString());
+            string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
                 if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
                     if (Table.TryGet<T>(id, out _))
-                        return false;
+                        return true;
         }
-        return true;
+        return false;
     }
 
+    /// <summary>
+    /// Gets an array of unique values stored in the column.
+    /// </summary>
+    /// <returns>An array of unique values stored in the column.</returns>
     public D[] UniqueValues()
     {
         List<D> ds = new();
