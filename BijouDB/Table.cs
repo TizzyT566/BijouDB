@@ -25,19 +25,20 @@ public abstract partial class Table
         }
     }
 
-    public static IReadOnlyDictionary<Guid, T> RecordsWithValues<T>(params IReadOnlyDictionary<Guid, T>[] columnMatches) where T : Table, new()
+    public static IReadOnlySet<Guid> RecordsWithValues(params IReadOnlySet<Guid>[] columnMatches)
     {
         if (columnMatches.Length == 1) return columnMatches[0];
-        Dictionary<Guid, T> result = new();
+        HashSet<Guid> result = new();
+        if (columnMatches.Length == 0) return result;
         Array.Sort(columnMatches, (x, y) => x.Count - y.Count);
-        foreach (KeyValuePair<Guid, T> pair in columnMatches[0])
+        foreach (Guid id in columnMatches[0])
         {
             int i = 1;
             for (; i < columnMatches.Length; i++)
-                if (!columnMatches[i].ContainsKey(pair.Key))
+                if (!columnMatches[i].Contains(id))
                     break;
             if (i == columnMatches.Length)
-                result.Add(pair.Key, pair.Value);
+                result.Add(id);
         }
         return result;
     }

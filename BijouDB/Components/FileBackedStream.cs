@@ -51,7 +51,7 @@ public class FileBackedStream : Stream, IDisposable
         _stream.Write(buffer, offset, count);
     }
 
-    public FileBackedStream(int thresholdSize = 1048576)
+    public FileBackedStream(int thresholdSize = 1048576) // 1MB buffer
     {
         _thresholdSize = thresholdSize;
         _stream = new MemoryStream();

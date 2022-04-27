@@ -24,7 +24,7 @@ public static class IncrementalGuid
         {
             _saveStream = new(SAVE_PATH, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             _guidBytes = new byte[16];
-            Random.Shared.NextBytes(_guidBytes);
+            //Random.Shared.NextBytes(_guidBytes); // uncomment to enable random intial state.
         }
         Save();
     }
@@ -43,7 +43,7 @@ public static class IncrementalGuid
         Array.Copy(l2Bytes, 0, _guidBytes, 8, l2Bytes.Length);
     }
 
-    public static void Save(string? savePath = null)
+    public static void Save()
     {
         while (Interlocked.Exchange(ref _lock, 1) == 1) ;
         _saveStream.Position = 0;

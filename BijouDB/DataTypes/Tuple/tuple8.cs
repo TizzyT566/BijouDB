@@ -4,7 +4,7 @@ using BijouDB.Exceptions;
 
 namespace BijouDB.DataTypes
 {
-    public struct @tuple<T1, T2, T3, T4, T5, T6, T7, T8> : IDataType
+    public struct @tuple<T1, T2, T3, T4, T5, T6, T7, TRest> : IDataType
         where T1 : IDataType, new()
         where T2 : IDataType, new()
         where T3 : IDataType, new()
@@ -12,13 +12,13 @@ namespace BijouDB.DataTypes
         where T5 : IDataType, new()
         where T6 : IDataType, new()
         where T7 : IDataType, new()
-        where T8 : IDataType, new()
+        where TRest : IDataType, new()
     {
         public static long Length => 0;
 
-        public (T1, T2, T3, T4, T5, T6, T7, T8) _value;
+        public (T1, T2, T3, T4, T5, T6, T7, TRest) _value;
 
-        public @tuple((T1, T2, T3, T4, T5, T6, T7, T8) value) => _value = value;
+        public @tuple((T1, T2, T3, T4, T5, T6, T7, TRest) value) => _value = value;
 
         public void Deserialize(Stream stream)
         {
@@ -44,8 +44,8 @@ namespace BijouDB.DataTypes
             _value.Item8.Serialize(stream);
         }
 
-        public static implicit operator (T1, T2, T3, T4, T5, T6, T7, T8)(@tuple<T1, T2, T3, T4, T5, T6, T7, T8> value) => value._value;
-        public static implicit operator @tuple<T1, T2, T3, T4, T5, T6, T7, T8>((T1, T2, T3, T4, T5, T6, T7, T8) value) => new(value);
+        public static implicit operator (T1, T2, T3, T4, T5, T6, T7, TRest)(@tuple<T1, T2, T3, T4, T5, T6, T7, TRest> value) => value._value;
+        public static implicit operator @tuple<T1, T2, T3, T4, T5, T6, T7, TRest>((T1, T2, T3, T4, T5, T6, T7, TRest) value) => new(value);
 
 
 
@@ -54,9 +54,9 @@ namespace BijouDB.DataTypes
         {
             public static long Length => 0;
 
-            public (T1, T2, T3, T4, T5, T6, T7, T8)? _value;
+            public (T1, T2, T3, T4, T5, T6, T7, TRest)? _value;
 
-            public nullable((T1, T2, T3, T4, T5, T6, T7, T8)? value) => _value = value;
+            public nullable((T1, T2, T3, T4, T5, T6, T7, TRest)? value) => _value = value;
 
             public void Deserialize(Stream stream)
             {
@@ -73,7 +73,7 @@ namespace BijouDB.DataTypes
                         }
                     default:
                         {
-                            _value = (new T1(), new T2(), new T3(), new T4(), new T5(), new T6(), new T7(), new T8());
+                            _value = (new T1(), new T2(), new T3(), new T4(), new T5(), new T6(), new T7(), new TRest());
                             _value.Value.Item1.Deserialize(stream);
                             _value.Value.Item2.Deserialize(stream);
                             _value.Value.Item3.Deserialize(stream);
@@ -85,7 +85,6 @@ namespace BijouDB.DataTypes
                             break;
                         }
                 }
-
             }
 
             public void Serialize(Stream stream)
@@ -108,8 +107,8 @@ namespace BijouDB.DataTypes
                 }
             }
 
-            public static implicit operator (T1, T2, T3, T4, T5, T6, T7, T8)?(nullable value) => value._value;
-            public static implicit operator nullable((T1, T2, T3, T4, T5, T6, T7, T8)? value) => new(value);
+            public static implicit operator (T1, T2, T3, T4, T5, T6, T7, TRest)?(nullable value) => value._value;
+            public static implicit operator nullable((T1, T2, T3, T4, T5, T6, T7, TRest)? value) => new(value);
         }
     }
 }

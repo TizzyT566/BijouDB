@@ -1,14 +1,18 @@
 ﻿using BijouDB.Components;
 using BijouDB.Exceptions;
-using System.Collections.ObjectModel;
 
 namespace BijouDB;
+
+public abstract class IndexsColumn
+{
+    public abstract bool Remove(Guid id);
+}
 
 /// <summary>
 /// A column for adding to custom table implementations.
 /// </summary>
 /// <typeparam name="D">The IDataType.</typeparam>
-public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataType, new()
+public sealed class IndexsColumn<T, D> : IndexsColumn where T : Table, new() where D : IDataType, new()
 {
     public string Name { get; }
     public long Offset { get; }
@@ -16,14 +20,13 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
 
     private readonly LengthRef _tableLength;
 
-    internal IndexedColumn(ColumnType type, long offset, string columnName, LengthRef tableLengthRef)
+    internal IndexsColumn(ColumnType type, long offset, string columnName, LengthRef tableLengthRef)
     {
         Type = type;
         Offset = offset;
         Name = columnName;
         _tableLength = tableLengthRef;
     }
-
 
     /// <summary>
     /// Checks if a value is already present in an indexed column,
@@ -307,5 +310,26 @@ public sealed class IndexedColumn<T, D> where T : Table, new() where D : IDataTy
             fs.WriteHashValue(newHash, newValue);
             fs.Flush(_tableLength);
         }
+    }
+
+    public override bool Remove(Guid id)
+    {
+        // Read record file
+        string recordPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
+        using FileStream fs = new(recordPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+        fs.Position = Offset;
+
+        if (fs.Length - Offset >= 32 && fs.ReadHashValue(out Guid oldHash, out Guid oldValue))
+        {
+            // Go to indexed location, delete reference file
+
+
+            // If no more references delete value folder
+
+            // If no more values delete hash folder
+
+        }
+
+        return true;
     }
 }

@@ -2,16 +2,16 @@
 
 namespace BijouDB
 {
-    public sealed class ReferencesColumn<T, TResult> where T : Table, new() where TResult : Table, new()
+    public sealed class RefersColumn<T, TResult> where T : Table, new() where TResult : Table, new()
     {
-        private readonly Func<IndexedColumn<TResult, @record<T>>> _sourceColumn;
+        private readonly Func<IndexsColumn<TResult, @record<T>>> _sourceColumn;
         
         /// <summary>
         /// If this column should prevent a record from being removed if it still holds child references.
         /// </summary>
         public bool Persistant { get; }
 
-        public ReferencesColumn(Func<IndexedColumn<TResult, @record<T>>> sourceColumn, bool persistant)
+        public RefersColumn(Func<IndexsColumn<TResult, @record<T>>> sourceColumn, bool persistant)
         {
             _sourceColumn = sourceColumn;
             Persistant = persistant;
