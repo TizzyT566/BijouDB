@@ -25,6 +25,8 @@ public struct @uint : IDataType
         stream.Write(bytes);
     }
 
+    public override string ToString() => _value.ToString();
+
     public static implicit operator uint(@uint value) => value._value;
     public static implicit operator @uint(uint value) => new(value);
 
@@ -76,6 +78,8 @@ public struct @uint : IDataType
                 stream.Write(BitConverter.GetBytes((uint)_value));
             }
         }
+
+        public override string ToString() => _value.ToString() ?? "\0";
 
         public static implicit operator uint?(nullable value) => value._value;
         public static implicit operator nullable(uint? value) => new(value);

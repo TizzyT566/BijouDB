@@ -21,6 +21,8 @@ public struct @string : IDataType
 
     public void Serialize(Stream stream) => stream.WriteDynamicData(Encoding.UTF8.GetBytes(_value ?? ""));
 
+    public override string ToString() => _value;
+
     public static implicit operator string(@string value) => value._value ?? "";
     public static implicit operator @string(string value) => value is null ? throw new NotNullableException(typeof(@string).Name) : new(value);
 
@@ -71,6 +73,8 @@ public struct @string : IDataType
                 stream.WriteDynamicData(Encoding.UTF8.GetBytes(_value));
             }
         }
+
+        public override string ToString() => _value?.ToString() ?? "\0";
 
         public static implicit operator string?(nullable value) => value._value;
         public static implicit operator nullable(string? value) => new(value);

@@ -37,6 +37,8 @@ public struct @decimal : IDataType
         }
     }
 
+    public override string ToString() => _value.ToString();
+
     public static implicit operator decimal(@decimal value) => value._value;
     public static implicit operator @decimal(decimal value) => new(value);
 
@@ -101,6 +103,8 @@ public struct @decimal : IDataType
                 }
             }
         }
+
+        public override string ToString() => _value.ToString() ?? "\0";
 
         public static implicit operator decimal?(nullable value) => value._value;
         public static implicit operator nullable(decimal? value) => new(value);

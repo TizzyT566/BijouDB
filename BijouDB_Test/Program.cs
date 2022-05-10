@@ -1,4 +1,6 @@
-﻿using BijouDB_Test;
+﻿using BijouDB;
+using BijouDB.DataTypes;
+using BijouDB_Test;
 using BijouDB_Test.Tables;
 using System.Numerics;
 using static BijouDB.Table;
@@ -35,9 +37,13 @@ using static BijouDB.Table;
 //////Employees.Points.IndexedValueExists(System.Numerics.BigInteger.Parse("452468476496486947785434565478964794641641246475949684312613241645641684742635445194167423454315187685464216416447356471349684764346748"), out Guid hash, out Guid value);
 //////Employees.Points.
 
-Console.WriteLine(count());
+//Console.WriteLine(count());
 
-int count(params int[] values)
-{
-    return values.Length;
-}
+//int count(params int[] values)
+//{
+//    return values.Length;
+//}
+
+Employee emplyee = new(("Willy", 5));
+
+Console.WriteLine(emplyee.Id);

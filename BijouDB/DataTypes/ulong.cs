@@ -25,6 +25,8 @@ public struct @ulong : IDataType
         stream.Write(bytes);
     }
 
+    public override string ToString() => _value.ToString();
+
     public static implicit operator ulong(@ulong value) => value._value;
     public static implicit operator @ulong(ulong value) => new(value);
 
@@ -76,6 +78,8 @@ public struct @ulong : IDataType
                 stream.Write(BitConverter.GetBytes((ulong)_value));
             }
         }
+
+        public override string ToString() => _value.ToString() ?? "\0";
 
         public static implicit operator ulong?(nullable value) => value._value;
         public static implicit operator nullable(ulong? value) => new(value);

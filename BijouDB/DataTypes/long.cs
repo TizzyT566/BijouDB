@@ -25,6 +25,8 @@ public struct @long : IDataType
         stream.Write(bytes);
     }
 
+    public override string ToString() => _value.ToString();
+
     public static implicit operator long(@long value) => value._value;
     public static implicit operator @long(long value) => new(value);
 
@@ -76,6 +78,8 @@ public struct @long : IDataType
                 stream.Write(BitConverter.GetBytes((long)_value));
             }
         }
+
+        public override string ToString() => _value.ToString() ?? "\0";
 
         public static implicit operator long?(nullable value) => value._value;
         public static implicit operator nullable(long? value) => new(value);

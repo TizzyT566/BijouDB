@@ -4,14 +4,14 @@ using System.Numerics;
 
 namespace BijouDB_Test.Tables;
 
-public struct Employee
-{
-    public string Name;
-    public int Number;
-    public long Age;
-    public Employees Manager;
-    public BigInteger Points;
-}
+//public struct Employee
+//{
+//    public string Name;
+//    public int Number;
+//    public long Age;
+//    public Employees Manager;
+//    public BigInteger Points;
+//}
 
 public partial class Employees : Table
 {

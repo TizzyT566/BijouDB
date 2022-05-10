@@ -20,6 +20,8 @@ namespace BijouDB.DataTypes
 
         public void Serialize(Stream stream) => stream.WriteDynamicData(_value ?? Array.Empty<byte>());
 
+        public override string ToString() => BitConverter.ToString(_value);
+
         public static implicit operator byte[](@blob value) => value._value;
         public static implicit operator @blob(byte[] value) => new(value);
 
@@ -70,6 +72,8 @@ namespace BijouDB.DataTypes
                     stream.WriteDynamicData(_value);
                 }
             }
+
+            public override string ToString() => BitConverter.ToString(_value ?? Array.Empty<byte>());
 
             public static implicit operator byte[]?(nullable value) => value._value;
             public static implicit operator nullable(byte[]? value) => new(value);

@@ -25,6 +25,8 @@ public struct @date : IDataType
         stream.Write(bytes);
     }
 
+    public override string ToString() => _value.ToString();
+
     public static implicit operator DateTime(@date value) => value._value;
     public static implicit operator @date(DateTime value) => new(value);
 
@@ -76,6 +78,8 @@ public struct @date : IDataType
                 stream.Write(BitConverter.GetBytes(((DateTime)_value).Ticks));
             }
         }
+
+        public override string ToString() => _value.ToString() ?? "\0";
 
         public static implicit operator DateTime?(nullable value) => value._value;
         public static implicit operator nullable(DateTime? value) => new(value);

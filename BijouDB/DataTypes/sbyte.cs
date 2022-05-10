@@ -21,6 +21,8 @@ public struct @sbyte : IDataType
 
     public void Serialize(Stream stream) => stream.WriteByte((byte)_value);
 
+    public override string ToString() => _value.ToString();
+
     public static implicit operator sbyte(@sbyte value) => value._value;
     public static implicit operator @sbyte(sbyte value) => new(value);
 
@@ -72,6 +74,8 @@ public struct @sbyte : IDataType
                 stream.WriteByte((byte)_value);
             }
         }
+
+        public override string ToString() => _value.ToString() ?? "\0";
 
         public static implicit operator sbyte?(nullable value) => value._value;
         public static implicit operator nullable(sbyte? value) => new(value);

@@ -26,6 +26,8 @@ public struct @record<T> : IDataType where T : Table, new()
         stream.Write((_value is null ? Guid.Empty : _value.Id).ToByteArray());
     }
 
+    public override string ToString() => _value.ToString() ?? "\0";
+
     public static implicit operator T(@record<T> value) => value._value;
     public static implicit operator @record<T>(T value) => value is null ? throw new NotNullableException($"record<{typeof(T).Name}>") : new(value);
 
@@ -77,6 +79,8 @@ public struct @record<T> : IDataType where T : Table, new()
                 stream.Write(_value.Id.ToByteArray());
             }
         }
+
+        public override string ToString() => _value?.ToString() ?? "\0";
 
         public static implicit operator T?(nullable value) => value._value;
         public static implicit operator nullable(T? value) => new(value);

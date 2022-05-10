@@ -25,6 +25,8 @@ public struct @short : IDataType
         stream.Write(bytes);
     }
 
+    public override string ToString() => _value.ToString();
+
     public static implicit operator short(@short value) => value._value;
     public static implicit operator @short(short value) => new(value);
 
@@ -76,6 +78,8 @@ public struct @short : IDataType
                 stream.Write(BitConverter.GetBytes((short)_value));
             }
         }
+
+        public override string ToString() => _value.ToString() ?? "\0";
 
         public static implicit operator short?(nullable value) => value._value;
         public static implicit operator nullable(short? value) => new(value);

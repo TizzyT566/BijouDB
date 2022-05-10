@@ -38,6 +38,8 @@ namespace BijouDB.DataTypes
             _value.Item6.Serialize(stream);
         }
 
+        public override string ToString() => _value.ToString();
+
         public static implicit operator (T1, T2, T3, T4, T5, T6)(@tuple<T1, T2, T3, T4, T5, T6> value) => value._value;
         public static implicit operator @tuple<T1, T2, T3, T4, T5, T6>((T1, T2, T3, T4, T5, T6) value) => new(value);
 
@@ -97,6 +99,8 @@ namespace BijouDB.DataTypes
                     _value.Value.Item6.Serialize(stream);
                 }
             }
+
+            public override string ToString() => _value.ToString() ?? "\0";
 
             public static implicit operator (T1, T2, T3, T4, T5, T6)?(nullable value) => value._value;
             public static implicit operator nullable((T1, T2, T3, T4, T5, T6)? value) => new(value);

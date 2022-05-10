@@ -21,6 +21,8 @@ public struct @bool : IDataType
 
     public void Serialize(Stream stream) => stream.WriteByte(_value ? byte.MaxValue : byte.MinValue);
 
+    public override string ToString() => _value.ToString();
+
     public static implicit operator bool(@bool value) => value._value;
     public static implicit operator @bool(bool value) => new(value);
 
@@ -69,6 +71,8 @@ public struct @bool : IDataType
                 stream.WriteByte((bool)_value ? byte.MaxValue : byte.MinValue);
             }
         }
+
+        public override string ToString() => _value.ToString() ?? "\0";
 
         public static implicit operator bool?(@nullable value) => value._value;
         public static implicit operator @nullable(bool? value) => new(value);

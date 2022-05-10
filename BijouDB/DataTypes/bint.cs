@@ -21,6 +21,8 @@ public struct @bint : IDataType
 
     public void Serialize(Stream stream) => stream.WriteDynamicData(_value.ToByteArray());
 
+    public override string ToString() => _value.ToString();
+
     public static implicit operator BigInteger(@bint value) => value._value;
     public static implicit operator @bint(BigInteger value) => new(value);
 
@@ -71,6 +73,8 @@ public struct @bint : IDataType
                 stream.WriteDynamicData(((BigInteger)_value).ToByteArray());
             }
         }
+
+        public override string ToString() => _value?.ToString() ?? "\0";
 
         public static implicit operator BigInteger?(nullable value) => value._value;
         public static implicit operator nullable(BigInteger? value) => new(value);
