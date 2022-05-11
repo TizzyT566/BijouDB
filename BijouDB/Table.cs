@@ -45,13 +45,40 @@ public abstract partial class Table
         return result;
     }
 
-    public D Get<D>(Table record, D @default = default!, [CallerMemberName] string memberName = "") where D : IDataType
+    public D Get<D>(D @default = default!, [CallerMemberName] string memberName = "") where D : IDataType
     {
+        Type type = GetType();
+
         return @default;
     }
 
-    public void Set<T>(T record, [CallerMemberName] string memberName = "") where T : Table
+    [AttributeUsage(AttributeTargets.Property)]
+    public class Column : Attribute
     {
+        [Flags]
+        public enum Attributes
+        {
+            None = 0,
+            Indexed = 1,
+            Unique = 3,
 
+        }
+
+        internal readonly Attributes _attributes;
+
+        public Column(Attributes attributes = Attributes.None) => _attributes = attributes;
+    }
+
+    public void Set<D>(D value, [CallerMemberName] string memberName = "") where D : IDataType
+    {
+        Type type = GetType();
+
+    }
+
+    public T[] References<T>() where T : Table
+    {
+        Type type = GetType();
+
+        return default;
     }
 }

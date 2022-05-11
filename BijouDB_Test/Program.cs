@@ -1,10 +1,7 @@
 ﻿using BijouDB;
 using BijouDB.DataTypes;
-using BijouDB_Test;
-using BijouDB_Test.Tables;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
-using static BijouDB.Table;
+using static BijouDB.Table.Column;
 
 
 //Employees newEmployee = new();
@@ -63,19 +60,27 @@ Test meh = new()
 
 public class Test : Table
 {
-    [NotNull]
-    public @int Age { get => Get<@int>(this, 5); set => Set(this); }
+    [Column]
+    public @bint Score { get => Get((@bint)BigInteger.One); set => Set(value); }
 
-    [NotNull]
-    public @bint Score { get => Get<@bint>(this); set => Set(this); }
+    [Column]
+    public @tuple<@int, @string> Level { get => Get<@tuple<@int, @string>>(); set => Set(value); }
 
-    [NotNull]
-    public @tuple<@int, @string> Level { get => Get<@tuple<@int, @string>>(this); set => Set(this); }
+    [Column(Attributes.Indexed)]
+    public @int Age { get => Get<@int>(5); set => Set(value); }
 
-    [NotNull]
-    [Unique]
-    public @string Name { get => Get<@string>(this); set => Set(this); }
+    [Column(Attributes.Unique)]
+    public @string Name { get => Get<@string>(); set => Set(value); }
 
-    [dependent]
-    public Test[] Candidates { get; set; }
+    [Column(Attributes.Indexed)]
+    public @record<Test> Parent { get => Get<record<Test>>(); set => Set(value); }
+
+    [Column(Attributes.Indexed)]
+    public Test[] Candidates => References<Test>();
+
+    // constructor used to force required properties
+    public Test()
+    {
+
+    }
 }
