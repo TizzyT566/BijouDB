@@ -1,4 +1,6 @@
-﻿namespace BijouDB;
+﻿using System.Runtime.CompilerServices;
+
+namespace BijouDB;
 
 public abstract partial class Table
 {
@@ -41,5 +43,15 @@ public abstract partial class Table
                 result.Add(id);
         }
         return result;
+    }
+
+    public D Get<D>(Table record, D @default = default!, [CallerMemberName] string memberName = "") where D : IDataType
+    {
+        return @default;
+    }
+
+    public void Set<T>(T record, [CallerMemberName] string memberName = "") where T : Table
+    {
+
     }
 }

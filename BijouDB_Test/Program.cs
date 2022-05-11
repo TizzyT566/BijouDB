@@ -47,16 +47,12 @@ using static BijouDB.Table;
 
 //Type recordType = typeof(Test);
 
-Test meh = new();
-
-Test meh2 = meh with
+Test meh = new()
 {
     Age = 1,
     Score = BigInteger.Parse("23763474835632467358365246245737345"),
     Level = (54, "M")
 };
-
-meh.Meh();
 
 //System.Reflection.PropertyInfo[] props = recordType.GetProperties();
 
@@ -65,10 +61,21 @@ meh.Meh();
 //    Console.WriteLine(property.PropertyType);
 //}
 
-public record Test : DbRecord
+public class Test : Table
 {
     [NotNull]
-    public @int Age { get => Table.Get(this); set => Table.Set(this); }
-    public @bint Score { get => Table.Get(this); set => Table.Set(this); }
-    public @tuple<@int, @string> Level { get => Table.Get(this); set => Table.Set(this); }
+    public @int Age { get => Get<@int>(this, 5); set => Set(this); }
+
+    [NotNull]
+    public @bint Score { get => Get<@bint>(this); set => Set(this); }
+
+    [NotNull]
+    public @tuple<@int, @string> Level { get => Get<@tuple<@int, @string>>(this); set => Set(this); }
+
+    [NotNull]
+    [Unique]
+    public @string Name { get => Get<@string>(this); set => Set(this); }
+
+    [dependent]
+    public Test[] Candidates { get; set; }
 }
