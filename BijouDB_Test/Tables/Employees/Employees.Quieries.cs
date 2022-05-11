@@ -7,5 +7,3 @@ public partial class Employees : Table
 {
 
 }
-
-public record Employee(tuple<@string, @int> tup) : Record;

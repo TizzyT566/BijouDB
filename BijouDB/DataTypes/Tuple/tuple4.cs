@@ -12,7 +12,7 @@ namespace BijouDB.DataTypes
     {
         public static long Length => 0;
 
-        public (T1, T2, T3, T4) _value;
+        private (T1, T2, T3, T4) _value;
 
         public @tuple((T1, T2, T3, T4) value) => _value = value;
 
@@ -44,7 +44,7 @@ namespace BijouDB.DataTypes
         {
             public static long Length => 0;
 
-            public (T1, T2, T3, T4)? _value;
+            private (T1, T2, T3, T4)? _value;
 
             public nullable((T1, T2, T3, T4)? value) => _value = value;
 

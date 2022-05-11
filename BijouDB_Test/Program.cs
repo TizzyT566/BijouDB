@@ -2,6 +2,7 @@
 using BijouDB.DataTypes;
 using BijouDB_Test;
 using BijouDB_Test.Tables;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using static BijouDB.Table;
 
@@ -44,6 +45,30 @@ using static BijouDB.Table;
 //    return values.Length;
 //}
 
-Employee emplyee = new(("Willy", 5));
+//Type recordType = typeof(Test);
 
-Console.WriteLine(emplyee.Id);
+Test meh = new();
+
+Test meh2 = meh with
+{
+    Age = 1,
+    Score = BigInteger.Parse("23763474835632467358365246245737345"),
+    Level = (54, "M")
+};
+
+meh.Meh();
+
+//System.Reflection.PropertyInfo[] props = recordType.GetProperties();
+
+//foreach(System.Reflection.PropertyInfo property in props)
+//{
+//    Console.WriteLine(property.PropertyType);
+//}
+
+public record Test : DbRecord
+{
+    [NotNull]
+    public @int Age { get => Table.Get(this); set => Table.Set(this); }
+    public @bint Score { get => Table.Get(this); set => Table.Set(this); }
+    public @tuple<@int, @string> Level { get => Table.Get(this); set => Table.Set(this); }
+}
