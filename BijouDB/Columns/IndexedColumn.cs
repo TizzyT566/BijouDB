@@ -101,6 +101,7 @@ public sealed class IndexedColumn<D> : IColumn<D> where D : IDataType, new()
     {
         List<D> ds = new();
         string colDir = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name);
+        if (!Directory.Exists(colDir)) return ds.ToArray();
         string[] uniqueValues = Directory.GetFiles(colDir, Globals.BinFile, SearchOption.AllDirectories);
         foreach (string uniqueValue in uniqueValues)
         {
