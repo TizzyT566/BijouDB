@@ -21,6 +21,20 @@ public class Record
         }
     }
 
+    public static R[] GetAll<R>() where R : Record, new()
+    {
+        string path = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec);
+        if (!Directory.Exists(path)) return Array.Empty<R>();
+        string[] records = Directory.GetFiles(path, Globals.RecPattern);
+        R[] result = new R[records.Length];
+        for(int i = 0; i < records.Length; i++)
+        {
+            string recordName = Path.GetFileNameWithoutExtension(records[i]);
+            result[i] = new() { Id = Guid.Parse(recordName) };
+        }
+        return result;
+    }
+
     public static IReadOnlySet<Guid> RecordsWithValues(params IReadOnlySet<Guid>[] columnMatches)
     {
         if (columnMatches.Length == 1) return columnMatches[0];

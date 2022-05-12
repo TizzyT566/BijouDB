@@ -7,16 +7,8 @@ public sealed class SchemaBuilder<R> where R : Record, new()
     private LengthRef Length = new();
     private int _count = 0;
 
-    // normal unindexed column
-    public SchemaBuilder<R> Column<D>(out Column<D> column) where D : IDataType
-    {
-        column = default!;
-
-        return this;
-    }
-
     // indexed column
-    public SchemaBuilder<R> Indexed<D>(out IndexedColumn<D> column) where D : IDataType, new()
+    public SchemaBuilder<R> Add<D>(out Column<D> column) where D : IDataType, new()
     {
         string columnName = $"{Globals.ColName}_{_count}";
         column = new(Length, columnName, typeof(R));
@@ -26,9 +18,9 @@ public sealed class SchemaBuilder<R> where R : Record, new()
     }
 
     // column which references other records which are related
-    public SchemaBuilder<R> Reference<D>(Func<IndexedColumn<D>> referenceColumn, out ReferenceColumn<R, D> column) where D : IDataType, new()
+    public SchemaBuilder<R> Add<D>(Func<Column<D>> referenceColumn, out References<R, D> column) where D : IDataType, new()
     {
-        ReferenceColumn<R, D> newColumn = new(referenceColumn);
+        References<R, D> newColumn = new(referenceColumn);
         column = newColumn;
         return this;
     }

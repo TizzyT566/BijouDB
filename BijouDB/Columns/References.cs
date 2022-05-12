@@ -1,10 +1,10 @@
 ﻿namespace BijouDB.Columns;
 
-public sealed class ReferenceColumn<R, D> where R : Record, new() where D : IDataType, new()
+public sealed class References<R, D> where R : Record, new() where D : IDataType, new()
 {
-    private readonly Func<IndexedColumn<D>> _sourceColumn;
+    private readonly Func<Column<D>> _sourceColumn;
 
-    public ReferenceColumn(Func<IndexedColumn<D>> sourceColumn) => _sourceColumn = sourceColumn;
+    public References(Func<Column<D>> sourceColumn) => _sourceColumn = sourceColumn;
 
     /// <summary>
     /// Gets a collection of all child records referenced by this column.

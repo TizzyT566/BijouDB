@@ -8,6 +8,7 @@ internal static class Globals
     public static readonly string Index = "indx";
     public static readonly string Ref = "ref";
     public static readonly string RefPattern = $"*.{Ref}";
+    public static readonly string RecPattern = $"*.{Rec}";
     public static readonly string BinFile = "value.bin";
 
     public static bool Logging { get; set; } = false;
