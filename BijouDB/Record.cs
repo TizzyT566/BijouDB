@@ -1,18 +1,16 @@
 ﻿namespace BijouDB;
 
-public abstract partial class Schema
+public class Record
 {
-    private Guid? _guid;
-    public Guid Id => _guid ?? Guid.Empty;
+    public Guid Id { get; init; } = IncrementalGuid.NextGuid();
 
-    public void Assign() => _guid ??= IncrementalGuid.NextGuid();
-
-    public static bool TryGet<T>(Guid id, out T? record) where T : Schema, new()
+    public static bool TryGet<R>(Guid id, out R? record) where R : Record, new()
     {
         try
         {
-            using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{id}.{Globals.Rec}"), FileMode.Open, FileAccess.Read, FileShare.Read);
-            record = new() { _guid = id };
+            string path = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
+            using FileStream fs = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            record = new() { Id = id };
             return true;
         }
         catch (Exception ex)
@@ -39,5 +37,18 @@ public abstract partial class Schema
                 result.Add(id);
         }
         return result;
+    }
+
+    public void Remove()
+    {
+        Type type = GetType();
+
+        // get all columns
+
+        // check all references
+
+        // loop through all columns and delete values for this record
+
+        // delete record
     }
 }
