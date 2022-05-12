@@ -8,12 +8,12 @@ namespace BijouDB_Test.Tables;
 public sealed class Employee : Record
 {
     public static readonly Column<@int> RndColumn;
-    public static readonly IndexedColumn<Employee, @string> NameColumn;
-    public static readonly IndexedColumn<Employee, @int> NumberColumn;
-    public static readonly IndexedColumn<Employee, @long> AgeColumn;
-    public static readonly IndexedColumn<Employee, @bint> PointsColumn;
-    public static readonly IndexedColumn<Employee, @record<Employee>> ManagerColumn;
-    public static readonly ReferenceColumn<Employee, @record<Employee>> EmployeesColumn;
+    public static readonly IndexedColumn<@string> NameColumn;
+    public static readonly IndexedColumn<@int> NumberColumn;
+    public static readonly IndexedColumn<@long> AgeColumn;
+    public static readonly IndexedColumn<@bint> PointsColumn;
+    public static readonly IndexedColumn<@record<Employee>.nullable> ManagerColumn;
+    public static readonly ReferenceColumn<Employee, @record<Employee>.nullable> EmployeesColumn;
 
     static Employee() => new SchemaBuilder<Employee>()
         .Column(out RndColumn)
@@ -29,7 +29,7 @@ public sealed class Employee : Record
     public int Number { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
     public long Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
     public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value!); }
-    public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
+    public Employee? Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
 
     public Employee[] Employees => EmployeesColumn.Get(this);
 }

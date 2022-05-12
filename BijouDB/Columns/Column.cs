@@ -1,19 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace BijouDB.Columns;
+﻿namespace BijouDB.Columns;
 
 public class Column<D> : IColumn<D> where D : IDataType
 {
-    public D Get<T>(T record) where T : Record
+    public D Get<R>(R record) where R : Record
     {
         throw new NotImplementedException();
     }
 
-    public void Set<T>(T record, D value) where T : Record
+    public void Set<R>(R record, D value) where R : Record
     {
         throw new NotImplementedException();
     }

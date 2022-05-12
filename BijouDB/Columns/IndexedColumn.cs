@@ -7,17 +7,19 @@ namespace BijouDB.Columns;
 /// A column for adding to custom table implementations.
 /// </summary>
 /// <typeparam name="D">The IDataType.</typeparam>
-public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() where D : IDataType, new()
+public sealed class IndexedColumn<D> : IColumn<D> where D : IDataType, new()
 {
     public long Offset { get; }
 
     private readonly LengthRef _tableLength;
     private readonly string _name;
+    private readonly Type _type;
 
-    internal IndexedColumn(LengthRef tableLengthRef, string columnName)
+    internal IndexedColumn(LengthRef tableLengthRef, string columnName, Type type)
     {
         Offset = _tableLength = tableLengthRef;
         _name = columnName;
+        _type = type;
     }
 
     /// <summary>
@@ -29,7 +31,7 @@ public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() whe
     /// <param name="hash">The hash of the value.</param>
     /// <param name="index">The index of the value if found, and a candidate if not.</param>
     /// <returns>true if the value was found, false otherwise.</returns>
-    public bool ValueIndex(D data, out Guid hash, out Guid index)
+    public bool ValueIndex<R>(D data, out Guid hash, out Guid index) where R : Record
     {
         // Generate hash for new value
         using FileBackedStream ms = new();
@@ -60,10 +62,10 @@ public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() whe
     /// </summary>
     /// <param name="data">The value to search records with.</param>
     /// <returns>A readonly dictionary of all records containing the value specified.</returns>
-    public R[] RecordsWithValue(D data)
+    public R[] RecordsWithValue<R>(D data) where R : Record, new()
     {
         List<R> records = new();
-        if (ValueIndex(data, out Guid hash, out Guid index))
+        if (ValueIndex<R>(data, out Guid hash, out Guid index))
         {
             string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, hash.ToString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
@@ -79,9 +81,9 @@ public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() whe
     /// </summary>
     /// <param name="data">The value to check for.</param>
     /// <returns>true if a record exists with the value specified, false otherwise.</returns>
-    public bool HasRecords(D data)
+    public bool HasRecords<R>(D data) where R : Record, new()
     {
-        if (ValueIndex(data, out Guid hash, out Guid index))
+        if (ValueIndex<R>(data, out Guid hash, out Guid index))
         {
             string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, hash.ToString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
@@ -98,7 +100,7 @@ public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() whe
     public D[] UniqueValues()
     {
         List<D> ds = new();
-        string colDir = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name);
+        string colDir = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name);
         string[] uniqueValues = Directory.GetFiles(colDir, Globals.BinFile, SearchOption.AllDirectories);
         foreach (string uniqueValue in uniqueValues)
         {
@@ -304,13 +306,13 @@ public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() whe
     //    //}
     //}
 
-    public D Get<S>(S record) where S : Record
+    public D Get<R>(R record) where R : Record
     {
-        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(S).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}"), FileMode.Open, FileAccess.Read, FileShare.Read);
+        using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}"), FileMode.Open, FileAccess.Read, FileShare.Read);
         fs.Position = Offset;
         if (fs.ReadHashValue(out Guid crntHash, out Guid crntValue))
         {
-            string crntBinPath = Path.Combine(Globals.DB_Path, typeof(S).FullName!, Globals.Index, _name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
+            string crntBinPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
             if (File.Exists(crntBinPath))
             {
                 using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -323,11 +325,11 @@ public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() whe
         return new();
     }
 
-    public void Set<S>(S record, D value) where S : Record
+    public void Set<R>(R record, D value) where R : Record
     {
-        if (record.Id == Guid.Empty) throw new IncompleteRecordException<S>();
+        if (record.Id == Guid.Empty) throw new IncompleteRecordException<R>();
 
-        string baseDir = Path.Combine(Globals.DB_Path, typeof(S).FullName!, Globals.Rec);
+        string baseDir = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec);
         Directory.CreateDirectory(baseDir);
 
         // Generate hash for new value
@@ -344,7 +346,7 @@ public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() whe
             // check if old hash/value is valid
             if (oldValue != Guid.Empty)
             {
-                string hashFolder = Path.Combine(Globals.DB_Path, typeof(S).FullName!, Globals.Index, _name, oldHash.ToString());
+                string hashFolder = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, oldHash.ToString());
                 string oldBinDir = Path.Combine(hashFolder, oldValue.ToString());
                 string oldBinPath = Path.Combine(oldBinDir, Globals.BinFile);
 
@@ -388,7 +390,7 @@ public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() whe
         }
 
         // check if hash already exist
-        string hashDir = Path.Combine(Globals.DB_Path, typeof(S).FullName!, Globals.Index, _name, newHash.ToString());
+        string hashDir = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, newHash.ToString());
         if (Directory.Exists(hashDir))
         {
             string[] hashCollisions = Directory.GetDirectories(hashDir);
@@ -419,7 +421,7 @@ public sealed class IndexedColumn<R, D> : IColumn<D> where R : Record, new() whe
         Guid newValue = IncrementalGuid.NextGuid();
 
         // write bin file
-        string newBinDir = Path.Combine(Globals.DB_Path, typeof(S).FullName!, Globals.Index, _name, newHash.ToString(), newValue.ToString());
+        string newBinDir = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, newHash.ToString(), newValue.ToString());
         Directory.CreateDirectory(newBinDir);
         string newBinPath = Path.Combine(newBinDir, Globals.BinFile);
         using FileStream fs3 = new(newBinPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);

@@ -4,13 +4,15 @@ using BijouDB.Exceptions;
 
 namespace BijouDB.DataTypes
 {
-    public struct @tuple<T1, T2> : IDataType where T1 : IDataType, new() where T2 : IDataType, new()
+    public struct @tuple<D1, D2> : IDataType
+        where D1 : IDataType, new()
+        where D2 : IDataType, new()
     {
         public static long Length => 0;
 
-        private (T1, T2) _value;
+        private (D1, D2) _value;
 
-        public @tuple((T1, T2) value) => _value = value;
+        public @tuple((D1, D2) value) => _value = value;
 
         public void Deserialize(Stream stream)
         {
@@ -26,8 +28,8 @@ namespace BijouDB.DataTypes
 
         public override string ToString() => _value.ToString();
 
-        public static implicit operator (T1, T2)(@tuple<T1, T2> value) => value._value;
-        public static implicit operator @tuple<T1, T2>((T1, T2) value) => new(value);
+        public static implicit operator (D1, D2)(@tuple<D1, D2> value) => value._value;
+        public static implicit operator @tuple<D1, D2>((D1, D2) value) => new(value);
 
 
 
@@ -36,9 +38,9 @@ namespace BijouDB.DataTypes
         {
             public static long Length => 0;
 
-            private (T1, T2)? _value;
+            private (D1, D2)? _value;
 
-            public nullable((T1, T2)? value) => _value = value;
+            public nullable((D1, D2)? value) => _value = value;
 
             public void Deserialize(Stream stream)
             {
@@ -55,7 +57,7 @@ namespace BijouDB.DataTypes
                         }
                     default:
                         {
-                            _value = (new T1(), new T2());
+                            _value = (new D1(), new D2());
                             _value.Value.Item1.Deserialize(stream);
                             _value.Value.Item2.Deserialize(stream);
                             break;
@@ -80,8 +82,8 @@ namespace BijouDB.DataTypes
 
             public override string ToString() => _value.ToString() ?? "";
 
-            public static implicit operator (T1, T2)?(nullable value) => value._value;
-            public static implicit operator nullable((T1, T2)? value) => new(value);
+            public static implicit operator (D1, D2)?(nullable value) => value._value;
+            public static implicit operator nullable((D1, D2)? value) => new(value);
         }
     }
 }

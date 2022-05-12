@@ -16,17 +16,17 @@ public sealed class SchemaBuilder<R> where R : Record, new()
     }
 
     // indexed column
-    public SchemaBuilder<R> Indexed<D>(out IndexedColumn<R, D> column) where D : IDataType, new()
+    public SchemaBuilder<R> Indexed<D>(out IndexedColumn<D> column) where D : IDataType, new()
     {
         string columnName = $"{Globals.ColName}_{_count}";
-        column = new(Length, columnName);
+        column = new(Length, columnName, typeof(R));
         Length += 32;
         _count++;
         return this;
     }
 
     // column which references other records which are related
-    public SchemaBuilder<R> Reference<D>(Func<IndexedColumn<R, D>> referenceColumn, out ReferenceColumn<R, D> column) where D : IDataType, new()
+    public SchemaBuilder<R> Reference<D>(Func<IndexedColumn<D>> referenceColumn, out ReferenceColumn<R, D> column) where D : IDataType, new()
     {
         ReferenceColumn<R, D> newColumn = new(referenceColumn);
         column = newColumn;

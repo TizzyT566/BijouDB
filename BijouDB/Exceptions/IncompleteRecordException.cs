@@ -1,7 +1,7 @@
 ﻿namespace BijouDB.Exceptions
 {
-    public class IncompleteRecordException<T> : Exception where T : Record
+    public class IncompleteRecordException<R> : Exception where R : Record
     {
-        public IncompleteRecordException() : base($"Record<{typeof(T).Name}> not yet inserted to store values.") { }
+        public IncompleteRecordException() : base($"Record<{typeof(R).Name}> not yet inserted to store values.") { }
     }
 }
