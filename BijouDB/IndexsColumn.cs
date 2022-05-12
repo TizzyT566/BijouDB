@@ -3,7 +3,7 @@ using BijouDB.Exceptions;
 
 namespace BijouDB;
 
-public abstract class IndexsColumn
+public abstract class IndexedColumn
 {
     public abstract bool Remove(Guid id);
 }
@@ -12,7 +12,7 @@ public abstract class IndexsColumn
 /// A column for adding to custom table implementations.
 /// </summary>
 /// <typeparam name="D">The IDataType.</typeparam>
-public sealed class IndexsColumn<T, D> : IndexsColumn where T : Table, new() where D : IDataType, new()
+public sealed class IndexedColumn<T, D> : IndexedColumn where T : Schema, new() where D : IDataType, new()
 {
     public string Name { get; }
     public long Offset { get; }
@@ -20,7 +20,7 @@ public sealed class IndexsColumn<T, D> : IndexsColumn where T : Table, new() whe
 
     private readonly LengthRef _tableLength;
 
-    internal IndexsColumn(ColumnType type, long offset, string columnName, LengthRef tableLengthRef)
+    internal IndexedColumn(ColumnType type, long offset, string columnName, LengthRef tableLengthRef)
     {
         Type = type;
         Offset = offset;
@@ -78,7 +78,7 @@ public sealed class IndexsColumn<T, D> : IndexsColumn where T : Table, new() whe
             string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
                 if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
-                    if (Table.TryGet(id, out T? _))
+                    if (Schema.TryGet(id, out T? _))
                         records.Add(id);
         }
         return records;
@@ -96,7 +96,7 @@ public sealed class IndexsColumn<T, D> : IndexsColumn where T : Table, new() whe
             string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Index, Name, hash.ToString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
                 if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
-                    if (Table.TryGet<T>(id, out _))
+                    if (Schema.TryGet<T>(id, out _))
                         return true;
         }
         return false;
@@ -312,24 +312,24 @@ public sealed class IndexsColumn<T, D> : IndexsColumn where T : Table, new() whe
         }
     }
 
-    public override bool Remove(Guid id)
-    {
-        // Read record file
-        string recordPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-        using FileStream fs = new(recordPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
-        fs.Position = Offset;
+    //public override bool Remove(Guid id)
+    //{
+    //    // Read record file
+    //    string recordPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
+    //    using FileStream fs = new(recordPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+    //    fs.Position = Offset;
 
-        if (fs.Length - Offset >= 32 && fs.ReadHashValue(out Guid oldHash, out Guid oldValue))
-        {
-            // Go to indexed location, delete reference file
+    //    if (fs.Length - Offset >= 32 && fs.ReadHashValue(out Guid oldHash, out Guid oldValue))
+    //    {
+    //        // Go to indexed location, delete reference file
 
 
-            // If no more references delete value folder
+    //        // If no more references delete value folder
 
-            // If no more values delete hash folder
+    //        // If no more values delete hash folder
 
-        }
+    //    }
 
-        return true;
-    }
+    //    return true;
+    //}
 }

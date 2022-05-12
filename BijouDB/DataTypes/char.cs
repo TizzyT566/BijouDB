@@ -79,7 +79,7 @@ public struct @char : IDataType
             }
         }
 
-        public override string ToString() => _value.ToString() ?? "\0";
+        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator char?(nullable value) => value._value;
         public static implicit operator nullable(char? value) => new(value);

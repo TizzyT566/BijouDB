@@ -3,9 +3,9 @@ using BijouDB.DataTypes;
 
 namespace BijouDB;
 
-public abstract partial class Table
+public abstract partial class Schema
 {
-    public sealed class ColumnBuilder<T> where T : Table, new()
+    public sealed class ColumnBuilder<T> where T : Schema, new()
     {
         private LengthRef Length = new();
         private int _count = 0;
@@ -13,9 +13,9 @@ public abstract partial class Table
         private readonly HashSet<string> _columnNames = new();
 
         private readonly List<Func<T, IReadOnlySet<Guid>>> persistantColumns = new();
-        private readonly List<IndexsColumn> indexedColumns = new();
+        private readonly List<IndexedColumn> indexedColumns = new();
 
-        public ColumnBuilder<T> Indexs<D>(out IndexsColumn<T, D> column, ColumnType type = ColumnType.None, string? columnName = null) where D : IDataType, new()
+        public ColumnBuilder<T> Index<D>(out IndexedColumn<T, D> column, ColumnType type = ColumnType.None, string? columnName = null) where D : IDataType, new()
         {
             if (columnName is not null) Misc.EnsureAlphaNumeric(columnName);
             columnName = $"{Globals.ColName}_{columnName ?? _count.ToString()}";
@@ -27,9 +27,9 @@ public abstract partial class Table
             return this;
         }
 
-        public ColumnBuilder<T> Refers<T2>(out RefersColumn<T, T2> column, Func<IndexsColumn<T2, @record<T>>> referenceColumn, bool persistant = true) where T2 : Table, new()
+        public ColumnBuilder<T> Refer<T2>(out ReferenceColumn<T, T2> column, Func<IndexedColumn<T2, @record<T>>> referenceColumn, bool persistant = true) where T2 : Schema, new()
         {
-            RefersColumn<T, T2> newColumn = new(referenceColumn, persistant);
+            ReferenceColumn<T, T2> newColumn = new(referenceColumn, persistant);
             column = newColumn;
             if (persistant) persistantColumns.Add(r => newColumn.Get(r));
             return this;
@@ -46,7 +46,7 @@ public abstract partial class Table
                         return false;
 
                 // Go through all indexed columns and delete all record references
-                foreach (IndexsColumn col in indexedColumns)
+                foreach (IndexedColumn col in indexedColumns)
                     col.Remove(r.Id);
 
                 // Delete main record file

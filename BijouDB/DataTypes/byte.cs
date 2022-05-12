@@ -75,7 +75,7 @@ public struct @byte : IDataType
             }
         }
 
-        public override string ToString() => _value.ToString() ?? "\0";
+        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator byte?(nullable value) => value._value;
         public static implicit operator nullable(byte? value) => new(value);

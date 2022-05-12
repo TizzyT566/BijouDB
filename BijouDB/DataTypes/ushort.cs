@@ -79,7 +79,7 @@ public struct @ushort : IDataType
             }
         }
 
-        public override string ToString() => _value.ToString() ?? "\0";
+        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator ushort?(nullable value) => value._value;
         public static implicit operator nullable(ushort? value) => new(value);

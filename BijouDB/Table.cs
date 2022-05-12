@@ -1,22 +1,18 @@
-﻿using System.Runtime.CompilerServices;
+﻿namespace BijouDB;
 
-namespace BijouDB;
-
-public abstract partial class Table
+public abstract partial class Schema
 {
     private Guid? _guid;
     public Guid Id => _guid ?? Guid.Empty;
-    public bool OnDisk => Id != Guid.Empty;
 
     public void Assign() => _guid ??= IncrementalGuid.NextGuid();
 
-    public static bool TryGet<T>(Guid id, out T? record) where T : Table, new()
+    public static bool TryGet<T>(Guid id, out T? record) where T : Schema, new()
     {
         try
         {
             using FileStream fs = new(Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{id}.{Globals.Rec}"), FileMode.Open, FileAccess.Read, FileShare.Read);
-            record = new();
-            record._guid = id;
+            record = new() { _guid = id };
             return true;
         }
         catch (Exception ex)
@@ -43,42 +39,5 @@ public abstract partial class Table
                 result.Add(id);
         }
         return result;
-    }
-
-    public D Get<D>(D @default = default!, [CallerMemberName] string memberName = "") where D : IDataType
-    {
-        Type type = GetType();
-
-        return @default;
-    }
-
-    [AttributeUsage(AttributeTargets.Property)]
-    public class Column : Attribute
-    {
-        [Flags]
-        public enum Attributes
-        {
-            None = 0,
-            Indexed = 1,
-            Unique = 3,
-
-        }
-
-        internal readonly Attributes _attributes;
-
-        public Column(Attributes attributes = Attributes.None) => _attributes = attributes;
-    }
-
-    public void Set<D>(D value, [CallerMemberName] string memberName = "") where D : IDataType
-    {
-        Type type = GetType();
-
-    }
-
-    public T[] References<T>() where T : Table
-    {
-        Type type = GetType();
-
-        return default;
     }
 }

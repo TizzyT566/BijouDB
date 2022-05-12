@@ -74,7 +74,7 @@ public struct @bint : IDataType
             }
         }
 
-        public override string ToString() => _value?.ToString() ?? "\0";
+        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator BigInteger?(nullable value) => value._value;
         public static implicit operator nullable(BigInteger? value) => new(value);

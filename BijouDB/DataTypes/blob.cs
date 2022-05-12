@@ -73,7 +73,7 @@ namespace BijouDB.DataTypes
                 }
             }
 
-            public override string ToString() => BitConverter.ToString(_value ?? Array.Empty<byte>());
+            public override string ToString() => _value is null ? "" : BitConverter.ToString(_value);
 
             public static implicit operator byte[]?(nullable value) => value._value;
             public static implicit operator nullable(byte[]? value) => new(value);

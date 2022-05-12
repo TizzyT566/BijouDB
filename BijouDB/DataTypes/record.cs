@@ -1,11 +1,11 @@
 ﻿#pragma warning disable IDE1006 // Naming Styles
 
 using BijouDB.Exceptions;
-using static BijouDB.Table;
+using static BijouDB.Schema;
 
 namespace BijouDB.DataTypes;
 
-public struct @record<T> : IDataType where T : Table, new()
+public struct @record<T> : IDataType where T : Schema, new()
 {
     public static long Length => 16;
 
@@ -80,7 +80,7 @@ public struct @record<T> : IDataType where T : Table, new()
             }
         }
 
-        public override string ToString() => _value?.ToString() ?? "\0";
+        public override string ToString() => _value?.ToString() ?? "";
 
         public static implicit operator T?(nullable value) => value._value;
         public static implicit operator nullable(T? value) => new(value);

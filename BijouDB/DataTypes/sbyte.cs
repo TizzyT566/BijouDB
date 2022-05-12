@@ -75,7 +75,7 @@ public struct @sbyte : IDataType
             }
         }
 
-        public override string ToString() => _value.ToString() ?? "\0";
+        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator sbyte?(nullable value) => value._value;
         public static implicit operator nullable(sbyte? value) => new(value);

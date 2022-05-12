@@ -90,7 +90,7 @@ namespace BijouDB.DataTypes
                 }
             }
 
-            public override string ToString() => _value.ToString() ?? "\0";
+            public override string ToString() => _value.ToString() ?? "";
 
             public static implicit operator (T1, T2, T3, T4)?(nullable value) => value._value;
             public static implicit operator nullable((T1, T2, T3, T4)? value) => new(value);

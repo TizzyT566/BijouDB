@@ -104,7 +104,7 @@ public struct @decimal : IDataType
             }
         }
 
-        public override string ToString() => _value.ToString() ?? "\0";
+        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator decimal?(nullable value) => value._value;
         public static implicit operator nullable(decimal? value) => new(value);
