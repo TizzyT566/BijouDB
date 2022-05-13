@@ -1,6 +1,6 @@
 ﻿namespace BijouDB;
 
-public class Record
+public abstract record Record
 {
     public Guid Id { get; init; } = IncrementalGuid.NextGuid();
 
@@ -9,7 +9,7 @@ public class Record
         try
         {
             string path = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-            using FileStream fs = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            if(!File.Exists(path)) throw new FileNotFoundException("Record is missing.");
             record = new() { Id = id };
             return true;
         }

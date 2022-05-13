@@ -4,25 +4,27 @@ namespace BijouDB;
 
 public sealed class SchemaBuilder<R> where R : Record, new()
 {
-    private LengthRef Length = new();
-    private int _count = 0;
+    internal LengthRef Length = new();
+    internal int _count = 0;
 
     // indexed column
-    public SchemaBuilder<R> Add<D>(out Column<D> column) where D : IDataType, new()
+    public static SchemaBuilder<R> AddCol<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!) where D : IDataType, new()
     {
-        string columnName = $"{Globals.ColName}_{_count}";
-        column = new(Length, columnName, typeof(R));
-        Length += 32;
-        _count++;
-        return this;
+        SchemaBuilder<R> builder = new();
+        string columnName = $"{Globals.ColName}_{builder._count}";
+        column = new(builder.Length, columnName, typeof(R), Unique, Default, Check);
+        builder.Length += 32;
+        builder._count++;
+        return builder;
     }
 
     // column which references other records which are related
-    public SchemaBuilder<R> Add<D>(Func<Column<D>> referenceColumn, out References<R, D> column) where D : IDataType, new()
+    public static SchemaBuilder<R> AddRef<RSource, D>(out References<RSource, D> column, Func<Column<D>> referenceColumn) where RSource : Record, new() where D : IDataType, new()
     {
-        References<R, D> newColumn = new(referenceColumn);
+        SchemaBuilder<R> builder = new();
+        References<RSource, D> newColumn = new(referenceColumn);
         column = newColumn;
-        return this;
+        return builder;
     }
 
     //public void Remove(out Func<T, bool> remover)
@@ -52,4 +54,25 @@ public sealed class SchemaBuilder<R> where R : Record, new()
     //        }
     //    };
     //}
+}
+
+public static class SchemaBuilderExtensions
+{
+    // indexed column
+    public static SchemaBuilder<R> AddCol<R, D>(this SchemaBuilder<R> @this, out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!) where R : Record, new() where D : IDataType, new()
+    {
+        string columnName = $"{Globals.ColName}_{@this._count}";
+        column = new(@this.Length, columnName, typeof(R), Unique, Default, Check);
+        @this.Length += 32;
+        @this._count++;
+        return @this;
+    }
+
+    // column which references other records which are related
+    public static SchemaBuilder<R> AddRef<R, RSource, D>(this SchemaBuilder<R> @this, out References<RSource, D> column, Func<Column<D>> referenceColumn) where R : Record, new() where RSource : Record, new() where D : IDataType, new()
+    {
+        References<RSource, D> newColumn = new(referenceColumn);
+        column = newColumn;
+        return @this;
+    }
 }

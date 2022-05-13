@@ -11,7 +11,7 @@ public sealed class References<R, D> where R : Record, new() where D : IDataType
     /// </summary>
     /// <param name="value">The parent record.</param>
     /// <returns>A collection with all child records.</returns>
-    public R[] Get(D value) => _sourceColumn().RecordsWithValue<R>(value);
+    public R[] For(D value) => _sourceColumn().RecordsWithValue<R>(value);
 
     /// <summary>
     /// Checks whether a record exists which references the current record.

@@ -1,20 +1,7 @@
-﻿using BijouDB.Exceptions;
-using System.Reflection;
-
-namespace BijouDB;
+﻿namespace BijouDB;
 
 public static class Misc
 {
-    public static string EnsureAlphaNumeric(string str, bool @throw = false)
-    {
-        int i = 0;
-        char[] chars = new char[str.Length];
-        foreach (char c in str)
-            if (char.IsLetterOrDigit(c)) chars[i++] = c;
-            else if (@throw) throw new NotAlphaNumericException(str);
-        return new(chars);
-    }
-
     /// <summary>
     /// Ensures a stream's total size.
     /// </summary>
@@ -70,18 +57,18 @@ public static class Misc
         return stream.GetSkipHash();
     }
 
-    public static bool ReadHashValue(this Stream @this, out Guid oldHash, out Guid oldValue)
+    public static bool ReadHashValue(this Stream @this, out Guid hash, out Guid value)
     {
         byte[] prevHashBytes = new byte[16];
         byte[] prevValueBytes = new byte[16];
         if (@this.TryFill(prevHashBytes) && @this.TryFill(prevValueBytes))
         {
-            oldHash = new(prevHashBytes);
-            oldValue = new(prevValueBytes);
+            hash = new(prevHashBytes);
+            value = new(prevValueBytes);
             return true;
         }
-        oldHash = default;
-        oldValue = default;
+        hash = default;
+        value = default;
         return false;
     }
 
