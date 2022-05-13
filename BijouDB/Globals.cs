@@ -1,6 +1,6 @@
 ﻿namespace BijouDB;
 
-internal static class Globals
+public static class Globals
 {
     public static readonly string DB_Path = Path.GetFullPath("DB");
     public static readonly string ColName = "col";

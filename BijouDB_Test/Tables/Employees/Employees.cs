@@ -5,7 +5,7 @@ using System.Numerics;
 
 namespace BijouDB_Test.Tables;
 
-public record Employee : Record
+public class Employee : Record
 {
     public static readonly Column<@string> NameColumn;
     public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
@@ -22,17 +22,15 @@ public record Employee : Record
     public static readonly Column<@record<Employee>.nullable> ManagerColumn;
     public Employee? Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
 
-    public static readonly References<Computer, @record<Employee>> ComputerReferences;
+    public static readonly References<Computer, @record<Employee>.nullable> ComputerReferences;
     public Computer[] Computers => ComputerReferences.For(this);
 
-    static Employee()
-    {
-        var b = SchemaBuilder<Employee>
-        .AddRef(out ComputerReferences, () => Computer.EmployeeColumn)
-        .AddCol(out NameColumn, Unique: true)
-        .AddCol(out NumberColumn)
-        .AddCol(out AgeColumn)
-        .AddCol(out PointsColumn)
-        .AddCol(out ManagerColumn);
-    }
+    static Employee() => SchemaBuilder<Employee>
+        .Add(out NameColumn, Unique: true)
+        .Add(out NumberColumn)
+        .Add(out AgeColumn)
+        .Add(out PointsColumn)
+        .Add(out ManagerColumn)
+        .Add(out ComputerReferences, () => Computer.EmployeeColumn)
+        .Build();
 }

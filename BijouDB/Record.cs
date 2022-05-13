@@ -1,7 +1,9 @@
 ﻿namespace BijouDB;
 
-public abstract record Record
+public abstract class Record
 {
+    private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
+
     public Guid Id { get; init; } = IncrementalGuid.NextGuid();
 
     public static bool TryGet<R>(Guid id, out R? record) where R : Record, new()
@@ -9,7 +11,7 @@ public abstract record Record
         try
         {
             string path = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-            if(!File.Exists(path)) throw new FileNotFoundException("Record is missing.");
+            if (!File.Exists(path)) throw new FileNotFoundException("Record is missing.");
             record = new() { Id = id };
             return true;
         }
@@ -27,7 +29,7 @@ public abstract record Record
         if (!Directory.Exists(path)) return Array.Empty<R>();
         string[] records = Directory.GetFiles(path, Globals.RecPattern);
         R[] result = new R[records.Length];
-        for(int i = 0; i < records.Length; i++)
+        for (int i = 0; i < records.Length; i++)
         {
             string recordName = Path.GetFileNameWithoutExtension(records[i]);
             result[i] = new() { Id = Guid.Parse(recordName) };
@@ -53,16 +55,32 @@ public abstract record Record
         return result;
     }
 
-    public void Remove()
+    internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition) where R : Record =>
+        _removeDefinitions.TryAdd(typeof(R), removeDefinition);
+
+    public void Remove() => Remove(this);
+
+    public bool TryRemove() => TryRemove(out _);
+    public bool TryRemove(out Exception? exception)
     {
-        Type type = GetType();
+        try
+        {
+            Remove(this);
+            exception = null;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            exception = ex;
+            if (Globals.Logging) Console.WriteLine(ex.Message);
+            return false;
+        }
+    }
 
-        // get all columns
-
-        // check all references
-
-        // loop through all columns and delete values for this record
-
-        // delete record
+    public static void Remove(Record record)
+    {
+        if (!_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition) || removeDefinition is null)
+            throw new Exception($"Missing 'Remove()' definition for {record.GetType().FullName}");
+        removeDefinition(record);
     }
 }

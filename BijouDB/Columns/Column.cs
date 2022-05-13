@@ -11,8 +11,9 @@ public sealed class Column<D> where D : IDataType, new()
 {
     public long Offset { get; }
 
+    internal readonly string _name;
+
     private readonly LengthRef _tableLength;
-    private readonly string _name;
     private readonly Type _type;
 
     private readonly bool _unique;
@@ -45,7 +46,7 @@ public sealed class Column<D> where D : IDataType, new()
         hash = data.Hash(ms);
 
         // hash lookup
-        string hashDir = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, hash.ToString());
+        string hashDir = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name, hash.ToString());
         if (Directory.Exists(hashDir))
         {
             foreach (string hashCollision in Directory.EnumerateDirectories(hashDir))
@@ -54,7 +55,7 @@ public sealed class Column<D> where D : IDataType, new()
                 string binFilePath = Path.Combine(hashCollision, Globals.BinFile);
                 if (Guid.TryParse(collisionName, out index) && File.Exists(binFilePath))
                 {
-                    using FileStream fs = new(binFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using FileStream fs = new(binFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
                     ms.Position = 0;
                     if (Misc.StreamCompare(ms, fs)) return true;
                 }
@@ -74,7 +75,7 @@ public sealed class Column<D> where D : IDataType, new()
         List<R> records = new();
         if (ValueIndex<R>(data, out Guid hash, out Guid index))
         {
-            string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, hash.ToString(), index.ToString());
+            string dataMatchPath = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name, hash.ToString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
                 if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
                     if (Record.TryGet(id, out R? record))
@@ -88,11 +89,11 @@ public sealed class Column<D> where D : IDataType, new()
     /// </summary>
     /// <param name="data">The value to check for.</param>
     /// <returns>true if a record exists with the value specified, false otherwise.</returns>
-    public bool HasRecords<R>(D data) where R : Record, new()
+    public bool HasRecordsWithValue<R>(D data) where R : Record, new()
     {
         if (ValueIndex<R>(data, out Guid hash, out Guid index))
         {
-            string dataMatchPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, hash.ToString(), index.ToString());
+            string dataMatchPath = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name, hash.ToString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
                 if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id) && Record.TryGet<R>(id, out _))
                     return true;
@@ -112,26 +113,26 @@ public sealed class Column<D> where D : IDataType, new()
         string[] uniqueValues = Directory.GetFiles(colDir, Globals.BinFile, SearchOption.AllDirectories);
         foreach (string uniqueValue in uniqueValues)
         {
-            using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.None);
             D newValue = new();
             newValue.Deserialize(fs);
-            ds.Add(newValue);
+            ds.Add(newValue);            
         }
         return ds.ToArray();
     }
 
     public D Get<R>(R record) where R : Record
     {
-        string recordPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
+        string recordPath = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
         if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
-        using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.None);
         fs.Position = Offset;
         if (fs.ReadHashValue(out Guid crntHash, out Guid crntValue))
         {
-            string crntBinPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
+            string crntBinPath = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
             if (File.Exists(crntBinPath))
             {
-                using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
                 if (fs.Length - Offset < D.Length) throw new CorruptedException<D>();
                 D newType = new();
                 newType.Deserialize(fs2);
@@ -146,7 +147,7 @@ public sealed class Column<D> where D : IDataType, new()
     {
         if (_check is not null && !_check(value)) throw new FailedCheckContraintException();
 
-        string baseDir = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec);
+        string baseDir = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Rec);
         Directory.CreateDirectory(baseDir);
 
         // Generate hash for new value
@@ -163,7 +164,7 @@ public sealed class Column<D> where D : IDataType, new()
             // check if old hash/value is valid
             if (oldValue != Guid.Empty)
             {
-                string hashFolder = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, oldHash.ToString());
+                string hashFolder = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name, oldHash.ToString());
                 string oldBinDir = Path.Combine(hashFolder, oldValue.ToString());
                 string oldBinPath = Path.Combine(oldBinDir, Globals.BinFile);
 
@@ -172,7 +173,7 @@ public sealed class Column<D> where D : IDataType, new()
                 {
                     if (File.Exists(oldBinPath))
                     {
-                        using FileStream fs2 = new(oldBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        using FileStream fs2 = new(oldBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
                         ms.Position = 0;
                         if (Misc.StreamCompare(ms, fs2))
                         {
@@ -207,7 +208,7 @@ public sealed class Column<D> where D : IDataType, new()
         }
 
         // check if hash already exist
-        string hashDir = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, newHash.ToString());
+        string hashDir = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name, newHash.ToString());
         if (Directory.Exists(hashDir))
         {
             string[] hashCollisions = Directory.GetDirectories(hashDir);
@@ -216,16 +217,18 @@ public sealed class Column<D> where D : IDataType, new()
                 string crntBinPath = Path.Combine(hashCollision, Globals.BinFile);
                 if (File.Exists(crntBinPath))
                 {
-                    using FileStream fsCollision = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using FileStream fsCollision = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
                     ms.Position = 0;
                     if (Misc.StreamCompare(ms, fsCollision))
                     {
+                        fsCollision.Dispose();
+
                         // Uniqueness check
                         if (_unique)
                             foreach (string match in Directory.EnumerateFiles(hashCollision, Globals.RefPattern))
                                 throw new UniqueConstraintException<D>();
 
-                        File.Create(Path.Combine(hashCollision, $"{record.Id}.{Globals.Ref}"));
+                        File.Create(Path.Combine(hashCollision, $"{record.Id}.{Globals.Ref}")).Dispose();
                         string crntValue = Path.GetFileName(hashCollision);
                         fs.Position = Offset;
                         fs.WriteHashValue(newHash, Guid.Parse(crntValue));
@@ -239,7 +242,7 @@ public sealed class Column<D> where D : IDataType, new()
         Guid newValue = IncrementalGuid.NextGuid();
 
         // write bin file
-        string newBinDir = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Index, _name, newHash.ToString(), newValue.ToString());
+        string newBinDir = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name, newHash.ToString(), newValue.ToString());
         Directory.CreateDirectory(newBinDir);
         string newBinPath = Path.Combine(newBinDir, Globals.BinFile);
         using FileStream fs3 = new(newBinPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
@@ -249,7 +252,7 @@ public sealed class Column<D> where D : IDataType, new()
 
         // add reference
         string newRef = Path.Combine(newBinDir, $"{record.Id}.{Globals.Ref}");
-        File.Create(newRef);
+        File.Create(newRef).Dispose();
         if (Globals.Logging) Console.WriteLine($"Created new reference: {newRef}");
 
         // write new info to record
@@ -258,24 +261,51 @@ public sealed class Column<D> where D : IDataType, new()
         fs.Flush(_tableLength);
     }
 
-    //public override bool Remove(Guid id)
-    //{
-    //    // Read record file
-    //    string recordPath = Path.Combine(Globals.DB_Path, typeof(T).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-    //    using FileStream fs = new(recordPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
-    //    fs.Position = Offset;
+    public void Remove(Record record)
+    {
+        // Read record file
+        string recordPath = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
 
-    //    if (fs.Length - Offset >= 32 && fs.ReadHashValue(out Guid oldHash, out Guid oldValue))
-    //    {
-    //        // Go to indexed location, delete reference file
+        if (!File.Exists(recordPath)) return;
 
+        using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.None);
+        fs.Position = Offset;
 
-    //        // If no more references delete value folder
+        if (fs.Length - Offset >= 32 && fs.ReadHashValue(out Guid hash, out Guid index))
+        {
+            // Go to indexed location, delete reference file
+            string hashDir = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name, hash.ToString());
+            string indexedDir = Path.Combine(hashDir, index.ToString());
+            string refPath = Path.Combine(indexedDir, $"{record.Id}.{Globals.Ref}");
 
-    //        // If no more values delete hash folder
+            if (File.Exists(refPath))
+                File.Delete(refPath);
 
-    //    }
+            // If no more references delete indexed folder
+            if (Directory.Exists(indexedDir))
+            {
+                bool empty = true;
+                foreach (string refernce in Directory.EnumerateFiles(indexedDir, Globals.RefPattern))
+                {
+                    empty = false;
+                    break;
+                }
+                if (empty)
+                    Directory.Delete(indexedDir, true);
+            }
 
-    //    return true;
-    //}
+            // If no more values delete hash folder
+            if (Directory.Exists(hashDir))
+            {
+                bool empty = true;
+                foreach (string indexes in Directory.EnumerateDirectories(hashDir))
+                {
+                    empty = false;
+                    break;
+                }
+                if (empty)
+                    Directory.Delete(hashDir, true);
+            }
+        }
+    }
 }

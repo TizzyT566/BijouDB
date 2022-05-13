@@ -1,4 +1,6 @@
-﻿namespace BijouDB;
+﻿using BijouDB.DataTypes;
+
+namespace BijouDB;
 
 public static class Misc
 {
@@ -50,6 +52,11 @@ public static class Misc
         return true;
     }
 
+    public static Guid Hash(this IDataType value)
+    {
+        using MemoryStream ms = new();
+        return value.Hash(ms);
+    }
     public static Guid Hash(this IDataType value, Stream stream)
     {
         value.Serialize(stream);
