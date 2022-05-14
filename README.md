@@ -3,18 +3,6 @@ A small C# database
 
 Nuget: [BijouDB Package](https://www.nuget.org/packages/BijouDB/)
 
-## Note
-Currently this utilizes preview features so to use this you must enable preview features in your project.
-
-```xml
-<PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>preview</LangVersion>
-    <EnablePreviewFeatures>true</EnablePreviewFeatures>
-</PropertyGroup>
-```
 # Features
 ## DataTypes => Synonymous Wrapper
 ```
@@ -234,14 +222,18 @@ using BijouDB.DataTypes;
 
 public class Employee : Record
 {
+    public static readonly Column<@string> NameColumn;
+    public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+
     public static readonly Column<@int> AgeColumn;
     public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-
+    
     // A Reference to 'Computer' Record
     public static readonly References<Computer, @record<Employee>> ComputerReferences;
     public Computer[] Computers => ComputerReferences.For(this);
 
     static Employee() => _ = ~SchemaBuilder<Employee>
+        .Add(out NameColumn)
         .Add(out AgeColumn, Unique: false, Check: value => value >= 18, Default: () => 18)
         // Generates the Referennce, and points it to the 'EmployeeColumn' in 'Computer' Record
         .Add(out ComputerReferences, () => Computer.EmployeeColumn);
@@ -322,16 +314,54 @@ foreach (Employee employee in BijouDB.Record.GetAll<Employee>())
 }
 ```
 
-If you know the `Type` of the Record and the value to one of its columns you can call the Column's `RecordsWithValue<R>( .. )` method.
+If you know the `Type` of the Record and the value to one of its columns you can call the Column's `WithValue<R>( .. )` method.
 
 ```cs
-public R[] RecordsWithValue<R>(D data) { }
+public R[] WithValue<R>(D data) { }
 
 // Example
 // Gets all Employee records where the age is 19
-foreach (Employee employee in Employee.AgeColumn.RecordsWithValue<Employee>(19))
+foreach (Employee employee in Employee.AgeColumn.WithValue<Employee>(19))
 {
     // Manipulate the record here
+}
+```
+
+If you know the Type and value of multiple columns then you use the previous method along side `BijouDB.Record.WithValues()`
+
+to get all records matching the values you know.
+
+```cs
+public static R[] WithValues<R>(params R[][] columnMatches) { }
+
+// Example
+// Find Employees with the name 'TizzyT' and that are 30 years old
+
+// Get all records with Name 'TizzyT'
+Employee[] nameMatches = Employee.NameColumn.WithValue<Employee>("TizzyT");
+
+// Get all records with age 30
+Employee[] ageMatches = Employee.AgeColumn.WithValue<Employee>(30);
+
+// Combine matches
+foreach(Employee employee in Record.WithValues<Employee>(nameMatches, ageMatches))
+{
+    // Manipulate record here
+}
+```
+
+If you want to know what unique values a column has you can call the respective column's `UniqueValues()` method.
+
+This will give you an array of all unique values found in that column.
+
+```cs
+public D[] UniqueValues() { }
+
+// Example
+// Get a list of all unique ages in Employee.AgeColumn
+foreach (int age in Employee.AgeColumn.UniqueValues())
+{
+    // Manipulate the age here
 }
 ```
 

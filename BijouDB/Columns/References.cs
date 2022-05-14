@@ -18,7 +18,7 @@ public sealed class References<R, D>
     /// </summary>
     /// <param name="value">The parent record.</param>
     /// <returns>A collection with all child records.</returns>
-    public R[] For(D value) => _sourceColumn().RecordsWithValue<R>(value);
+    public R[] For(D value) => _sourceColumn().Contains<R>(value);
 
     internal bool HasRecords<S>(Record record)
         where S : Record, new()

@@ -70,7 +70,7 @@ public sealed class Column<D> where D : IDataType, new()
     /// </summary>
     /// <param name="data">The value to search records with.</param>
     /// <returns>A readonly dictionary of all records containing the value specified.</returns>
-    public R[] RecordsWithValue<R>(D data) where R : Record, new()
+    public R[] WithValue<R>(D data) where R : Record, new()
     {
         List<R> records = new();
         if (ValueIndex<R>(data, out Guid hash, out Guid index))
@@ -89,7 +89,7 @@ public sealed class Column<D> where D : IDataType, new()
     /// </summary>
     /// <param name="data">The value to check for.</param>
     /// <returns>true if a record exists with the value specified, false otherwise.</returns>
-    internal bool HasRecordsWithValue<R>(D data) where R : Record, new()
+    public bool Contains<R>(D data) where R : Record, new()
     {
         if (ValueIndex<R>(data, out Guid hash, out Guid index))
         {

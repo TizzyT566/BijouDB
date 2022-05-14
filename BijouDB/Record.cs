@@ -43,21 +43,25 @@ public class Record : IEqualityComparer<Record>
         return result;
     }
 
-    public static R[] RecordsWithValues<R>(params R[][] columnMatches) where R : Record, new()
+    public static R[] WithValues<R>(params R[][] columnMatches) where R : Record, new()
     {
-        if (columnMatches.Length == 1) return columnMatches[0];
-        HashSet<R> result = new();
-        if (columnMatches.Length == 0) return result.ToArray();
-        Array.Sort(columnMatches, (x, y) => x.Length - y.Length);
-        foreach (R id in columnMatches[0])
-        {
-            int i = 1;
-            for (; i < columnMatches.Length; i++)
-                if (!columnMatches[i].Contains(id))
-                    break;
-            if (i == columnMatches.Length)
-                result.Add(id);
-        }
+        if (columnMatches.Length == 1)
+            return columnMatches[0] is null ? Array.Empty<R>() : columnMatches[0];
+        if (columnMatches.Length == 0) return Array.Empty<R>();
+
+        // Turn all arrays into hashsets for fast lookup
+        List<HashSet<R>> hashSets = new();
+        foreach (R[] arr in columnMatches)
+            if (arr is not null && arr.Length > 0) hashSets.Add(new HashSet<R>(arr));
+
+        // start with the smallest collection
+        hashSets.Sort((x, y) => x.Count.CompareTo(y.Count));
+
+        HashSet<R> result = hashSets[0];
+
+        for(int i = 1; i < hashSets.Count; i++)
+            result.IntersectWith(hashSets[i]);
+
         return result.ToArray();
     }
 
