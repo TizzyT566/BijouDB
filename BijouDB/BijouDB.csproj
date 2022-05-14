@@ -25,11 +25,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Include="..\..\..\..\Desktop\Icon.png">
+	  <None Include="..\README.md">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
-	  <None Include="..\README.md">
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Icon.png">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
