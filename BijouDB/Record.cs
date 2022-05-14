@@ -10,9 +10,11 @@ public class Record : IEqualityComparer<Record>
 
     public Record(Guid id) => Id = id;
 
-    public static bool TryGet<R>(string id, out R? record) where R : Record, new() =>
+    public static bool TryGet<R>(string id, out R? record)
+        where R : Record, new() =>
         TryGet(Guid.Parse(id), out record);
-    public static bool TryGet<R>(Guid id, out R? record) where R : Record, new()
+    public static bool TryGet<R>(Guid id, out R? record)
+        where R : Record, new()
     {
         try
         {
@@ -29,7 +31,8 @@ public class Record : IEqualityComparer<Record>
         }
     }
 
-    public static R[] GetAll<R>() where R : Record, new()
+    public static R[] GetAll<R>()
+        where R : Record, new()
     {
         string path = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec);
         if (!Directory.Exists(path)) return Array.Empty<R>();
@@ -43,7 +46,8 @@ public class Record : IEqualityComparer<Record>
         return result;
     }
 
-    public static R[] WithValues<R>(params R[][] columnMatches) where R : Record, new()
+    public static R[] WithValues<R>(params R[][] columnMatches)
+        where R : Record, new()
     {
         if (columnMatches.Length == 1)
             return columnMatches[0] is null ? Array.Empty<R>() : columnMatches[0];
@@ -65,7 +69,8 @@ public class Record : IEqualityComparer<Record>
         return result.ToArray();
     }
 
-    internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition) where R : Record
+    internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition)
+        where R : Record
     {
         Type type = typeof(R);
         if (_removeDefinitions.ContainsKey(type)) return;
@@ -97,7 +102,7 @@ public class Record : IEqualityComparer<Record>
         removeDefinition(record);
     }
 
-    public bool Equals(Record x, Record y) => Guid.Equals(x.Id, y.Id);
+    public bool Equals(Record x, Record y) => Equals(x.Id, y.Id);
 
     public int GetHashCode(Record obj) => obj.Id.GetHashCode();
 }

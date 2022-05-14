@@ -4,24 +4,24 @@ using BijouDB.Exceptions;
 
 namespace BijouDB.DataTypes;
 
-public struct @date : IDataType
+public struct @time : IDataType
 {
     private DateTime _value;
 
-    private @date(DateTime value) => _value = value;
+    private @time(DateTime value) => _value = value;
 
     public void Deserialize(Stream stream)
     {
         byte[] bytes = new byte[8];
         if (stream.TryFill(bytes)) _value = new DateTime(BitConverter.ToInt64(bytes, 0));
-        else throw new CorruptedException<@date>();
+        else throw new CorruptedException<@time>();
     }
 
     public void Serialize(Stream stream) =>
         stream.Write(BitConverter.GetBytes(_value.Ticks), 0, 8);
 
-    public static implicit operator DateTime(@date value) => value._value;
-    public static implicit operator @date(DateTime value) => new(value);
+    public static implicit operator DateTime(@time value) => value._value;
+    public static implicit operator @time(DateTime value) => new(value);
 
 
 

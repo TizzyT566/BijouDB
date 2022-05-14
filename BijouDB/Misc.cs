@@ -92,7 +92,8 @@ public static class Misc
         return total == length;
     }
 
-    public static bool TryReadValueSize<T>(this T @this, out long valLen) where T : Stream
+    public static bool TryReadValueSize<T>(this T @this, out long valLen)
+        where T : Stream
     {
         int temp = @this.ReadByte();
 
@@ -172,7 +173,8 @@ public static class Misc
         return true;
     }
 
-    public static bool TryReadDynamicData<T>(this T @this, out byte[] data) where T : Stream
+    public static bool TryReadDynamicData<T>(this T @this, out byte[] data)
+        where T : Stream
     {
         if (@this.TryReadValueSize(out long size))
         {
@@ -183,7 +185,8 @@ public static class Misc
         return false;
     }
 
-    public static T WriteValueSize<T>(this T @this, in long valLen) where T : Stream
+    public static T WriteValueSize<T>(this T @this, in long valLen)
+        where T : Stream
     {
         if (valLen < 0) throw new ArgumentOutOfRangeException(nameof(valLen));
         byte[] bytes = BitConverter.GetBytes(valLen);
@@ -253,7 +256,8 @@ public static class Misc
         return @this;
     }
 
-    public static void WriteDynamicData<T>(this T @this, in byte[] data) where T : Stream
+    public static void WriteDynamicData<T>(this T @this, in byte[] data)
+        where T : Stream
     {
         @this.WriteValueSize(data.LongLength);
         @this.Write(data, 0, data.Length);

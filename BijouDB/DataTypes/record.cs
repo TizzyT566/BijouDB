@@ -5,7 +5,8 @@ using static BijouDB.Record;
 
 namespace BijouDB.DataTypes;
 
-public struct @record<R> : IDataType where R : Record, new()
+public struct @record<R> : IDataType
+    where R : Record, new()
 {
     private R _value;
 

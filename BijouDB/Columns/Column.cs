@@ -7,7 +7,8 @@ namespace BijouDB;
 /// A column for adding to custom table implementations.
 /// </summary>
 /// <typeparam name="D">The IDataType.</typeparam>
-public sealed class Column<D> where D : IDataType, new()
+public sealed class Column<D>
+    where D : IDataType, new()
 {
     public long Offset { get; }
 
@@ -39,7 +40,8 @@ public sealed class Column<D> where D : IDataType, new()
     /// <param name="hash">The hash of the value.</param>
     /// <param name="index">The index of the value if found, and a candidate if not.</param>
     /// <returns>true if the value was found, false otherwise.</returns>
-    internal bool ValueIndex<R>(D data, out Guid hash, out Guid index) where R : Record
+    internal bool ValueIndex<R>(D data, out Guid hash, out Guid index)
+        where R : Record
     {
         // Generate hash for new value
         using FileBackedStream ms = new();
@@ -70,7 +72,8 @@ public sealed class Column<D> where D : IDataType, new()
     /// </summary>
     /// <param name="data">The value to search records with.</param>
     /// <returns>A readonly dictionary of all records containing the value specified.</returns>
-    public R[] WithValue<R>(D data) where R : Record, new()
+    public R[] WithValue<R>(D data)
+        where R : Record, new()
     {
         List<R> records = new();
         if (ValueIndex<R>(data, out Guid hash, out Guid index))
@@ -89,7 +92,8 @@ public sealed class Column<D> where D : IDataType, new()
     /// </summary>
     /// <param name="data">The value to check for.</param>
     /// <returns>true if a record exists with the value specified, false otherwise.</returns>
-    public bool Contains<R>(D data) where R : Record, new()
+    public bool Contains<R>(D data)
+        where R : Record, new()
     {
         if (ValueIndex<R>(data, out Guid hash, out Guid index))
         {
@@ -121,7 +125,8 @@ public sealed class Column<D> where D : IDataType, new()
         return ds.ToArray();
     }
 
-    public D Get<R>(R record) where R : Record
+    public D Get<R>(R record)
+        where R : Record
     {
         string recordPath = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
         if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
@@ -142,7 +147,8 @@ public sealed class Column<D> where D : IDataType, new()
         return _default is null ? default! : _default();
     }
 
-    public void Set<R>(R record, D value) where R : Record
+    public void Set<R>(R record, D value)
+        where R : Record
     {
         if (_check is not null && !_check(value)) throw new FailedCheckContraintException();
 
