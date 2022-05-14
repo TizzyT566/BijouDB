@@ -164,7 +164,9 @@ Create a static contructor, its needed to instantiate the columns.
 
 Use the SchemaBuilder to generate the columns via the `Add()` method.
 
-Do this for each of your columns and finally at the end call the `Build()` method.
+Do this for each of your columns and finally at preceed the SchemaBuilder with `_ = ~`.
+
+This pattern automatically disposes the SchemaBuilder at the end and ensure proper init and disposal.
 
 ## Example
 ```csharp
@@ -176,9 +178,8 @@ public class MyRecord : Record
     public static readonly Column<@int> AgeColumn;
     public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
 
-    static MyRecord() => SchemaBuilder<MyRecord>
-        .Add(out AgeColumn)
-        .Build();
+    static MyRecord() => _ = ~SchemaBuilder<MyRecord>
+        .Add(out AgeColumn);
 }
 ```
 
@@ -200,12 +201,11 @@ public class MyRecord : Record
     public static readonly Column<@int> AgeColumn;
     public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
 
-    static MyRecord() => SchemaBuilder<MyRecord>
+    static MyRecord() => _ = ~SchemaBuilder<MyRecord>
         // Specify that the column is NOT unique
         // Specify that valid values must be 18 or larger
         // Specify that the default value is 18
-        .Add(out AgeColumn, Unique: false, Check: value => value >= 18, Default: () => 18)
-        .Build();
+        .Add(out AgeColumn, Unique: false, Check: value => value >= 18, Default: () => 18);
 }
 ```
 
@@ -214,7 +214,11 @@ In SQL we have the notion of `PRIMARY KEY` and `FOREIGN KEY` to link relationshi
 
 Here we have the concept of References. Its very similar in concept.
 
-References prevent a Record from being deleted if it has references. 
+References prevent a Record from being deleted if it has references.
+
+You can keep the relationship but allow deleting even if referenced exist by setting the `restricted`
+
+parameter to true for the `Add()` method for references.
 
 You can create a `Reference` specifying the `Record` it references and the generic type of that column.
 
@@ -241,11 +245,10 @@ public class Employee : Record
     public static readonly References<Computer, @record<Employee>> ComputerReferences;
     public Computer[] Computers => ComputerReferences.For(this);
 
-    static Employee() => SchemaBuilder<Employee>
+    static Employee() => _ = ~SchemaBuilder<Employee>
         .Add(out AgeColumn, Unique: false, Check: value => value >= 18, Default: () => 18)
         // Generates the Referennce, and points it to the 'EmployeeColumn' in 'Computer' Record
-        .Add(out ComputerReferences, () => Computer.EmployeeColumn)
-        .Build();
+        .Add(out ComputerReferences, () => Computer.EmployeeColumn);
 }
 
 public class Computer : Record
@@ -253,9 +256,8 @@ public class Computer : Record
     public static readonly Column<@record<Employee>> EmployeeColumn;
     public Employee Employee { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
 
-    static Computer() => SchemaBuilder<Computer>
-        .Add(out EmployeeColumn)
-        .Build();
+    static Computer() => _ = ~SchemaBuilder<Computer>
+        .Add(out EmployeeColumn);
 }
 ```
 

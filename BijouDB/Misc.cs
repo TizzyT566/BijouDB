@@ -1,6 +1,4 @@
-﻿using BijouDB.DataTypes;
-
-namespace BijouDB;
+﻿namespace BijouDB;
 
 public static class Misc
 {

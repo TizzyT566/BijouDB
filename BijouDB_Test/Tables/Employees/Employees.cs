@@ -24,12 +24,11 @@ public class Employee : Record
     private static readonly References<Computer, @record<Employee>.nullable> ComputerReferences;
     public Computer[] Computers => ComputerReferences.For(this);
 
-    static Employee() => SchemaBuilder<Employee>
+    static Employee() => _ = ~SchemaBuilder<Employee>
         .Add(out NameColumn, Unique: true)
         .Add(out NumberColumn, Default: () => 5555555)
         .Add(out AgeColumn, Check: value => value >= 18)
         .Add(out PointsColumn)
         .Add(out ManagerColumn)
-        .Add(out ComputerReferences, () => Computer.EmployeeColumn)
-        .Build();
+        .Add(out ComputerReferences, () => Computer.EmployeeColumn);
 }

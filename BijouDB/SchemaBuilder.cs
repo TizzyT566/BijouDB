@@ -1,14 +1,11 @@
-﻿using BijouDB.Exceptions;
+﻿namespace BijouDB;
 
-namespace BijouDB;
-
-public sealed class SchemaBuilder<R>
+public sealed class SchemaBuilder<R> : IDisposable
     where R : Record, new()
 {
+    private bool disposedValue;
     internal LengthRef Length = new();
     internal int _count = 0;
-    internal bool _built = false;
-
     internal readonly List<Func<Record, bool>> _references = new();
     internal readonly List<Action<Record>> _columns = new();
 
@@ -16,8 +13,6 @@ public sealed class SchemaBuilder<R>
     public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!)
         where D : IDataType, new()
     {
-        Globals.CheckSchema<R>();
-
         SchemaBuilder<R> builder = new();
         string columnName = $"{Globals.ColName}_{builder._count}";
         column = new(builder.Length, columnName, typeof(R), Unique, Default, Check);
@@ -32,33 +27,47 @@ public sealed class SchemaBuilder<R>
         where RSource : Record, new()
         where D : IDataType, new()
     {
-        Globals.CheckSchema<R>();
-
         SchemaBuilder<R> builder = new();
         column = new(referenceColumn);
         if (restricted) builder._references.Add(column.HasRecords<R>);
         return builder;
     }
 
-    public void Build()
+    private void Dispose(bool disposing)
     {
-        if (_built) throw new InvalidOperationException();
-        Record.AddRemoveDefinition<R>(record =>
+        if (!disposedValue)
         {
-            foreach (Func<Record, bool> referenceCheck in _references)
-                if (referenceCheck(record))
-                    throw new Exception("There are references to the current record.");
+            if (disposing)
+            {
+                Record.AddRemoveDefinition<R>(record =>
+                {
+                    foreach (Func<Record, bool> referenceCheck in _references)
+                        if (referenceCheck(record))
+                            throw new Exception("There are references to the current record.");
 
-            foreach (Action<Record> remove in _columns)
-                remove(record);
+                    foreach (Action<Record> remove in _columns)
+                        remove(record);
 
-            string recordPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
-            if (File.Exists(recordPath))
-                File.Delete(recordPath);
-        });
-        _built = true;
+                    string recordPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
+                    if (File.Exists(recordPath))
+                        File.Delete(recordPath);
+                });
+            }
+            disposedValue = true;
+        }
+    }
 
-        Globals._currentSchema = null;
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    public static SchemaBuilder<R> operator ~(SchemaBuilder<R> a)
+    {
+        a.Dispose();
+        return a;
     }
 }
 
@@ -69,9 +78,6 @@ public static class SchemaBuilderExtensions
         where R : Record, new()
         where D : IDataType, new()
     {
-        Globals.CheckSchema<R>();
-
-        if (@this._built) throw new InvalidOperationException("Already built the current schema.");
         string columnName = $"{Globals.ColName}_{@this._count}";
         column = new(@this.Length, columnName, typeof(R), Unique, Default, Check);
         @this._columns.Add(column.Remove);
@@ -86,9 +92,6 @@ public static class SchemaBuilderExtensions
         where RSource : Record, new()
         where D : IDataType, new()
     {
-        Globals.CheckSchema<R>();
-
-        if (@this._built) throw new InvalidOperationException();
         column = new(referenceColumn);
         if (restricted) @this._references.Add(column.HasRecords<R>);
         return @this;
