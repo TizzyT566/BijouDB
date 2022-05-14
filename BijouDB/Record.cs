@@ -1,10 +1,14 @@
 ﻿namespace BijouDB;
 
-public abstract class Record
+public class Record : IEqualityComparer<Record>
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
 
-    public Guid Id { get; private set; } = IncrementalGuid.NextGuid();
+    public Guid Id { get; }
+
+    public Record() => Id = IncrementalGuid.NextGuid();
+
+    public Record(Guid id) => Id = id;
 
     public static bool TryGet<R>(string id, out R? record) where R : Record, new() =>
         TryGet(Guid.Parse(id), out record);
@@ -14,7 +18,7 @@ public abstract class Record
         {
             string path = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
             if (!File.Exists(path)) throw new FileNotFoundException("Record is missing.");
-            record = new() { Id = id };
+            record = (R)new Record(id);
             return true;
         }
         catch (Exception ex)
@@ -34,28 +38,28 @@ public abstract class Record
         for (int i = 0; i < records.Length; i++)
         {
             string recordName = Path.GetFileNameWithoutExtension(records[i]);
-            result[i] = new() { Id = Guid.Parse(recordName) };
+            result[i] = (R)new Record(Guid.Parse(recordName));
         }
         return result;
     }
 
-    //public static IReadOnlySet<Guid> RecordsWithValues(params IReadOnlySet<Guid>[] columnMatches)
-    //{
-    //    if (columnMatches.Length == 1) return columnMatches[0];
-    //    HashSet<Guid> result = new();
-    //    if (columnMatches.Length == 0) return result;
-    //    Array.Sort(columnMatches, (x, y) => x.Count - y.Count);
-    //    foreach (Guid id in columnMatches[0])
-    //    {
-    //        int i = 1;
-    //        for (; i < columnMatches.Length; i++)
-    //            if (!columnMatches[i].Contains(id))
-    //                break;
-    //        if (i == columnMatches.Length)
-    //            result.Add(id);
-    //    }
-    //    return result;
-    //}
+    public static R[] RecordsWithValues<R>(params R[][] columnMatches) where R : Record, new()
+    {
+        if (columnMatches.Length == 1) return columnMatches[0];
+        HashSet<R> result = new();
+        if (columnMatches.Length == 0) return result.ToArray();
+        Array.Sort(columnMatches, (x, y) => x.Length - y.Length);
+        foreach (R id in columnMatches[0])
+        {
+            int i = 1;
+            for (; i < columnMatches.Length; i++)
+                if (!columnMatches[i].Contains(id))
+                    break;
+            if (i == columnMatches.Length)
+                result.Add(id);
+        }
+        return result.ToArray();
+    }
 
     internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition) where R : Record
     {
@@ -88,4 +92,8 @@ public abstract class Record
             throw new Exception($"Missing 'Remove()' definition for {record.GetType().FullName}");
         removeDefinition(record);
     }
+
+    public bool Equals(Record x, Record y) => Guid.Equals(x.Id, y.Id);
+
+    public int GetHashCode(Record obj) => obj.Id.GetHashCode();
 }
