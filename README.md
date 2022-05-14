@@ -16,7 +16,7 @@ Nuget: [BijouDB Package](https://www.nuget.org/packages/BijouDB/)
 
                                     char => @char
 
-                                DateTime => @date
+                                DateTime => @time
 
                                  decimal => @decimal
 
@@ -68,7 +68,7 @@ Nullable Types:
 
                                     char? => @char.nullable
 
-                                DateTime? => @date.nullable
+                                DateTime? => @time.nullable
 
                                  decimal? => @decimal.nullable
 
