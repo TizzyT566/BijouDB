@@ -6,8 +6,6 @@ namespace BijouDB.DataTypes;
 
 public struct @uint : IDataType
 {
-    public static long Length => 4;
-
     private uint _value;
 
     private @uint(uint value) => _value = value;
@@ -19,13 +17,8 @@ public struct @uint : IDataType
         else throw new CorruptedException<@uint>();
     }
 
-    public void Serialize(Stream stream)
-    {
-        byte[] bytes = BitConverter.GetBytes(_value);
-        stream.Write(bytes);
-    }
-
-    public override string ToString() => _value.ToString();
+    public void Serialize(Stream stream) =>
+        stream.Write(BitConverter.GetBytes(_value), 0, 4);
 
     public static implicit operator uint(@uint value) => value._value;
     public static implicit operator @uint(uint value) => new(value);
@@ -35,8 +28,6 @@ public struct @uint : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => @uint.Length + 1;
-
         private uint? _value;
 
         private nullable(uint? value) => _value = value;
@@ -75,11 +66,9 @@ public struct @uint : IDataType
             else
             {
                 stream.WriteByte(byte.MaxValue);
-                stream.Write(BitConverter.GetBytes((uint)_value));
+                stream.Write(BitConverter.GetBytes((uint)_value), 0, 4);
             }
         }
-
-        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator uint?(nullable value) => value._value;
         public static implicit operator nullable(uint? value) => new(value);

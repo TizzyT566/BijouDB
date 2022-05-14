@@ -4,7 +4,7 @@ public abstract class Record
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
 
-    public Guid Id { get; init; } = IncrementalGuid.NextGuid();
+    public Guid Id { get; private set; } = IncrementalGuid.NextGuid();
 
     public static bool TryGet<R>(string id, out R? record) where R : Record, new() =>
         TryGet(Guid.Parse(id), out record);
@@ -39,26 +39,30 @@ public abstract class Record
         return result;
     }
 
-    public static IReadOnlySet<Guid> RecordsWithValues(params IReadOnlySet<Guid>[] columnMatches)
-    {
-        if (columnMatches.Length == 1) return columnMatches[0];
-        HashSet<Guid> result = new();
-        if (columnMatches.Length == 0) return result;
-        Array.Sort(columnMatches, (x, y) => x.Count - y.Count);
-        foreach (Guid id in columnMatches[0])
-        {
-            int i = 1;
-            for (; i < columnMatches.Length; i++)
-                if (!columnMatches[i].Contains(id))
-                    break;
-            if (i == columnMatches.Length)
-                result.Add(id);
-        }
-        return result;
-    }
+    //public static IReadOnlySet<Guid> RecordsWithValues(params IReadOnlySet<Guid>[] columnMatches)
+    //{
+    //    if (columnMatches.Length == 1) return columnMatches[0];
+    //    HashSet<Guid> result = new();
+    //    if (columnMatches.Length == 0) return result;
+    //    Array.Sort(columnMatches, (x, y) => x.Count - y.Count);
+    //    foreach (Guid id in columnMatches[0])
+    //    {
+    //        int i = 1;
+    //        for (; i < columnMatches.Length; i++)
+    //            if (!columnMatches[i].Contains(id))
+    //                break;
+    //        if (i == columnMatches.Length)
+    //            result.Add(id);
+    //    }
+    //    return result;
+    //}
 
-    internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition) where R : Record =>
-        _removeDefinitions.TryAdd(typeof(R), removeDefinition);
+    internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition) where R : Record
+    {
+        Type type = typeof(R);
+        if (_removeDefinitions.ContainsKey(type)) return;
+        _removeDefinitions.Add(type, removeDefinition);
+    }
 
     public bool TryRemove() => TryRemove(out _);
     public bool TryRemove(out Exception? exception)

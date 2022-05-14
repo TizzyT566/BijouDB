@@ -6,8 +6,6 @@ namespace BijouDB.DataTypes
 {
     public struct @blob : IDataType
     {
-        public static long Length => 0;
-
         private byte[] _value;
 
         private @blob(byte[] value) => _value = value ?? Array.Empty<byte>();
@@ -20,8 +18,6 @@ namespace BijouDB.DataTypes
 
         public void Serialize(Stream stream) => stream.WriteDynamicData(_value ?? Array.Empty<byte>());
 
-        public override string ToString() => BitConverter.ToString(_value);
-
         public static implicit operator byte[](@blob value) => value._value;
         public static implicit operator @blob(byte[] value) => new(value);
 
@@ -30,8 +26,6 @@ namespace BijouDB.DataTypes
         // Nullable
         public sealed class nullable : IDataType
         {
-            public static long Length => 0;
-
             private byte[]? _value;
 
             private nullable(byte[]? value) => _value = value;
@@ -72,8 +66,6 @@ namespace BijouDB.DataTypes
                     stream.WriteDynamicData(_value);
                 }
             }
-
-            public override string ToString() => _value is null ? "" : BitConverter.ToString(_value);
 
             public static implicit operator byte[]?(nullable value) => value._value;
             public static implicit operator nullable(byte[]? value) => new(value);

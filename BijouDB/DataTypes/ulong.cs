@@ -6,8 +6,6 @@ namespace BijouDB.DataTypes;
 
 public struct @ulong : IDataType
 {
-    public static long Length => 8;
-
     private ulong _value;
 
     private @ulong(ulong value) => _value = value;
@@ -19,13 +17,8 @@ public struct @ulong : IDataType
         else throw new CorruptedException<@ulong>();
     }
 
-    public void Serialize(Stream stream)
-    {
-        byte[] bytes = BitConverter.GetBytes(_value);
-        stream.Write(bytes);
-    }
-
-    public override string ToString() => _value.ToString();
+    public void Serialize(Stream stream) =>
+        stream.Write(BitConverter.GetBytes(_value), 0, 8);
 
     public static implicit operator ulong(@ulong value) => value._value;
     public static implicit operator @ulong(ulong value) => new(value);
@@ -35,8 +28,6 @@ public struct @ulong : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => @ulong.Length + 1;
-
         private ulong? _value;
 
         private nullable(ulong? value) => _value = value;
@@ -75,11 +66,9 @@ public struct @ulong : IDataType
             else
             {
                 stream.WriteByte(byte.MaxValue);
-                stream.Write(BitConverter.GetBytes((ulong)_value));
+                stream.Write(BitConverter.GetBytes((ulong)_value), 0, 8);
             }
         }
-
-        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator ulong?(nullable value) => value._value;
         public static implicit operator nullable(ulong? value) => new(value);

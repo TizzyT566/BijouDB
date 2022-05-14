@@ -6,8 +6,6 @@ namespace BijouDB.DataTypes;
 
 public struct @date : IDataType
 {
-    public static long Length => 8;
-
     private DateTime _value;
 
     private @date(DateTime value) => _value = value;
@@ -19,13 +17,8 @@ public struct @date : IDataType
         else throw new CorruptedException<@date>();
     }
 
-    public void Serialize(Stream stream)
-    {
-        byte[] bytes = BitConverter.GetBytes(_value.Ticks);
-        stream.Write(bytes);
-    }
-
-    public override string ToString() => _value.ToString();
+    public void Serialize(Stream stream) =>
+        stream.Write(BitConverter.GetBytes(_value.Ticks), 0, 8);
 
     public static implicit operator DateTime(@date value) => value._value;
     public static implicit operator @date(DateTime value) => new(value);
@@ -35,8 +28,6 @@ public struct @date : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => date.Length + 1;
-
         private DateTime? _value;
 
         private nullable(DateTime? value) => _value = value;
@@ -75,11 +66,9 @@ public struct @date : IDataType
             else
             {
                 stream.WriteByte(byte.MaxValue);
-                stream.Write(BitConverter.GetBytes(((DateTime)_value).Ticks));
+                stream.Write(BitConverter.GetBytes(((DateTime)_value).Ticks), 0, 8);
             }
         }
-
-        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator DateTime?(nullable value) => value._value;
         public static implicit operator nullable(DateTime? value) => new(value);

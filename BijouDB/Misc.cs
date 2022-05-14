@@ -79,8 +79,8 @@ public static class Misc
 
     public static void WriteHashValue(this Stream @this, in Guid newHash, in Guid newValue)
     {
-        @this.Write(newHash.ToByteArray());
-        @this.Write(newValue.ToByteArray());
+        @this.Write(newHash.ToByteArray(), 0, 16);
+        @this.Write(newValue.ToByteArray(), 0, 16);
     }
 
     public static bool TryFill(this Stream @this, byte[] buffer, int offset = 0, int length = -1)
@@ -246,7 +246,7 @@ public static class Misc
             default:
                 {
                     @this.WriteByte(255);
-                    @this.Write(bytes);
+                    @this.Write(bytes, 0, 8);
                     break;
                 }
         }
@@ -256,6 +256,6 @@ public static class Misc
     public static void WriteDynamicData<T>(this T @this, in byte[] data) where T : Stream
     {
         @this.WriteValueSize(data.LongLength);
-        @this.Write(data);
+        @this.Write(data, 0, data.Length);
     }
 }

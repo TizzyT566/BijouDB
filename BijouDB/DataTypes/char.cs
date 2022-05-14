@@ -6,8 +6,6 @@ namespace BijouDB.DataTypes;
 
 public struct @char : IDataType
 {
-    public static long Length => 2;
-
     private char _value;
 
     private @char(char value) => _value = value;
@@ -15,17 +13,12 @@ public struct @char : IDataType
     public void Deserialize(Stream stream)
     {
         byte[] bytes = new byte[2];
-        if (stream.TryFill(bytes)) _value = BitConverter.ToChar(bytes);
+        if (stream.TryFill(bytes)) _value = BitConverter.ToChar(bytes, 0);
         else throw new CorruptedException<@char>();
     }
 
-    public void Serialize(Stream stream)
-    {
-        byte[] bytes = BitConverter.GetBytes(_value);
-        stream.Write(bytes);
-    }
-
-    public override string ToString() => _value.ToString();
+    public void Serialize(Stream stream) =>
+        stream.Write(BitConverter.GetBytes(_value), 0, 2);
 
     public static implicit operator char(@char value) => value._value;
     public static implicit operator @char(char value) => new(value);
@@ -35,8 +28,6 @@ public struct @char : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => @char.Length + 1;
-
         private char? _value;
 
         private nullable(char? value) => _value = value;
@@ -59,7 +50,7 @@ public struct @char : IDataType
                 default:
                     {
                         byte[] bytes = new byte[2];
-                        if (stream.TryFill(bytes)) _value = BitConverter.ToChar(bytes);
+                        if (stream.TryFill(bytes)) _value = BitConverter.ToChar(bytes, 0);
                         else throw new CorruptedException<nullable>();
                         break;
                     }
@@ -75,11 +66,9 @@ public struct @char : IDataType
             else
             {
                 stream.WriteByte(byte.MaxValue);
-                stream.Write(BitConverter.GetBytes((char)_value));
+                stream.Write(BitConverter.GetBytes((char)_value), 0, 2);
             }
         }
-
-        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator char?(nullable value) => value._value;
         public static implicit operator nullable(char? value) => new(value);

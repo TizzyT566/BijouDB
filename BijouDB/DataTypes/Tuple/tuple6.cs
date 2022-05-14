@@ -12,8 +12,6 @@ namespace BijouDB.DataTypes
         where D5 : IDataType, new()
         where D6 : IDataType, new()
     {
-        public static long Length => 0;
-
         private (D1, D2, D3, D4, D5, D6) _value;
 
         public @tuple((D1, D2, D3, D4, D5, D6) value) => _value = value;
@@ -38,8 +36,6 @@ namespace BijouDB.DataTypes
             _value.Item6.Serialize(stream);
         }
 
-        public override string ToString() => _value.ToString();
-
         public static implicit operator (D1, D2, D3, D4, D5, D6)(@tuple<D1, D2, D3, D4, D5, D6> value) => value._value;
         public static implicit operator @tuple<D1, D2, D3, D4, D5, D6>((D1, D2, D3, D4, D5, D6) value) => new(value);
 
@@ -48,8 +44,6 @@ namespace BijouDB.DataTypes
         // Nullable
         public sealed class nullable : IDataType
         {
-            public static long Length => 0;
-
             private (D1, D2, D3, D4, D5, D6)? _value;
 
             public nullable((D1, D2, D3, D4, D5, D6)? value) => _value = value;
@@ -99,8 +93,6 @@ namespace BijouDB.DataTypes
                     _value.Value.Item6.Serialize(stream);
                 }
             }
-
-            public override string ToString() => _value.ToString() ?? "";
 
             public static implicit operator (D1, D2, D3, D4, D5, D6)?(nullable value) => value._value;
             public static implicit operator nullable((D1, D2, D3, D4, D5, D6)? value) => new(value);

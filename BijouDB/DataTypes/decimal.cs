@@ -6,8 +6,6 @@ namespace BijouDB.DataTypes;
 
 public struct @decimal : IDataType
 {
-    public static long Length => 16;
-
     private decimal _value;
 
     private @decimal(decimal value) => _value = value;
@@ -30,14 +28,8 @@ public struct @decimal : IDataType
     public void Serialize(Stream stream)
     {
         int[] bits = decimal.GetBits(_value);
-        foreach (int bit in bits)
-        {
-            byte[] bytes = BitConverter.GetBytes(bit);
-            stream.Write(bytes);
-        }
+        foreach (int bit in bits) stream.Write(BitConverter.GetBytes(bit), 0, 4);
     }
-
-    public override string ToString() => _value.ToString();
 
     public static implicit operator decimal(@decimal value) => value._value;
     public static implicit operator @decimal(decimal value) => new(value);
@@ -47,8 +39,6 @@ public struct @decimal : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => @decimal.Length + 1;
-
         private decimal? _value;
 
         private nullable(decimal? value) => _value = value;
@@ -96,15 +86,9 @@ public struct @decimal : IDataType
             {
                 stream.WriteByte(byte.MaxValue);
                 int[] bits = decimal.GetBits((decimal)_value);
-                foreach (int bit in bits)
-                {
-                    byte[] bytes = BitConverter.GetBytes(bit);
-                    stream.Write(bytes);
-                }
+                foreach (int bit in bits) stream.Write(BitConverter.GetBytes(bit), 0, 4);
             }
         }
-
-        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator decimal?(nullable value) => value._value;
         public static implicit operator nullable(decimal? value) => new(value);

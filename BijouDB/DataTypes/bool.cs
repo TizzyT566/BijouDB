@@ -6,8 +6,6 @@ namespace BijouDB.DataTypes;
 
 public struct @bool : IDataType
 {
-    public static long Length => 1;
-
     private bool _value;
 
     private @bool(bool value) => _value = value;
@@ -21,8 +19,6 @@ public struct @bool : IDataType
 
     public void Serialize(Stream stream) => stream.WriteByte(_value ? byte.MaxValue : byte.MinValue);
 
-    public override string ToString() => _value.ToString();
-
     public static implicit operator bool(@bool value) => value._value;
     public static implicit operator @bool(bool value) => new(value);
 
@@ -31,8 +27,6 @@ public struct @bool : IDataType
     // Nullable
     public sealed class @nullable : IDataType
     {
-        public static long Length => @bool.Length + 1;
-
         private bool? _value;
 
         private @nullable(bool? value) => _value = value;
@@ -71,8 +65,6 @@ public struct @bool : IDataType
                 stream.WriteByte((bool)_value ? byte.MaxValue : byte.MinValue);
             }
         }
-
-        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator bool?(@nullable value) => value._value;
         public static implicit operator @nullable(bool? value) => new(value);

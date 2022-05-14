@@ -45,12 +45,10 @@ public sealed class SchemaBuilder<R> : IDisposable
                         if (referenceCheck(record))
                             throw new Exception("There are references to the current record.");
 
-                    foreach (Action<Record> remove in _columns)
-                        remove(record);
+                    foreach (Action<Record> remove in _columns) remove(record);
 
                     string recordPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
-                    if (File.Exists(recordPath))
-                        File.Delete(recordPath);
+                    if (File.Exists(recordPath)) File.Delete(recordPath);
                 });
             }
             disposedValue = true;
@@ -59,15 +57,14 @@ public sealed class SchemaBuilder<R> : IDisposable
 
     public void Dispose()
     {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
 
     public static SchemaBuilder<R> operator ~(SchemaBuilder<R> a)
     {
-        a.Dispose();
-        return a;
+        a?.Dispose();
+        return a!;
     }
 }
 

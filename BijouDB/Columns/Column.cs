@@ -133,7 +133,6 @@ public sealed class Column<D> where D : IDataType, new()
             if (File.Exists(crntBinPath))
             {
                 using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
-                if (fs.Length - Offset < D.Length) throw new CorruptedException<D>();
                 D newType = new();
                 newType.Deserialize(fs2);
                 return newType;

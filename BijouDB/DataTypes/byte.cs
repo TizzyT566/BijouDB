@@ -6,8 +6,6 @@ namespace BijouDB.DataTypes;
 
 public struct @byte : IDataType
 {
-    public static long Length => 1;
-
     private byte _value;
 
     private @byte(byte value) => _value = value;
@@ -21,8 +19,6 @@ public struct @byte : IDataType
 
     public void Serialize(Stream stream) => stream.WriteByte(_value);
 
-    public override string ToString() => _value.ToString();
-
     public static implicit operator byte(@byte value) => value._value;
     public static implicit operator @byte(byte value) => new(value);
 
@@ -31,8 +27,6 @@ public struct @byte : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => @byte.Length + 1;
-
         private byte? _value;
 
         private nullable(byte? value) => _value = value;
@@ -74,8 +68,6 @@ public struct @byte : IDataType
                 stream.WriteByte((byte)_value);
             }
         }
-
-        public override string ToString() => _value.ToString() ?? "";
 
         public static implicit operator byte?(nullable value) => value._value;
         public static implicit operator nullable(byte? value) => new(value);

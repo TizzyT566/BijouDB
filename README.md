@@ -136,14 +136,10 @@ You can create your own data types by implementing the interface `BijouDB.IDataT
 ```csharp
 public interface IDataType
 {
-    // The size in bytes of the serialized datatype, set to 0 if not a fixed size
-    public static abstract long Length { get; }
     // The logic to convert from bytes
     public void Deserialize(Stream stream);
     // The logic to convert to bytes
     public void Serialize(Stream stream);
-    // The logic to represent the datatype in a human readable string
-    public string ToString();
 }
 ```
 
@@ -164,9 +160,9 @@ Create a static contructor, its needed to instantiate the columns.
 
 Use the SchemaBuilder to generate the columns via the `Add()` method.
 
-Do this for each of your columns and finally at preceed the SchemaBuilder with `_ = ~`.
+Do this for each of your columns and finally preceed the SchemaBuilder with `_ = ~`.
 
-This pattern automatically disposes the SchemaBuilder at the end and ensure proper init and disposal.
+This pattern automatically disposes the SchemaBuilder at the end and ensures proper init and disposal.
 
 ## Example
 ```csharp
@@ -218,7 +214,7 @@ References prevent a Record from being deleted if it has references.
 
 You can keep the relationship but allow deleting even if referenced exist by setting the `restricted`
 
-parameter to true for the `Add()` method for references.
+parameter to false in the `Add( ... , bool restricted)` method for references, default is true.
 
 You can create a `Reference` specifying the `Record` it references and the generic type of that column.
 

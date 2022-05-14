@@ -7,8 +7,6 @@ namespace BijouDB.DataTypes;
 
 public struct @string : IDataType
 {
-    public static long Length => 0;
-
     private string _value;
 
     private @string(string value) => _value = value ?? "";
@@ -21,8 +19,6 @@ public struct @string : IDataType
 
     public void Serialize(Stream stream) => stream.WriteDynamicData(Encoding.UTF8.GetBytes(_value ?? ""));
 
-    public override string ToString() => _value;
-
     public static implicit operator string(@string value) => value._value ?? "";
     public static implicit operator @string(string value) => value is null ? throw new NotNullableException(typeof(@string).Name) : new(value);
 
@@ -31,8 +27,6 @@ public struct @string : IDataType
     // Nullable
     public sealed class nullable : IDataType
     {
-        public static long Length => 0;
-
         private string? _value;
 
         private nullable(string? value) => _value = value;
@@ -73,8 +67,6 @@ public struct @string : IDataType
                 stream.WriteDynamicData(Encoding.UTF8.GetBytes(_value));
             }
         }
-
-        public override string ToString() => _value?.ToString() ?? "";
 
         public static implicit operator string?(nullable value) => value._value;
         public static implicit operator nullable(string? value) => new(value);

@@ -8,8 +8,6 @@ namespace BijouDB.DataTypes
         where D1 : IDataType, new()
         where D2 : IDataType, new()
     {
-        public static long Length => 0;
-
         private (D1, D2) _value;
 
         public @tuple((D1, D2) value) => _value = value;
@@ -26,8 +24,6 @@ namespace BijouDB.DataTypes
             _value.Item2.Serialize(stream);
         }
 
-        public override string ToString() => _value.ToString();
-
         public static implicit operator (D1, D2)(@tuple<D1, D2> value) => value._value;
         public static implicit operator @tuple<D1, D2>((D1, D2) value) => new(value);
 
@@ -36,8 +32,6 @@ namespace BijouDB.DataTypes
         // Nullable
         public sealed class nullable : IDataType
         {
-            public static long Length => 0;
-
             private (D1, D2)? _value;
 
             public nullable((D1, D2)? value) => _value = value;

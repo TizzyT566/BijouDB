@@ -30,7 +30,7 @@ public static class SkipHash
         {
             int total = 0, read;
             while (((total += read = @this.Read(buffer, total, 16 - total)) < 16) && (read != 0)) ;
-            ms.Write(buffer);
+            ms.Write(buffer, 0, buffer.Length);
             position += offset;
             @this.Position = (long)Math.Round(position);
         }

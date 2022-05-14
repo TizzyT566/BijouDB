@@ -47,7 +47,7 @@ public static class IncrementalGuid
     {
         while (Interlocked.Exchange(ref _lock, 1) == 1) ;
         _saveStream.Position = 0;
-        _saveStream.Write(_guidBytes);
+        _saveStream.Write(_guidBytes, 0, 16);
         _saveStream.Flush();
         Interlocked.Exchange(ref _lock, 0);
     }
