@@ -36,7 +36,7 @@ Currently this utilizes preview features so to use this you must enable preview 
 
                                     long => @long
 
-                        R : BijouDB.Record => @record<R>
+                      R : BijouDB.Record => @record<R>
 
                                    sbyte => @sbyte
 
@@ -88,7 +88,7 @@ Nullable Types:
 
                                     long? => @long.nullable
 
-                        R? : BijouDB.Record => @record<R>.nullable
+                      R? : BijouDB.Record => @record<R>.nullable
 
                                    sbyte? => @sbyte.nullable
 
