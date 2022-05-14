@@ -1,6 +1,8 @@
 # BijouDB
 A small C# database
 
+Nuget: [BijouDB Package](https://www.nuget.org/packages/BijouDB/)
+
 ## Note
 Currently this utilizes preview features so to use this you must enable preview features in your project.
 
