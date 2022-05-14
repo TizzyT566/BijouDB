@@ -6,6 +6,8 @@ public abstract class Record
 
     public Guid Id { get; init; } = IncrementalGuid.NextGuid();
 
+    public static bool TryGet<R>(string id, out R? record) where R : Record, new() =>
+        TryGet(Guid.Parse(id), out record);
     public static bool TryGet<R>(Guid id, out R? record) where R : Record, new()
     {
         try

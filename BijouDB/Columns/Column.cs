@@ -1,7 +1,7 @@
 ﻿using BijouDB.Components;
 using BijouDB.Exceptions;
 
-namespace BijouDB.Columns;
+namespace BijouDB;
 
 /// <summary>
 /// A column for adding to custom table implementations.
@@ -39,7 +39,7 @@ public sealed class Column<D> where D : IDataType, new()
     /// <param name="hash">The hash of the value.</param>
     /// <param name="index">The index of the value if found, and a candidate if not.</param>
     /// <returns>true if the value was found, false otherwise.</returns>
-    public bool ValueIndex<R>(D data, out Guid hash, out Guid index) where R : Record
+    internal bool ValueIndex<R>(D data, out Guid hash, out Guid index) where R : Record
     {
         // Generate hash for new value
         using FileBackedStream ms = new();
@@ -89,7 +89,7 @@ public sealed class Column<D> where D : IDataType, new()
     /// </summary>
     /// <param name="data">The value to check for.</param>
     /// <returns>true if a record exists with the value specified, false otherwise.</returns>
-    public bool HasRecordsWithValue<R>(D data) where R : Record, new()
+    internal bool HasRecordsWithValue<R>(D data) where R : Record, new()
     {
         if (ValueIndex<R>(data, out Guid hash, out Guid index))
         {

@@ -1,7 +1,4 @@
-﻿using BijouDB.Columns;
-using BijouDB.DataTypes;
-
-namespace BijouDB;
+﻿namespace BijouDB;
 
 public sealed class SchemaBuilder<R>
     where R : Record, new()

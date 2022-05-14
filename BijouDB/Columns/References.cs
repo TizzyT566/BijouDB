@@ -1,7 +1,7 @@
 ﻿using BijouDB.Components;
 using BijouDB.DataTypes;
 
-namespace BijouDB.Columns;
+namespace BijouDB;
 
 public sealed class References<R, D>
     where R : Record, new()

@@ -1,5 +1,4 @@
 ﻿using BijouDB;
-using BijouDB.Columns;
 using BijouDB.DataTypes;
 using System.Numerics;
 
@@ -22,13 +21,13 @@ public class Employee : Record
     public static readonly Column<@record<Employee>.nullable> ManagerColumn;
     public Employee? Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
 
-    public static readonly References<Computer, @record<Employee>.nullable> ComputerReferences;
+    private static readonly References<Computer, @record<Employee>.nullable> ComputerReferences;
     public Computer[] Computers => ComputerReferences.For(this);
 
     static Employee() => SchemaBuilder<Employee>
         .Add(out NameColumn, Unique: true)
-        .Add(out NumberColumn)
-        .Add(out AgeColumn)
+        .Add(out NumberColumn, Default: () => 5555555)
+        .Add(out AgeColumn, Check: value => value >= 18)
         .Add(out PointsColumn)
         .Add(out ManagerColumn)
         .Add(out ComputerReferences, () => Computer.EmployeeColumn)

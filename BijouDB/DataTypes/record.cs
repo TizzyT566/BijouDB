@@ -63,7 +63,7 @@ public struct @record<R> : IDataType where R : Record, new()
                 default:
                     {
                         byte[] bytes = new byte[16];
-                        if (stream.TryFill(bytes)) TryGet(new(bytes), out _value);
+                        if (stream.TryFill(bytes)) TryGet(new Guid(bytes), out _value);
                         else throw new CorruptedException<nullable>();
                         break;
                     }
