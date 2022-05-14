@@ -373,12 +373,12 @@ To turn on logging, set `BijouDB.Globals.Logging` to `true`.
 # Operations Complexity
 > Getting a Record via its Id `O(1)`
 
-> Getting all Records of a Type `O(1) - O(n)`
+> Getting all Records of a Type `O(1)`
 
 > Getting all Records of a Type by value `O(1) - O(n)`
 
 > Adding a Record `O(1)`
 
-> Removing a Record `O(1) - O(n)`
+> Removing a Record `O(1)`
 
 > Getting References `O(1) - O(n)`
