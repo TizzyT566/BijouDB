@@ -1,7 +1,7 @@
 ﻿using BijouDB;
 using BijouDB_Test.Tables;
 
-BijouDB.Globals.Logging = true;
+Globals.Logging = true;
 
 Employee test = new()
 {
@@ -26,13 +26,13 @@ Computer com3 = new()
     Type = "Origin"
 };
 
-test.TryRemove();
-
 com1.Remove();
 
 com2.Remove();
 
 com3.Remove();
+
+test.TryRemove();
 
 
 //foreach (Computer comp in Employee.ComputerReferences.For(test))

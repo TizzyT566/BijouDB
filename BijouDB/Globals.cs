@@ -1,4 +1,6 @@
-﻿namespace BijouDB;
+﻿using BijouDB.Exceptions;
+
+namespace BijouDB;
 
 public static class Globals
 {
@@ -12,4 +14,11 @@ public static class Globals
     public static readonly string BinFile = "value.bin";
 
     public static bool Logging { get; set; } = false;
+
+    internal static Type? _currentSchema = null;
+    internal static void CheckSchema<R>() where R : Record
+    {
+        if (_currentSchema is null) _currentSchema = typeof(R);
+        else if (_currentSchema != typeof(R)) throw new IncompleteSchemaException(_currentSchema);
+    }
 }

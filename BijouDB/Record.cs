@@ -60,8 +60,6 @@ public abstract class Record
     internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition) where R : Record =>
         _removeDefinitions.TryAdd(typeof(R), removeDefinition);
 
-    public void Remove() => Remove(this);
-
     public bool TryRemove() => TryRemove(out _);
     public bool TryRemove(out Exception? exception)
     {
@@ -79,6 +77,7 @@ public abstract class Record
         }
     }
 
+    public void Remove() => Remove(this);
     public static void Remove(Record record)
     {
         if (!_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition) || removeDefinition is null)

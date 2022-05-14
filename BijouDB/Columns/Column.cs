@@ -116,7 +116,7 @@ public sealed class Column<D> where D : IDataType, new()
             using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.None);
             D newValue = new();
             newValue.Deserialize(fs);
-            ds.Add(newValue);            
+            ds.Add(newValue);
         }
         return ds.ToArray();
     }
@@ -221,8 +221,6 @@ public sealed class Column<D> where D : IDataType, new()
                     ms.Position = 0;
                     if (Misc.StreamCompare(ms, fsCollision))
                     {
-                        fsCollision.Dispose();
-
                         // Uniqueness check
                         if (_unique)
                             foreach (string match in Directory.EnumerateFiles(hashCollision, Globals.RefPattern))
@@ -290,8 +288,7 @@ public sealed class Column<D> where D : IDataType, new()
                     empty = false;
                     break;
                 }
-                if (empty)
-                    Directory.Delete(indexedDir, true);
+                if (empty) Directory.Delete(indexedDir, true);
             }
 
             // If no more values delete hash folder
@@ -303,8 +300,7 @@ public sealed class Column<D> where D : IDataType, new()
                     empty = false;
                     break;
                 }
-                if (empty)
-                    Directory.Delete(hashDir, true);
+                if (empty) Directory.Delete(hashDir, true);
             }
         }
     }

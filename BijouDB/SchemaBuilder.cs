@@ -1,4 +1,6 @@
-﻿namespace BijouDB;
+﻿using BijouDB.Exceptions;
+
+namespace BijouDB;
 
 public sealed class SchemaBuilder<R>
     where R : Record, new()
@@ -14,6 +16,8 @@ public sealed class SchemaBuilder<R>
     public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!)
         where D : IDataType, new()
     {
+        Globals.CheckSchema<R>();
+
         SchemaBuilder<R> builder = new();
         string columnName = $"{Globals.ColName}_{builder._count}";
         column = new(builder.Length, columnName, typeof(R), Unique, Default, Check);
@@ -24,13 +28,15 @@ public sealed class SchemaBuilder<R>
     }
 
     // column which references other records which are related
-    public static SchemaBuilder<R> Add<RSource, D>(out References<RSource, D> column, Func<Column<D>> referenceColumn)
+    public static SchemaBuilder<R> Add<RSource, D>(out References<RSource, D> column, Func<Column<D>> referenceColumn, bool restricted = true)
         where RSource : Record, new()
         where D : IDataType, new()
     {
+        Globals.CheckSchema<R>();
+
         SchemaBuilder<R> builder = new();
         column = new(referenceColumn);
-        builder._references.Add(column.HasRecords<R>);
+        if (restricted) builder._references.Add(column.HasRecords<R>);
         return builder;
     }
 
@@ -47,10 +53,12 @@ public sealed class SchemaBuilder<R>
                 remove(record);
 
             string recordPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
-            if(File.Exists(recordPath))
+            if (File.Exists(recordPath))
                 File.Delete(recordPath);
         });
         _built = true;
+
+        Globals._currentSchema = null;
     }
 }
 
@@ -61,7 +69,9 @@ public static class SchemaBuilderExtensions
         where R : Record, new()
         where D : IDataType, new()
     {
-        if (@this._built) throw new InvalidOperationException();
+        Globals.CheckSchema<R>();
+
+        if (@this._built) throw new InvalidOperationException("Already built the current schema.");
         string columnName = $"{Globals.ColName}_{@this._count}";
         column = new(@this.Length, columnName, typeof(R), Unique, Default, Check);
         @this._columns.Add(column.Remove);
@@ -71,14 +81,16 @@ public static class SchemaBuilderExtensions
     }
 
     // column which references other records which are related
-    public static SchemaBuilder<R> Add<R, RSource, D>(this SchemaBuilder<R> @this, out References<RSource, D> column, Func<Column<D>> referenceColumn)
+    public static SchemaBuilder<R> Add<R, RSource, D>(this SchemaBuilder<R> @this, out References<RSource, D> column, Func<Column<D>> referenceColumn, bool restricted = true)
         where R : Record, new()
         where RSource : Record, new()
         where D : IDataType, new()
     {
-        if (@this._built) throw new Exception();
+        Globals.CheckSchema<R>();
+
+        if (@this._built) throw new InvalidOperationException();
         column = new(referenceColumn);
-        @this._references.Add(column.HasRecords<R>);
+        if (restricted) @this._references.Add(column.HasRecords<R>);
         return @this;
     }
 }
