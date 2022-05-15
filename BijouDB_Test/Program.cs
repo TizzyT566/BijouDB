@@ -26,7 +26,13 @@ Computer com3 = new()
     Type = "Origin"
 };
 
+com1.Remove();
 
+com2.Remove();
+
+com3.Remove();
+
+test.Remove();
 
 foreach (Computer comp in Computer.EmployeeColumn.WithValue<Computer>(test))
 {

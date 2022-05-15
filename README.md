@@ -365,6 +365,14 @@ foreach (int age in Employee.AgeColumn.UniqueValues())
 }
 ```
 
+## Storing Data
+
+The database can be made to store arbitrary data.
+
+To mitigate a vulnerability due to malicious data being stored, data is stored with a random bitmask.
+
+The mask is generated using a seed. The seed can be changed at `BijouDB.Globals.SeedMask`, default is 712247. 
+
 ## Logging
 There was very minimal effor put into logging. It is disabled by default.
 
