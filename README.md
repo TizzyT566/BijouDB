@@ -307,6 +307,7 @@ class Child : Record
     public static readonly Column<@int> AgeColumn;
     public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
 
+    // Index Columns are inherently Unique and cannot be disabled
     public static readonly Column<@index<Person, @string>> ParentColumn;
     public (Person Record, string Index) Parent 
     { 
