@@ -28,7 +28,6 @@ public struct @index<R, D> : IIndex, IDataType
 
     public static implicit operator (R record, D index)(@index<R, D> value) => value._value;
     public static implicit operator @index<R, D>((R record, D index) value) => new(value);
-    public static implicit operator R(@index<R, D> value) => value._value.Item1;
 
 
 
@@ -78,11 +77,8 @@ public struct @index<R, D> : IIndex, IDataType
             }
         }
 
-        public override string ToString() => _value.ToString() ?? "";
-
         public static implicit operator (R record, D index)?(nullable value) => value._value;
         public static implicit operator nullable((R record, D index)? value) => new(value);
-        public static implicit operator R?(nullable value) => value._value.HasValue ? value._value.Value.Item1 : default;
     }
 }
 

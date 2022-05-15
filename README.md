@@ -6,105 +6,109 @@ Nuget: [BijouDB Package](https://www.nuget.org/packages/BijouDB/)
 # Features
 ## DataTypes => Synonymous Wrapper
 ```
-                              BigInteger => @bint
+                                 BigInteger => @bint
 
-                                  byte[] => @blob
+                                     byte[] => @blob
 
-                                    bool => @bool
+                                       bool => @bool
 
-                                    byte => @byte
+                                       byte => @byte
 
-                                    char => @char
+                                       char => @char
 
-                                DateTime => @time
+                                   DateTime => @time
 
-                                 decimal => @decimal
+                                    decimal => @decimal
 
-                                   float => @float
+                                      float => @float
 
-                                     int => @int
+                                        int => @int
 
-                                    long => @long
+                                       long => @long
 
-                      R : BijouDB.Record => @record<R>
+                         R : BijouDB.Record => @record<R>
 
-                                   sbyte => @sbyte
+(R : BijouDB.Record, D : BijouDB.IDataType) => @index<R, D>
 
-                                   short => @short
+                                      sbyte => @sbyte
 
-                                  string => @string
+                                      short => @short
 
-                                    uint => @uint
+                                     string => @string
 
-                                   ulong => @ulong
+                                       uint => @uint
 
-                                  ushort => @ushort
+                                      ulong => @ulong
 
-                           Tuple<T1, T2> => @tuple<D1, D2>
+                                     ushort => @ushort
 
-                       Tuple<T1, T2, T3> => @tuple<D1, D2, D3>
+                              Tuple<T1, T2> => @tuple<D1, D2>
 
-                   Tuple<T1, T2, T3, T4> => @tuple<D1, D2, D3, D4>
+                          Tuple<T1, T2, T3> => @tuple<D1, D2, D3>
 
-               Tuple<T1, T2, T3, T4, T5> => @tuple<D1, D2, D3, D4, D5>
+                      Tuple<T1, T2, T3, T4> => @tuple<D1, D2, D3, D4>
 
-           Tuple<T1, T2, T3, T4, T5, T6> => @tuple<D1, D2, D3, D4, D5, D6>
+                  Tuple<T1, T2, T3, T4, T5> => @tuple<D1, D2, D3, D4, D5>
 
-       Tuple<T1, T2, T3, T4, T5, T6, T7> => @tuple<D1, D2, D3, D4, D5, D6, D7>
+              Tuple<T1, T2, T3, T4, T5, T6> => @tuple<D1, D2, D3, D4, D5, D6>
 
-Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> => @tuple<D1, D2, D3, D4, D5, D6, D7, DRest>
+          Tuple<T1, T2, T3, T4, T5, T6, T7> => @tuple<D1, D2, D3, D4, D5, D6, D7>
+
+   Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> => @tuple<D1, D2, D3, D4, D5, D6, D7, DRest>
 ```
 
 Nullable Types:
 
 ```
-                              BigInteger? => @bint.nullable
+                                 BigInteger? => @bint.nullable
 
-                                  byte[]? => @blob.nullable
+                                     byte[]? => @blob.nullable
 
-                                    bool? => @bool.nullable
+                                       bool? => @bool.nullable
 
-                                    byte? => @byte.nullable
+                                       byte? => @byte.nullable
 
-                                    char? => @char.nullable
+                                       char? => @char.nullable
 
-                                DateTime? => @time.nullable
+                                   DateTime? => @time.nullable
 
-                                 decimal? => @decimal.nullable
+                                    decimal? => @decimal.nullable
 
-                                   float? => @float.nullable
+                                      float? => @float.nullable
 
-                                     int? => @int.nullable
+                                        int? => @int.nullable
 
-                                    long? => @long.nullable
+                                       long? => @long.nullable
 
-                      R? : BijouDB.Record => @record<R>.nullable
+                         R? : BijouDB.Record => @record<R>.nullable
 
-                                   sbyte? => @sbyte.nullable
+(R : BijouDB.Record, D : BijouDB.IDataType)? => @index<R, D>.nullable
 
-                                   short? => @short.nullable
+                                      sbyte? => @sbyte.nullable
 
-                                  string? => @string.nullable
+                                      short? => @short.nullable
 
-                                    uint? => @uint.nullable
+                                     string? => @string.nullable
 
-                                   ulong? => @ulong.nullable
+                                       uint? => @uint.nullable
 
-                                  ushort? => @ushort.nullable
+                                      ulong? => @ulong.nullable
 
-                           Tuple<T1, T2>? => @tuple<D1, D2>.nullable
+                                     ushort? => @ushort.nullable
 
-                       Tuple<T1, T2, T3>? => @tuple<D1, D2, D3>.nullable
+                              Tuple<T1, T2>? => @tuple<D1, D2>.nullable
 
-                   Tuple<T1, T2, T3, T4>? => @tuple<D1, D2, D3, D4>.nullable
+                          Tuple<T1, T2, T3>? => @tuple<D1, D2, D3>.nullable
 
-               Tuple<T1, T2, T3, T4, T5>? => @tuple<D1, D2, D3, D4, D5>.nullable
+                      Tuple<T1, T2, T3, T4>? => @tuple<D1, D2, D3, D4>.nullable
 
-           Tuple<T1, T2, T3, T4, T5, T6>? => @tuple<D1, D2, D3, D4, D5, D6>.nullable
+                  Tuple<T1, T2, T3, T4, T5>? => @tuple<D1, D2, D3, D4, D5>.nullable
 
-       Tuple<T1, T2, T3, T4, T5, T6, T7>? => @tuple<D1, D2, D3, D4, D5, D6, D7>.nullable
+              Tuple<T1, T2, T3, T4, T5, T6>? => @tuple<D1, D2, D3, D4, D5, D6>.nullable
 
-Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>? => @tuple<D1, D2, D3, D4, D5, D6, D7, DRest>.nullable
+          Tuple<T1, T2, T3, T4, T5, T6, T7>? => @tuple<D1, D2, D3, D4, D5, D6, D7>.nullable
+
+   Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>? => @tuple<D1, D2, D3, D4, D5, D6, D7, DRest>.nullable
 ```
 
 ## Constraints
