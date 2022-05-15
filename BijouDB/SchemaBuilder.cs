@@ -1,4 +1,6 @@
-﻿namespace BijouDB;
+﻿using BijouDB.DataTypes;
+
+namespace BijouDB;
 
 public sealed class SchemaBuilder<R> : IDisposable
     where R : Record, new()
@@ -15,6 +17,9 @@ public sealed class SchemaBuilder<R> : IDisposable
     {
         SchemaBuilder<R> builder = new();
         string columnName = $"{Globals.ColName}_{builder._count}";
+
+        if (typeof(IIndex).IsAssignableFrom(typeof(D))) Unique = true;
+
         column = new(builder.Length, columnName, typeof(R), Unique, Default, Check);
         builder._columns.Add(column.Remove);
         builder.Length += 32;

@@ -70,8 +70,20 @@ public sealed class Column<D>
     /// <summary>
     /// Get records with the specified value.
     /// </summary>
+    /// <typeparam name="R">The return record type.</typeparam>
+    /// <param name="value">The value to search records with.</param>
+    /// <param name="records">An array of records which contains the specified value.</param>
+    public void WithValue<R>(D value, out R[] records)
+        where R : Record, new() =>
+        records = WithValue<R>(value);
+
+    /// <summary>
+    /// Get records with the specified value.
+    /// </summary>
+    /// <typeparam name="R">The return record type.</typeparam>
     /// <param name="value">The value to search records with.</param>
     /// <returns>A array of all records containing the value specified.</returns>
+    /// <summary>
     public R[] WithValue<R>(D value)
         where R : Record, new()
     {
