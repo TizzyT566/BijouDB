@@ -287,7 +287,11 @@ class Person : Record
     public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
 
     public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
-    public (int, int, int) PhoneNumber { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
+    public (int, int, int) PhoneNumber 
+    { 
+        get => PhoneNumberColumn.Get(this); 
+        set => PhoneNumberColumn.Set(this, value);
+    }
 
     public static readonly Reference<Child, @index<Person, @string>> ChildReferences;
     public Indexer<Child, @string> Children => new(i => ChildReferences.For((this, i)));
@@ -304,7 +308,11 @@ class Child : Record
     public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
 
     public static readonly Column<@index<Person, @string>> ParentColumn;
-    public (Person Record, string Index) Parent { get => ParentColumn.Get(this); set => ParentColumn.Set(this, value); }
+    public (Person Record, string Index) Parent 
+    { 
+        get => ParentColumn.Get(this); 
+        set => ParentColumn.Set(this, value); 
+    }
 
     static Child() => _ = ~SchemaBuilder<Child>
         .Add(out AgeColumn)
