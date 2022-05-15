@@ -3,7 +3,7 @@ using BijouDB.DataTypes;
 
 namespace BijouDB;
 
-public sealed class References<R, D>
+public sealed class Reference<R, D>
     where R : Record, new()
     where D : IDataType, new()
 {
@@ -11,7 +11,7 @@ public sealed class References<R, D>
 
     internal Column<D> SourceColumn => _sourceColumn();
 
-    internal References(Func<Column<D>> sourceColumn) => _sourceColumn = sourceColumn;
+    internal Reference(Func<Column<D>> sourceColumn) => _sourceColumn = sourceColumn;
 
     /// <summary>
     /// Gets all child records referenced by this column.

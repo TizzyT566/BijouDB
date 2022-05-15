@@ -116,7 +116,7 @@ Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>? => @tuple<D1, D2, D3, D4, D5, D6, D7, 
 
 > NotNull is the default, use a `IDataType.nullable` to explicitly use null
 
-> PRIMARY KEY and FOREIGN KEY is replicated loosely with `References`
+> PRIMARY KEY and FOREIGN KEY is replicated loosely with `Reference`
 
 ## Custom DataTypes
 You can create your own data types by implementing the interface `BijouDB.IDataType`
@@ -196,7 +196,7 @@ public class MyRecord : Record
 ## References
 In SQL we have `PRIMARY KEY` and `FOREIGN KEY` to link relationships between tables.
 
-Here we have the concept of References. Its very similar in concept.
+Here we have the concept of  references. Its very similar in concept.
 
 References prevent a Record from being deleted if it has child references.
 
@@ -212,7 +212,7 @@ Create a property with the type of the referenced Record. This property should b
 
 Use the `For()` method passing in `this`.
 
-You then use an overload for the `Add()` method for References. References do NOT have contraints.
+You then use an overload for the `Add()` method for references. References do NOT have contraints.
 
 Instead you have to specifically point it to the column in the referenced Record.
 
@@ -237,7 +237,7 @@ public class Employee : Record
     }
     
     // A Reference to 'Computer' Record
-    public static readonly References<Computer, @record<Employee>> ComputerReferences;
+    public static readonly Reference<Computer, @record<Employee>> ComputerReferences;
     public Computer[] Computers => ComputerReferences.For(this);
 
     static Employee() => _ = ~SchemaBuilder<Employee>
@@ -274,6 +274,73 @@ foreach (Computer computer in employee.Computers)
 {
     // Manipulate the record here
 }
+```
+
+In addition we have `Indexer` properties which will allow you to associate an index along side the reference.
+
+```cs
+// Example
+
+class Person : Record
+{
+    public static readonly Column<@string> NameColumn;
+    public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+
+    public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
+    public (int, int, int) PhoneNumber { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
+
+    public static readonly References<Child, @index<Person, @int>> ChildReferences;
+    // Indexer property
+    public Indexer<Child, @int> Children => new(i => ChildReferences.For((this, i)));
+
+    static Person() => _ = ~SchemaBuilder<Person>
+        .Add(out NameColumn)
+        .Add(out PhoneNumberColumn)
+        .Add(out ChildReferences, () => Child.ParentColumn);
+}
+
+class Child : Record
+{
+    public static readonly Column<@string> NameColumn;
+    public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+
+    public static readonly Column<@index<Person, @int>> ParentColumn;
+    public (Person Record, int Index) Parent { get => ParentColumn.Get(this); set => ParentColumn.Set(this, value); }
+
+    static Child() => _ = ~SchemaBuilder<Child>
+        .Add(out NameColumn)
+        .Add(out ParentColumn);
+}
+
+// Usage
+
+Person person = new()
+{
+    Name = "TizzyT",
+    PhoneNumber = (555, 941, 9464)
+};
+
+Child child1 = new()
+{
+    Name = "David",
+    Parent = (person, 1)
+};
+
+Child child2 = new()
+{
+    Name = "Micheal",
+    Parent = (person, 2)
+};
+
+Child c1 = person.Children[1];
+Console.WriteLine(c1.Name);
+Console.WriteLine(c1.Parent.Record.Name);
+Console.WriteLine(c1.Parent.Record.PhoneNumber);
+
+Child c2 = person.Children[2];
+Console.WriteLine(c2.Name);
+Console.WriteLine(c2.Parent.Record.Name);
+Console.WriteLine(c2.Parent.Record.PhoneNumber);
 ```
 
 ## Removing Records

@@ -49,17 +49,27 @@ using BijouDB_Test.Tables;
 Person person = new()
 {
     Name = "TizzyT",
-    PhoneNumber = (267, 810, 5620)
+    PhoneNumber = (555, 941, 9464)
 };
 
 Child child1 = new()
 {
-    Name = "Thien Huynh",
-    Parent = (person, 5)
+    Name = "David",
+    Parent = (person, 1)
 };
 
-Child c = person.Children[5];
+Child child2 = new()
+{
+    Name = "Micheal",
+    Parent = (person, 2)
+};
 
-Console.WriteLine(c.Name);
-Console.WriteLine(c.Parent.Record.Name);
-Console.WriteLine(c.Parent.Record.PhoneNumber);
+Child c1 = person.Children[1];
+Console.WriteLine(c1.Name);
+Console.WriteLine(c1.Parent.Record.Name);
+Console.WriteLine(c1.Parent.Record.PhoneNumber);
+
+Child c2 = person.Children[2];
+Console.WriteLine(c2.Name);
+Console.WriteLine(c2.Parent.Record.Name);
+Console.WriteLine(c2.Parent.Record.PhoneNumber);
