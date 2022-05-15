@@ -59,9 +59,13 @@ public static class Misc
     }
     public static Guid Hash(this IDataType value, Stream stream)
     {
+        long pos = stream.Position;
         MaskedStream ms = new(stream, Globals.SeedMask);
         value.Serialize(ms);
-        return stream.GetSkipHash();
+        stream.Position = 0;
+        Guid ret = stream.GetSkipHash();
+        stream.Position = pos;
+        return ret;
     }
 
     public static bool ReadHashValue(this Stream @this, out Guid hash, out Guid value)
