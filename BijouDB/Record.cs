@@ -4,10 +4,8 @@ public class Record : IEqualityComparer<Record>
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
 
-    private Guid _id;
-    public Guid Id => _id;
-
-    public Record() => _id = IncrementalGuid.NextGuid();
+    private Guid? _id;
+    public Guid Id => _id ??= IncrementalGuid.NextGuid();
 
     public static bool TryGet<R>(string id, out R? record)
         where R : Record, new() =>
