@@ -1,6 +1,6 @@
 ﻿namespace BijouDB;
 
-public static class IncrementalGuid
+internal static class IncrementalGuid
 {
     private const int SPACING = 500;
     private static readonly string SAVE_PATH = @$"{Globals.DB_Path}\Guid.state";

@@ -2,7 +2,7 @@
 
 namespace BijouDB;
 
-public static class Misc
+internal static class Misc
 {
     /// <summary>
     /// Ensures a stream's total size.
@@ -52,11 +52,6 @@ public static class Misc
         return true;
     }
 
-    public static Guid Hash(this IDataType value)
-    {
-        using MemoryStream ms = new();
-        return value.Hash(ms);
-    }
     public static Guid Hash(this IDataType value, Stream stream)
     {
         long pos = stream.Position;

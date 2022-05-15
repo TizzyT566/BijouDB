@@ -1,6 +1,6 @@
 ﻿namespace BijouDB.Components;
 
-public class FileBackedStream : Stream, IDisposable
+internal class FileBackedStream : Stream, IDisposable
 {
     private readonly int _thresholdSize;
     private bool disposedValue, _check = true;

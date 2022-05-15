@@ -5,7 +5,7 @@ Globals.Logging = true;
 
 Employee test = new()
 {
-    Name = "Thien Huynh3"
+    Name = "Thien Huynh1"
 };
 
 Computer com1 = new()
@@ -34,7 +34,7 @@ Computer com3 = new()
 
 //test.Remove();
 
-foreach (Computer comp in Computer.EmployeeColumn.WithValue<Computer>(test))
+foreach (Computer comp in test.Computers)
 {
     Console.WriteLine(comp.Type);
 }

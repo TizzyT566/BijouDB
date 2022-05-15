@@ -1,6 +1,6 @@
 ﻿namespace BijouDB.Components;
 
-public class MaskedStream : Stream
+internal class MaskedStream : Stream
 {
     private readonly Stream _stream;
     private readonly int _seed;

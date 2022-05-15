@@ -1,6 +1,6 @@
 ﻿namespace BijouDB;
 
-public class LengthRef
+internal class LengthRef
 {
     private long _length = 0;
     public static implicit operator long(LengthRef lengthRef) => lengthRef._length;

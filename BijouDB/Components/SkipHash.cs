@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 namespace BijouDB;
 
-public static class SkipHash
+internal static class SkipHash
 {
     /// <summary>
     /// Generates a hash that skip portions of the data for speed.
