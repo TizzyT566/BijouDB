@@ -4,11 +4,10 @@ public class Record : IEqualityComparer<Record>
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
 
-    public Guid Id { get; }
+    private Guid _id;
+    public Guid Id => _id;
 
-    public Record() => Id = IncrementalGuid.NextGuid();
-
-    public Record(Guid id) => Id = id;
+    public Record() => _id = IncrementalGuid.NextGuid();
 
     public static bool TryGet<R>(string id, out R? record)
         where R : Record, new() =>
@@ -20,7 +19,7 @@ public class Record : IEqualityComparer<Record>
         {
             string path = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
             if (!File.Exists(path)) throw new FileNotFoundException("Record is missing.");
-            record = (R)new Record(id);
+            record = new() { _id = id };
             return true;
         }
         catch (Exception ex)
@@ -41,7 +40,7 @@ public class Record : IEqualityComparer<Record>
         for (int i = 0; i < records.Length; i++)
         {
             string recordName = Path.GetFileNameWithoutExtension(records[i]);
-            result[i] = (R)new Record(Guid.Parse(recordName));
+            result[i] = new() { _id = Guid.Parse(recordName) };
         }
         return result;
     }
@@ -63,7 +62,7 @@ public class Record : IEqualityComparer<Record>
 
         HashSet<R> result = hashSets[0];
 
-        for(int i = 1; i < hashSets.Count; i++)
+        for (int i = 1; i < hashSets.Count; i++)
             result.IntersectWith(hashSets[i]);
 
         return result.ToArray();

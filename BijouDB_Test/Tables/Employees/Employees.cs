@@ -21,7 +21,7 @@ public class Employee : Record
     public static readonly Column<@record<Employee>.nullable> ManagerColumn;
     public Employee? Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
 
-    private static readonly References<Computer, @record<Employee>.nullable> ComputerReferences;
+    public static readonly References<Computer, @record<Employee>.nullable> ComputerReferences;
     public Computer[] Computers => ComputerReferences.For(this);
 
     static Employee() => _ = ~SchemaBuilder<Employee>

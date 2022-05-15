@@ -26,19 +26,12 @@ Computer com3 = new()
     Type = "Origin"
 };
 
-com1.Remove();
-
-com2.Remove();
-
-com3.Remove();
-
-test.TryRemove();
 
 
-//foreach (Computer comp in Employee.ComputerReferences.For(test))
-//{
-//    Console.WriteLine(comp.Type);
-//}
+foreach (Computer comp in Computer.EmployeeColumn.WithValue<Computer>(test))
+{
+    Console.WriteLine(comp.Type);
+}
 
 //foreach (Employee employee in Record.GetAll<Employee>())
 //{

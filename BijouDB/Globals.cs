@@ -12,4 +12,5 @@ public static class Globals
     public static readonly string BinFile = "value.bin";
 
     public static bool Logging { get; set; } = false;
+    public static int SeedMask { get; set; } = 712247;
 }

@@ -119,7 +119,8 @@ public sealed class Column<D>
         {
             using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.None);
             D newValue = new();
-            newValue.Deserialize(fs);
+            MaskedStream ms = new(fs, Globals.SeedMask);
+            newValue.Deserialize(ms);
             ds.Add(newValue);
         }
         return ds.ToArray();
@@ -138,9 +139,10 @@ public sealed class Column<D>
             if (File.Exists(crntBinPath))
             {
                 using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
-                D newType = new();
-                newType.Deserialize(fs2);
-                return newType;
+                D newValue = new();
+                MaskedStream ms = new(fs2, Globals.SeedMask);
+                newValue.Deserialize(ms);
+                return newValue;
             }
             else throw new FileNotFoundException("Value for DataType is missing, database maybe corrupted.");
         }
