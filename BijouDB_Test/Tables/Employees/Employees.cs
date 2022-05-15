@@ -19,9 +19,9 @@ public class Employee : Record
     public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
 
     public static readonly Column<@record<Employee>> ManagerColumn;
-    public Employee? Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
+    public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
 
-    public static readonly References<Computer, @record<Employee>> ComputerReferences;
+    public static readonly References<Computer, @record<Employee>.nullable> ComputerReferences;
     public Computer[] Computers => ComputerReferences.For(this);
 
     static Employee() => _ = ~SchemaBuilder<Employee>
