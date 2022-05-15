@@ -52,24 +52,24 @@ Person person = new()
     PhoneNumber = (555, 941, 9464)
 };
 
-Child child1 = new()
+_ = new Child()
 {
-    Name = "David",
-    Parent = (person, 1)
+    Age = 12,
+    Parent = (Record: person, Index: "David")
 };
 
-Child child2 = new()
+_ = new Child()
 {
-    Name = "Micheal",
-    Parent = (person, 2)
+    Age = 10,
+    Parent = (Record: person, Index: "Lisa")
 };
 
-Child c1 = person.Children[1];
-Console.WriteLine(c1.Name);
+Child c1 = person.Children["David"];
+Console.WriteLine(c1.Age);
 Console.WriteLine(c1.Parent.Record.Name);
 Console.WriteLine(c1.Parent.Record.PhoneNumber);
 
-Child c2 = person.Children[2];
-Console.WriteLine(c2.Name);
+Child c2 = person.Children["Lisa"];
+Console.WriteLine(c2.Age);
 Console.WriteLine(c2.Parent.Record.Name);
 Console.WriteLine(c2.Parent.Record.PhoneNumber);

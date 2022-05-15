@@ -289,9 +289,8 @@ class Person : Record
     public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
     public (int, int, int) PhoneNumber { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
 
-    public static readonly References<Child, @index<Person, @int>> ChildReferences;
-    // Indexer property
-    public Indexer<Child, @int> Children => new(i => ChildReferences.For((this, i)));
+    public static readonly Reference<Child, @index<Person, @string>> ChildReferences;
+    public Indexer<Child, @string> Children => new(i => ChildReferences.For((this, i)));
 
     static Person() => _ = ~SchemaBuilder<Person>
         .Add(out NameColumn)
@@ -301,14 +300,14 @@ class Person : Record
 
 class Child : Record
 {
-    public static readonly Column<@string> NameColumn;
-    public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+    public static readonly Column<@int> AgeColumn;
+    public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
 
-    public static readonly Column<@index<Person, @int>> ParentColumn;
-    public (Person Record, int Index) Parent { get => ParentColumn.Get(this); set => ParentColumn.Set(this, value); }
+    public static readonly Column<@index<Person, @string>> ParentColumn;
+    public (Person Record, string Index) Parent { get => ParentColumn.Get(this); set => ParentColumn.Set(this, value); }
 
     static Child() => _ = ~SchemaBuilder<Child>
-        .Add(out NameColumn)
+        .Add(out AgeColumn)
         .Add(out ParentColumn);
 }
 
@@ -320,25 +319,25 @@ Person person = new()
     PhoneNumber = (555, 941, 9464)
 };
 
-Child child1 = new()
+_ = new Child()
 {
-    Name = "David",
-    Parent = (person, 1)
+    Age = 12,
+    Parent = (Record: person, Index: "David")
 };
 
-Child child2 = new()
+_ = new Child()
 {
-    Name = "Micheal",
-    Parent = (person, 2)
+    Age = 10,
+    Parent = (Record: person, Index: "Lisa")
 };
 
-Child c1 = person.Children[1];
-Console.WriteLine(c1.Name);
+Child c1 = person.Children["David"];
+Console.WriteLine(c1.Age);
 Console.WriteLine(c1.Parent.Record.Name);
 Console.WriteLine(c1.Parent.Record.PhoneNumber);
 
-Child c2 = person.Children[2];
-Console.WriteLine(c2.Name);
+Child c2 = person.Children["Lisa"];
+Console.WriteLine(c2.Age);
 Console.WriteLine(c2.Parent.Record.Name);
 Console.WriteLine(c2.Parent.Record.PhoneNumber);
 ```

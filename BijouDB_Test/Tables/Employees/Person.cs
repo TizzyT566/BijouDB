@@ -11,8 +11,8 @@ class Person : Record
     public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
     public (int, int, int) PhoneNumber { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
 
-    public static readonly Reference<Child, @index<Person, @int>> ChildReferences;
-    public Indexer<Child, @int> Children => new(i => ChildReferences.For((this, i)));
+    public static readonly Reference<Child, @index<Person, @string>> ChildReferences;
+    public Indexer<Child, @string> Children => new(i => ChildReferences.For((this, i)));
 
     static Person() => _ = ~SchemaBuilder<Person>
         .Add(out NameColumn)
