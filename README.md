@@ -250,7 +250,11 @@ public class Employee : Record
 public class Computer : Record
 {
     public static readonly Column<@record<Employee>> EmployeeColumn;
-    public Employee Employee { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
+    public Employee Employee 
+    {
+        get => EmployeeColumn.Get(this); 
+        set => EmployeeColumn.Set(this, value); 
+    }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
         .Add(out EmployeeColumn);
@@ -410,9 +414,7 @@ foreach (Employee employee in Employee.AgeColumn.WithValue<Employee>(19))
 }
 ```
 
-If you know the Type and value of multiple columns then you use the previous method along side `BijouDB.Record.WithValues()`
-
-to get all records matching the values you know.
+If you know the Type and value of multiple columns then you use the previous method along side `BijouDB.Record.WithValues()` to get all records matching the values you know.
 
 ```cs
 public static R[] WithValues<R>(params R[][] columnMatches) { }
