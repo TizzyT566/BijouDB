@@ -12,7 +12,7 @@ namespace BijouDB.DataTypes
     {
         private (D1, D2, D3, D4) _value;
 
-        public @tuple((D1, D2, D3, D4) value) => _value = value;
+        private @tuple((D1, D2, D3, D4) value) => _value = value;
 
         public void Deserialize(Stream stream)
         {
@@ -40,7 +40,9 @@ namespace BijouDB.DataTypes
         {
             private (D1, D2, D3, D4)? _value;
 
-            public nullable((D1, D2, D3, D4)? value) => _value = value;
+            private nullable((D1, D2, D3, D4)? value) => _value = value;
+
+            public nullable() => _value = null;
 
             public void Deserialize(Stream stream)
             {

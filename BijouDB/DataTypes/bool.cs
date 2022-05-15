@@ -31,7 +31,7 @@ public struct @bool : IDataType
 
         private @nullable(bool? value) => _value = value;
 
-        public @nullable() => _value = null;
+        public nullable() => _value = null;
 
         public void Deserialize(Stream stream)
         {

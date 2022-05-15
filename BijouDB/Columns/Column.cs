@@ -10,7 +10,7 @@ namespace BijouDB;
 public sealed class Column<D>
     where D : IDataType, new()
 {
-    public long Offset { get; }
+    internal long Offset { get; }
 
     internal readonly string _name;
 
@@ -68,15 +68,15 @@ public sealed class Column<D>
     }
 
     /// <summary>
-    /// Get a list of records with the specified value.
+    /// Get records with the specified value.
     /// </summary>
-    /// <param name="data">The value to search records with.</param>
-    /// <returns>A readonly dictionary of all records containing the value specified.</returns>
-    public R[] WithValue<R>(D data)
+    /// <param name="value">The value to search records with.</param>
+    /// <returns>A array of all records containing the value specified.</returns>
+    public R[] WithValue<R>(D value)
         where R : Record, new()
     {
         List<R> records = new();
-        if (ValueIndex<R>(data, out Guid hash, out Guid index))
+        if (ValueIndex<R>(value, out Guid hash, out Guid index))
         {
             string dataMatchPath = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Index, _name, hash.ToString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
@@ -126,6 +126,13 @@ public sealed class Column<D>
         return ds.ToArray();
     }
 
+    /// <summary>
+    /// Gets the value stored in a record.
+    /// </summary>
+    /// <typeparam name="R">The record type.</typeparam>
+    /// <param name="record">The record to get the value from.</param>
+    /// <returns>The value stored in the record.</returns>
+    /// <exception cref="FileNotFoundException">The record is missing from the database.</exception>
     public D Get<R>(R record)
         where R : Record
     {
@@ -149,6 +156,14 @@ public sealed class Column<D>
         return _default is null ? default! : _default();
     }
 
+    /// <summary>
+    /// Sets the value stored in a record.
+    /// </summary>
+    /// <typeparam name="R">The record type.</typeparam>
+    /// <param name="record">The record to set the value to.</param>
+    /// <param name="value">The value to store into the record.</param>
+    /// <exception cref="CheckContraintException">The value failed the check constraint.</exception>
+    /// <exception cref="UniqueConstraintException{D}">The value failed the unique contraint.</exception>
     public void Set<R>(R record, D value)
         where R : Record
     {
@@ -266,7 +281,7 @@ public sealed class Column<D>
         fs.Flush(_tableLength);
     }
 
-    public void Remove(Record record)
+    internal void Remove(Record record)
     {
         // Read record file
         string recordPath = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");

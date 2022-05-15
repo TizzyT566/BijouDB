@@ -9,18 +9,24 @@ public sealed class References<R, D>
 {
     private readonly Func<Column<D>> _sourceColumn;
 
-    public Column<D> SourceColumn => _sourceColumn();
+    internal Column<D> SourceColumn => _sourceColumn();
 
-    public References(Func<Column<D>> sourceColumn) => _sourceColumn = sourceColumn;
+    internal References(Func<Column<D>> sourceColumn) => _sourceColumn = sourceColumn;
 
     /// <summary>
-    /// Gets a collection of all child records referenced by this column.
+    /// Gets all child records referenced by this column.
     /// </summary>
     /// <param name="value">The parent record.</param>
     /// <returns>A collection with all child records.</returns>
     public R[] For(D value) => _sourceColumn().WithValue<R>(value);
 
-    internal bool HasRecords<S>(Record record)
+    /// <summary>
+    /// Checks to see if a record has any child references.
+    /// </summary>
+    /// <typeparam name="S">The child column type.</typeparam>
+    /// <param name="record">The parent record to check for references.</param>
+    /// <returns>true if record has child records referencing it, otherwise false.</returns>
+    public bool HasRecords<S>(Record record)
         where S : Record, new()
     {
         Type target = typeof(D);
@@ -29,6 +35,7 @@ public sealed class References<R, D>
 
         Guid hash;
 
+        // ugly check, refactor in the future ...
         if (typeof(@record<S>) == target)
         {
             @record<S> r = (@record<S>)record!;

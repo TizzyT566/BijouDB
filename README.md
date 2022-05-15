@@ -110,7 +110,7 @@ Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>? => @tuple<D1, D2, D3, D4, D5, D6, D7, 
 ## Constraints
 > Unique `Ensures that a column has all unique values`
 
-> Default `Specifies a default for any values that arent set`
+> Default `Specifies a default for unset values`
 
 > Check `Specifies a condition for a value to be set`
 
@@ -138,7 +138,7 @@ Create a static readonly field to act as a column, specify a BijouDB datatype.
 
 As a convention, the column should end in `Column`.
 
-Create a new property with the respectice type of the column.
+Create a new property with the respective type of the column (check the datatypes chart above).
 
 The get accessor should call the column you just made's `Get()` method, passing in `this` as an argument.
 
@@ -170,9 +170,9 @@ public class MyRecord : Record
 ## Specifying Constraints
 Use the SchemaBuilder to add constraints to your columns.
 
-Place the constraints on any column by using the `Add()` method.
+Place the constraints on columns by passing arguments to the `Add()` method.
 
-Provide the label for the constraint `Unique:` or `Default:` or `Check:` followed by the value for the constraint.
+Provide the label of the constraint `Unique:` or `Default:` or `Check:` followed by the value for the constraint.
 
 The order does't matter and you don't have to provide every constraint.
 
@@ -194,13 +194,13 @@ public class MyRecord : Record
 ```
 
 ## References
-In SQL we have the notion of `PRIMARY KEY` and `FOREIGN KEY` to link relationships between tables.
+In SQL we have `PRIMARY KEY` and `FOREIGN KEY` to link relationships between tables.
 
 Here we have the concept of References. Its very similar in concept.
 
-References prevent a Record from being deleted if it has references.
+References prevent a Record from being deleted if it has child references.
 
-You can keep the relationship but allow deleting even if referenced exist by setting the `restricted`
+You can keep the relationship but allow deleting even if references exist by setting the `restricted`
 
 parameter to false in the `Add( ... , bool restricted)` method for references, default is true.
 
@@ -223,10 +223,18 @@ using BijouDB.DataTypes;
 public class Employee : Record
 {
     public static readonly Column<@string> NameColumn;
-    public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+    public string Name
+    { 
+        get => NameColumn.Get(this);
+        set => NameColumn.Set(this, value);
+    }
 
     public static readonly Column<@int> AgeColumn;
-    public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+    public int Age
+    {
+        get => AgeColumn.Get(this);
+        set => AgeColumn.Set(this, value);
+    }
     
     // A Reference to 'Computer' Record
     public static readonly References<Computer, @record<Employee>> ComputerReferences;
