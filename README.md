@@ -403,7 +403,7 @@ foreach (Employee employee in BijouDB.Record.GetAll<Employee>())
 
 If you know the `Type` of the Record and the value to one of its columns you can call the Column's
 
-`WithValue<R>( .. )` method.
+`WithValue<R>( ... )` method.
 
 ```cs
 public R[] WithValue<R>(D data) { }
