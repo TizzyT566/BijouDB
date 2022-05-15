@@ -60,7 +60,7 @@ public static class Misc
     public static Guid Hash(this IDataType value, Stream stream)
     {
         long pos = stream.Position;
-        MaskedStream ms = new(stream, Globals.SeedMask);
+        using MaskedStream ms = new(stream, Globals.SeedMask);
         value.Serialize(ms);
         stream.Position = 0;
         Guid ret = stream.GetSkipHash();
