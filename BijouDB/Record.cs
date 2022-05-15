@@ -1,6 +1,6 @@
 ﻿namespace BijouDB;
 
-public class Record : IEqualityComparer<Record>
+public abstract class Record : IEqualityComparer<Record>
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
 
