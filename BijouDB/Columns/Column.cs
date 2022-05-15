@@ -152,7 +152,7 @@ public sealed class Column<D>
     public void Set<R>(R record, D value)
         where R : Record
     {
-        if (_check is not null && !_check(value)) throw new FailedCheckContraintException();
+        if (_check is not null && !_check(value)) throw new CheckContraintException();
 
         string baseDir = Path.Combine(Globals.DB_Path, _type.FullName!, Globals.Rec);
         Directory.CreateDirectory(baseDir);
