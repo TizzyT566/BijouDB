@@ -163,7 +163,7 @@ public struct Column<D>
                 newValue.Deserialize(ms);
                 return newValue;
             }
-            else throw new FileNotFoundException("Value for DataType is missing, database maybe corrupted.");
+            //else throw new FileNotFoundException("Value for DataType is missing, database maybe corrupted.");
         }
         return _default is null ? default! : _default();
     }

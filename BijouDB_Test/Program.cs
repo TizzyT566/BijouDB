@@ -6,7 +6,8 @@ using BijouDB_Test.Tables;
 
 //Employee test = new()
 //{
-//    Name = "Thien Huynh1"
+//    Name = "Thien Huynh1",
+//    Points = System.Numerics.BigInteger.Parse("67238716445498743469543159143421643219478744322316519847519175092634987354091896")
 //};
 
 //Computer com1 = new()
@@ -26,6 +27,8 @@ using BijouDB_Test.Tables;
 //    Employee = test,
 //    Type = "Origin"
 //};
+
+//Console.WriteLine(test.Json);
 
 ////com1.Remove();
 
