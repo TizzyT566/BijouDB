@@ -7,21 +7,37 @@ namespace BijouDB_Test.Tables;
 public sealed class Employee : Record
 {
     public static readonly Column<@string> NameColumn;
+    public static readonly Column<@int> NumberColumn;
+    public static readonly Column<@long> AgeColumn;
+    public static readonly Column<@bint> PointsColumn;
+    public static readonly Column<@record<Employee>> ManagerColumn;
+    public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
+    public static readonly Reference<Computer, @record<Employee>.nullable> ComputerReferences;
+
+    // Marked with 'JsonAttribute'
     [Json] public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
 
-    public static readonly Column<@int> NumberColumn;
+    // Marked with 'JsonAttribute'
     [Json] public int Number { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
 
-    public static readonly Column<@long> AgeColumn;
+    // Marked with 'JsonAttribute'
     [Json] public long Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
 
-    public static readonly Column<@bint> PointsColumn;
+    // Marked with 'JsonAttribute'
     [Json] public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
 
-    public static readonly Column<@record<Employee>> ManagerColumn;
+    // Marked with 'JsonAttribute'
     [Json] public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
 
-    public static readonly Reference<Computer, @record<Employee>.nullable> ComputerReferences;
+    // Marked with 'JsonAttribute' and 'TupleObjectAttribute'
+    [Json, TupleObject("Area", "Exchange", "Subscriber")]
+    public (int, int, int) PhoneNumber
+    {
+        get => PhoneNumberColumn.Get(this);
+        set => PhoneNumberColumn.Set(this, value);
+    }
+
+    // Marked with 'JsonAttribute'
     [Json] public Computer[] Computers => ComputerReferences.For(this);
 
     static Employee() => _ = ~SchemaBuilder<Employee>
@@ -30,5 +46,6 @@ public sealed class Employee : Record
         .Add(out AgeColumn, Check: value => value >= 18)
         .Add(out PointsColumn)
         .Add(out ManagerColumn)
+        .Add(out PhoneNumberColumn)
         .Add(out ComputerReferences, () => Computer.EmployeeColumn);
 }

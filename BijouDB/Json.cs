@@ -74,8 +74,7 @@ public static class Json
 
         List<string> parts = new();
 
-        foreach (object item in arr)
-            parts.Add(ToJson(item, references));
+        foreach (object item in arr) parts.Add(ToJson(item, references));
 
         return sb.Append($"{string.Join(",", parts)}]").ToString();
     }

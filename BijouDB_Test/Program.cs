@@ -1,34 +1,35 @@
 ﻿using BijouDB;
 using BijouDB.DataTypes;
 using BijouDB_Test.Tables;
+using System.Numerics;
 
 //Globals.Logging = true;
 
-//Employee test = new()
-//{
-//    Name = "Thien Huynh1",
-//    Points = System.Numerics.BigInteger.Parse("67238716445498743469543159143421643219478744322316519847519175092634987354091896")
-//};
+Employee test = new()
+{
+    Name = "TizzyT",
+    Points = BigInteger.Parse("672387164454987434695431591434216")
+};
 
-//Computer com1 = new()
-//{
-//    Employee = test,
-//    Type = "Alienware"
-//};
+Computer com1 = new()
+{
+    Employee = test,
+    Type = "Alienware"
+};
 
-//Computer com2 = new()
-//{
-//    Employee = test,
-//    Type = "HP"
-//};
+Computer com2 = new()
+{
+    Employee = test,
+    Type = "HP"
+};
 
-//Computer com3 = new()
-//{
-//    Employee = test,
-//    Type = "Origin"
-//};
+Computer com3 = new()
+{
+    Employee = test,
+    Type = "Origin"
+};
 
-//Console.WriteLine(test.Json);
+Console.WriteLine(test.Json);
 
 ////com1.Remove();
 
@@ -49,20 +50,25 @@ using BijouDB_Test.Tables;
 ////    Console.WriteLine(Employee.ComputerReferences.HasRecords(employee));
 ////}
 
-Person person = new()
-{
-    Name = "TizzyT",
-    PhoneNumber = (555, 941, 9464)
-};
+//if (Json.TryAddFormater(typeof(TimeSpan), obj => $"{{TimeSpan:\"{obj}\"}}"))
+//    Console.WriteLine("Successfully added formatter.");
+//else
+//    Console.WriteLine("Failed to add formatter.");
 
-_ = new Child()
-{
-    Age = 12,
-    Data = new byte[] { 15, 64, 156, 44, 49, 91, 241 },
-    Parent = (Record: person, Index: "David")
-};
+//Person person = new()
+//{
+//    Name = "TizzyT",
+//    PhoneNumber = (555, 941, 9464)
+//};
 
-Console.WriteLine(person.Children["David"].Json);
+//_ = new Child()
+//{
+//    Age = 12,
+//    Data = new byte[] { 15, 64, 156, 44, 49, 91, 241 },
+//    Parent = (person, "David")
+//};
+
+//Console.WriteLine(person.Json);
 
 //_ = new Child()
 //{

@@ -456,6 +456,173 @@ foreach (int age in Employee.AgeColumn.UniqueValues())
 }
 ```
 
+## Json
+
+Records can be presented in Json format by calling the `Json` property.
+
+Columns must be marked with the `JsonAttribute` to be included in the resulting json.
+
+For records with tuple properties you can assign labels by marking the property with the 
+
+`TupleObjectAttribute` and passing in the label names as arguments.
+
+The property will be presented as an object instead of the default for tuples which is an array.
+
+For user defined types you can add formatters via `Json.TryAddFormater( ... )`.
+
+```cs
+public static bool TryAddFormater(Type type, Func<object, string> formater) { }
+
+// Example
+
+if (Json.TryAddFormater(typeof(TimeSpan), obj => $"{{TimeSpan:\"{obj}\"}}"))
+    Console.WriteLine("Successfully added formatter.");
+else
+    Console.WriteLine("Failed to add formatter.");
+```
+
+```cs
+// Example
+
+public sealed class Employee : Record
+{
+    public static readonly Column<@string> NameColumn;
+    public static readonly Column<@int> NumberColumn;
+    public static readonly Column<@long> AgeColumn;
+    public static readonly Column<@bint> PointsColumn;
+    public static readonly Column<@record<Employee>> ManagerColumn;
+    public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
+    public static readonly Reference<Computer, @record<Employee>.nullable> ComputerReferences;
+
+    // Marked with 'JsonAttribute'
+    [Json] public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+
+    // Marked with 'JsonAttribute'
+    [Json] public int Number { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
+
+    // Marked with 'JsonAttribute'
+    [Json] public long Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+
+    // Marked with 'JsonAttribute'
+    [Json] public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
+
+    // Marked with 'JsonAttribute'
+    [Json] public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
+
+    // Marked with 'JsonAttribute' and 'TupleObjectAttribute'
+    [Json, TupleObject("Area", "Exchange", "Subscriber")]
+    public (int, int, int) PhoneNumber
+    {
+        get => PhoneNumberColumn.Get(this);
+        set => PhoneNumberColumn.Set(this, value);
+    }
+
+    // Marked with 'JsonAttribute'
+    [Json] public Computer[] Computers => ComputerReferences.For(this);
+
+    static Employee() => _ = ~SchemaBuilder<Employee>
+        .Add(out NameColumn, Unique: false)
+        .Add(out NumberColumn, Default: () => 5555555)
+        .Add(out AgeColumn, Check: value => value >= 18)
+        .Add(out PointsColumn)
+        .Add(out ManagerColumn)
+        .Add(out PhoneNumberColumn)
+        .Add(out ComputerReferences, () => Computer.EmployeeColumn);
+}
+
+public sealed class Computer : Record
+{
+    public static readonly Column<@record<Employee>.nullable> EmployeeColumn;
+    public static readonly Column<@string> TypeColumn;
+
+    // Marked with 'JsonAttribute'
+    [Json] public Employee? Employee { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
+
+    // Marked with 'JsonAttribute'
+    [Json] public string Type { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
+
+    static Computer() => _ = ~SchemaBuilder<Computer>
+        .Add(out EmployeeColumn)
+        .Add(out TypeColumn, Check: value => value != "" && value != "Dell");
+}
+
+// Usage
+
+Employee test = new()
+{
+    Name = "TizzyT",
+    Points = BigInteger.Parse("672387164454987434695431591434216")
+};
+
+Computer com1 = new()
+{
+    Employee = test,
+    Type = "Alienware"
+};
+
+Computer com2 = new()
+{
+    Employee = test,
+    Type = "HP"
+};
+
+Computer com3 = new()
+{
+    Employee = test,
+    Type = "Origin"
+};
+
+Console.WriteLine(test.Json);
+```
+
+Output (formated, actual output is minimal):
+
+```json
+{
+	"Id": "00004650-0000-0000-0000-000000000000",
+	"BijouDB_Test.Tables.Employee": {
+		"Name": "TizzyT",
+		"Number": 5555555,
+		"Age": 0,
+		"Points": 672387164454987434695431591434216,
+		"Manager": null,
+		"PhoneNumber": {
+			"Area": 0,
+			"Exchange": 0,
+			"Subscriber": 0
+		},
+		"Computers": [{
+			"Id": "00004653-0000-0000-0000-000000000000",
+			"BijouDB_Test.Tables.Computer": {
+				"Employee": {
+					"Id": "00004650-0000-0000-0000-000000000000",
+					"BijouDB_Test.Tables.Employee": {}
+				},
+				"Type": "Alienware"
+			}
+		}, {
+			"Id": "00004656-0000-0000-0000-000000000000",
+			"BijouDB_Test.Tables.Computer": {
+				"Employee": {
+					"Id": "00004650-0000-0000-0000-000000000000",
+					"BijouDB_Test.Tables.Employee": {}
+				},
+				"Type": "HP"
+			}
+		}, {
+			"Id": "00004658-0000-0000-0000-000000000000",
+			"BijouDB_Test.Tables.Computer": {
+				"Employee": {
+					"Id": "00004650-0000-0000-0000-000000000000",
+					"BijouDB_Test.Tables.Employee": {}
+				},
+				"Type": "Origin"
+			}
+		}]
+	}
+}
+```
+
 ## Storing Data
 
 The database can be made to store arbitrary data.
