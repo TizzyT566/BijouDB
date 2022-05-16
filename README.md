@@ -502,12 +502,12 @@ public sealed class Employee : Record
 
     // Marked with 'JsonAttribute'
     [Json] public long Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
-    [Json] public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
-    [Json] public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
+        
+    [Json] // Marked with 'JsonAttribute'
+    public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
+        
+    [Json] // Marked with 'JsonAttribute'
+    public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
 
     // Marked with 'JsonAttribute' and 'TupleObjectAttribute'
     [Json, TupleObject("Area", "Exchange", "Subscriber")]
