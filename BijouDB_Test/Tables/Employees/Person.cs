@@ -3,13 +3,13 @@ using BijouDB.DataTypes;
 
 namespace BijouDB_Test.Tables;
 
-class Person : Record
+public sealed class Person : Record
 {
     public static readonly Column<@string> NameColumn;
-    public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+    [Json] public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
 
     public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
-    public (int, int, int) PhoneNumber { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
+    [Json] public (int, int, int) PhoneNumber { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
 
     public static readonly Reference<Child, @index<Person, @string>> ChildReferences;
     public Indexer<Child, @string> Children => new(i => ChildReferences.For((this, i)));

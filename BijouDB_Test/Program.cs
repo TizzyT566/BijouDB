@@ -55,21 +55,24 @@ Person person = new()
 _ = new Child()
 {
     Age = 12,
+    Data = new byte[] { 15, 64, 156, 44, 49, 91, 241 },
     Parent = (Record: person, Index: "David")
 };
 
-_ = new Child()
-{
-    Age = 10,
-    Parent = (Record: person, Index: "Lisa")
-};
+Console.WriteLine(person.Children["David"].Json);
 
-Child c1 = person.Children["David"];
-Console.WriteLine(c1.Age);
-Console.WriteLine(c1.Parent.Record.Name);
-Console.WriteLine(c1.Parent.Record.PhoneNumber);
+//_ = new Child()
+//{
+//    Age = 10,
+//    Parent = (Record: person, Index: "Lisa")
+//};
 
-Child c2 = person.Children["Lisa"];
-Console.WriteLine(c2.Age);
-Console.WriteLine(c2.Parent.Record.Name);
-Console.WriteLine(c2.Parent.Record.PhoneNumber);
+//Child c1 = person.Children["David"];
+//Console.WriteLine(c1.Age);
+//Console.WriteLine(c1.Parent.Record.Name);
+//Console.WriteLine(c1.Parent.Record.PhoneNumber);
+
+//Child c2 = person.Children["Lisa"];
+//Console.WriteLine(c2.Age);
+//Console.WriteLine(c2.Parent.Record.Name);
+//Console.WriteLine(c2.Parent.Record.PhoneNumber);

@@ -7,6 +7,8 @@ public abstract class Record : IEqualityComparer<Record>
     private Guid? _id;
     public Guid Id => _id ??= IncrementalGuid.NextGuid();
 
+    public string Json => Jsonify.ToJson(this);
+
     public static bool TryGet<R>(string id, out R? record)
         where R : Record, new() =>
         TryGet(Guid.Parse(id), out record);
@@ -100,6 +102,7 @@ public abstract class Record : IEqualityComparer<Record>
     }
 
     public bool Equals(Record x, Record y) => Equals(x.Id, y.Id);
-
     public int GetHashCode(Record obj) => obj.Id.GetHashCode();
+
+    public string ToJson(int depth) => Jsonify.ToJson(this, depth);
 }

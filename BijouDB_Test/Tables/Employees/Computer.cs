@@ -3,7 +3,7 @@ using BijouDB.DataTypes;
 
 namespace BijouDB_Test.Tables;
 
-public class Computer : Record
+public sealed class Computer : Record
 {
     public static readonly Column<@record<Employee>.nullable> EmployeeColumn;
     public Employee? Employee { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }

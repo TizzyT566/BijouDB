@@ -1,6 +1,6 @@
 ﻿namespace BijouDB;
 
-public sealed class Indexer<R, D>
+public struct Indexer<R, D>
     where D : IDataType, new()
     where R : Record, new()
 {
@@ -30,3 +30,4 @@ public sealed class Indexer<R, D>
         _get = get;
     }
 }
+    

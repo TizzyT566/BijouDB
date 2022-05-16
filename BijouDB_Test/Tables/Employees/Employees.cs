@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace BijouDB_Test.Tables;
 
-public class Employee : Record
+public sealed class Employee : Record
 {
     public static readonly Column<@string> NameColumn;
     public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
