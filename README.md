@@ -536,7 +536,11 @@ public sealed class Computer : Record
     public static readonly Column<@string> TypeColumn;
 
     // Marked with 'JsonAttribute'
-    [Json] public Employee? Employee { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
+    [Json] public Employee? Employee
+    {
+        get => EmployeeColumn.Get(this);
+        set => EmployeeColumn.Set(this, value);
+    }
 
     // Marked with 'JsonAttribute'
     [Json] public string Type { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
