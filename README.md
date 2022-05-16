@@ -580,7 +580,7 @@ Computer com3 = new()
 Console.WriteLine(test.Json);
 ```
 
-Output (formated, actual output is minimal):
+Output (formatted, actual output is minimal):
 
 ```json
 {
