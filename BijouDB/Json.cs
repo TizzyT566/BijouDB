@@ -36,7 +36,7 @@ public static class Json
     /// <param name="type">The type to add a formatter for.</param>
     /// <param name="formater">The type formatter.</param>
     /// <returns></returns>
-    public static bool TryAddFormater(Type type, Func<object, string> formater)
+    public static bool TryAddFormatter(Type type, Func<object, string> formater)
     {
         if (type is null) return false;
         if (typeof(Record).Equals(type)) return false;

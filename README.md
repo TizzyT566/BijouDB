@@ -468,14 +468,14 @@ For records with tuple properties you can assign labels by marking the property 
 
 The property will be presented as an object instead of the default for tuples which is an array.
 
-For user defined types you can add formatters via `Json.TryAddFormater( ... )`.
+For user defined types you can add formatters via `Json.TryAddFormatter( ... )`.
 
 ```cs
-public static bool TryAddFormater(Type type, Func<object, string> formater) { }
+public static bool TryAddFormatter(Type type, Func<object, string> formater) { }
 
 // Example
 
-if (Json.TryAddFormater(typeof(TimeSpan), obj => $"{{TimeSpan:\"{obj}\"}}"))
+if (Json.TryAddFormatter(typeof(TimeSpan), obj => $"{{TimeSpan:\"{obj}\"}}"))
     Console.WriteLine("Successfully added formatter.");
 else
     Console.WriteLine("Failed to add formatter.");
