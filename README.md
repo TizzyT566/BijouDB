@@ -551,7 +551,8 @@ public sealed class Computer : Record
 Employee test = new()
 {
     Name = "TizzyT",
-    Points = BigInteger.Parse("672387164454987434695431591434216")
+    Points = BigInteger.Parse("672387164454987434695431591434216"),
+    PhoneNumber = (555, 856, 8153)
 };
 
 Computer com1 = new()
@@ -579,7 +580,7 @@ Output (formated, actual output is minimal):
 
 ```json
 {
-	"Id": "00004650-0000-0000-0000-000000000000",
+	"Id": "00004844-0000-0000-0000-000000000000",
 	"BijouDB_Test.Tables.Employee": {
 		"Name": "TizzyT",
 		"Number": 5555555,
@@ -587,33 +588,33 @@ Output (formated, actual output is minimal):
 		"Points": 672387164454987434695431591434216,
 		"Manager": null,
 		"PhoneNumber": {
-			"Area": 0,
-			"Exchange": 0,
-			"Subscriber": 0
+			"Area": 555,
+			"Exchange": 856,
+			"Subscriber": 8153
 		},
 		"Computers": [{
-			"Id": "00004653-0000-0000-0000-000000000000",
+			"Id": "00004846-0000-0000-0000-000000000000",
 			"BijouDB_Test.Tables.Computer": {
 				"Employee": {
-					"Id": "00004650-0000-0000-0000-000000000000",
+					"Id": "00004844-0000-0000-0000-000000000000",
 					"BijouDB_Test.Tables.Employee": {}
 				},
 				"Type": "Alienware"
 			}
 		}, {
-			"Id": "00004656-0000-0000-0000-000000000000",
+			"Id": "00004848-0000-0000-0000-000000000000",
 			"BijouDB_Test.Tables.Computer": {
 				"Employee": {
-					"Id": "00004650-0000-0000-0000-000000000000",
+					"Id": "00004844-0000-0000-0000-000000000000",
 					"BijouDB_Test.Tables.Employee": {}
 				},
 				"Type": "HP"
 			}
 		}, {
-			"Id": "00004658-0000-0000-0000-000000000000",
+			"Id": "00004849-0000-0000-0000-000000000000",
 			"BijouDB_Test.Tables.Computer": {
 				"Employee": {
-					"Id": "00004650-0000-0000-0000-000000000000",
+					"Id": "00004844-0000-0000-0000-000000000000",
 					"BijouDB_Test.Tables.Employee": {}
 				},
 				"Type": "Origin"
