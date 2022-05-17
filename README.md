@@ -296,6 +296,16 @@ The getter should call the relational column you just made's `To()` method passi
 
 The setter should be left empty.
 
+Like the other columns you use the SchemaBuilder to instantiate a relational column as well.
+
+Its similar to reference columns but intead of pointing to a `Column<>` you will be pointing
+
+to another `Relational<,>`.
+
+In the other record you will be doing the same thing, so in the end you will have the two
+
+relational columns point to each other.
+
 ```cs
 // Example
 
@@ -346,9 +356,9 @@ public sealed class Computer : Record
     public static readonly Relational<Computer, Employee> EmployeeRelational;
 
     [Json] public string Type { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
-
-    // The junction between this record and employee records
-    [Json] public Relational<Computer, Employee>.Junc Employees { get => EmployeeRelational.To(this); set { } }
+        
+    [Json] // The junction between this record and employee records
+    public Relational<Computer, Employee>.Junc Employees { get => EmployeeRelational.To(this); set { } }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
         .Add(out EmployeeRelational, () => Employee.ComputerRelational)
