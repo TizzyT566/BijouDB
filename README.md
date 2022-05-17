@@ -288,6 +288,14 @@ It doesn't store values like `Column` nor is it based on values in another table
 
 It simply creates links between records.
 
+To create a 'Relational' you define a Relational of the current record type and the related record type.
+
+You then add a property of type `Junc` which is nested inside of the Relational column you just made.
+
+The getter should call the relational column you just made's `To()` method passing in `this`.
+
+The setter should be left empty.
+
 ```cs
 // Example
 
@@ -306,17 +314,19 @@ public sealed class Employee : Record
     [Json] public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
     [Json] public int Number { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
     [Json] public long Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-    [Json] public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
-    [Json] public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
+    [Json]
+    public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
+    [Json]
+    public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
     [Json, TupleObject("Area", "Exchange", "Subscriber")]
     public (int, int, int) PhoneNumber
     {
         get => PhoneNumberColumn.Get(this);
         set => PhoneNumberColumn.Set(this, value);
     }
-
-    // The junction between this record and 'Computer' records
-    [Json] public Relational<Employee, Computer>.Junc Computers { get => ComputerRelational.To(this); set { } }
+        
+    [Json] // The junction between this record and 'Computer' records
+    public Relational<Employee, Computer>.Junc Computers { get => ComputerRelational.To(this); set { } }
 
     static Employee() => _ = ~SchemaBuilder<Employee>
         .Add(out NameColumn, Unique: false)
