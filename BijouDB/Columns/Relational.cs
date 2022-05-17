@@ -2,14 +2,11 @@
 
 public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Record, new()
 {
-    private readonly Func<Relational<R2, R1>> _companion;
-
     private readonly string _dir;
     private readonly bool _leads;
 
-    internal Relational(Func<Relational<R2, R1>> companion)
+    internal Relational(Func<Relational<R2, R1>> _)
     {
-        _companion = companion;
         string r1 = typeof(R1).FullName;
         string[] types = { r1, typeof(R2).FullName };
         Array.Sort(types);
