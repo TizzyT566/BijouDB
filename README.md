@@ -315,7 +315,7 @@ public sealed class Employee : Record
         set => PhoneNumberColumn.Set(this, value);
     }
 
-    // The junction between this record and computer records
+    // The junction between this record and 'Computer' records
     [Json] public Relational<Employee, Computer>.Junc Computers { get => ComputerRelational.To(this); set { } }
 
     static Employee() => _ = ~SchemaBuilder<Employee>
