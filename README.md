@@ -286,7 +286,7 @@ If you want many-to-many relationships than the `Relational` column might be wha
 
 It doesn't store values like `Column` nor is it based on values in another table like `Reference`.
 
-It simply creates a link between records.
+It simply creates links between records.
 
 ```cs
 // Example
