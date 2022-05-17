@@ -54,16 +54,28 @@ public static class Json
         if (_formatters.TryGetValue(obj.GetType(), out Func<object, string> formatter))
             return formatter(obj);
 
+        references ??= new();
+
+        // if junction
+        if (IsJunction(obj)) return JunctionToJson(obj, references);
+
         // if record
-        if (obj is Record record) return RecordToJson(record, references ?? new());
+        if (obj is Record record) return RecordToJson(record, references);
 
         // if tuple
-        if (IsTuple(obj)) return TupleToJson(obj, references ?? new());
+        if (IsTuple(obj)) return TupleToJson(obj, references);
 
         // if array
-        if (obj.GetType().IsArray) return ArrayToJson(obj, references ?? new());
+        if (obj.GetType().IsArray) return ArrayToJson(obj, references);
 
         return Q(obj);
+    }
+
+    private static string JunctionToJson(object obj, HashSet<Guid> references)
+    {
+        dynamic objDyn = obj;
+        object[] relations = objDyn.All();
+        return ArrayToJson(relations, references);
     }
 
     private static string ArrayToJson(object obj, HashSet<Guid> references)
@@ -155,6 +167,14 @@ public static class Json
             if (tupleType is null) return false;
             if (def == tupleType) return true;
         }
+    }
+
+    private static bool IsJunction(object obj)
+    {
+        Type type = obj.GetType();
+        if (!type.IsGenericType) return false;
+        Type genType = type.GetGenericTypeDefinition();
+        return genType.FullName == "BijouDB.Relational`2+Junc";
     }
 
     private static bool IsRecord(object obj)

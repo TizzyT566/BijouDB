@@ -18,8 +18,6 @@ public sealed class SchemaBuilder<R> : IDisposable
         SchemaBuilder<R> builder = new();
         string columnName = $"{Globals.ColName}_{builder._count}";
 
-        if (typeof(IIndex).IsAssignableFrom(typeof(D))) Unique = true;
-
         column = new(builder.Length, columnName, typeof(R), Unique, Default, Check);
         builder._columns.Add(column.Remove);
         builder.Length += 32;
@@ -35,6 +33,16 @@ public sealed class SchemaBuilder<R> : IDisposable
         SchemaBuilder<R> builder = new();
         column = new(referenceColumn);
         if (restricted) builder._references.Add(column.HasRecords<R>);
+        return builder;
+    }
+
+    // relational column
+    public static SchemaBuilder<R> Add<R2>(out Relational<R, R2> column, Func<Relational<R2, R>> relationalColumn)
+        where R2 : Record, new()
+    {
+        SchemaBuilder<R> builder = new();
+        column = new(relationalColumn);
+        builder._columns.Add(column.Remove);
         return builder;
     }
 
@@ -96,6 +104,16 @@ public static class SchemaBuilderExtensions
     {
         column = new(referenceColumn);
         if (restricted) @this._references.Add(column.HasRecords<R>);
+        return @this;
+    }
+
+    // relational column
+    public static SchemaBuilder<R> Add<R, R2>(this SchemaBuilder<R> @this, out Relational<R, R2> column, Func<Relational<R2, R>> relationalColumn)
+        where R : Record, new()
+        where R2 : Record, new()
+    {
+        column = new(relationalColumn);
+        @this._columns.Add(column.Remove);
         return @this;
     }
 }

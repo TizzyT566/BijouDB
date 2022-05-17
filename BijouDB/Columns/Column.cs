@@ -7,7 +7,7 @@ namespace BijouDB;
 /// A column for adding to custom table implementations.
 /// </summary>
 /// <typeparam name="D">The IDataType.</typeparam>
-public struct Column<D>
+public sealed class Column<D>
     where D : IDataType, new()
 {
     internal long Offset { get; }

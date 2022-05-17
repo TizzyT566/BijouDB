@@ -1,6 +1,6 @@
 ﻿namespace BijouDB;
 
-public class Record : IEqualityComparer<Record>
+public abstract class Record : IEqualityComparer<Record>
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
 
@@ -8,6 +8,13 @@ public class Record : IEqualityComparer<Record>
     public Guid Id => _id ??= IncrementalGuid.NextGuid();
 
     public string Json => BijouDB.Json.ToJson(this);
+
+    public Record()
+    {
+        string baseDir = Path.Combine(Globals.DB_Path, GetType().FullName!, Globals.Rec);
+        Directory.CreateDirectory(baseDir);
+        File.Create(Path.Combine(baseDir, $"{Id}.{Globals.Rec}")).Dispose();
+    }
 
     public static bool TryGet<R>(string id, out R? record)
         where R : Record, new() =>

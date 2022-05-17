@@ -200,7 +200,7 @@ public class MyRecord : Record
 ## References
 In SQL we have `PRIMARY KEY` and `FOREIGN KEY` to link relationships between tables.
 
-Here we have the concept of  references. Its very similar in concept.
+Here we have the concept of  references. Its very similar in concept but is a one-many relationship.
 
 References prevent a Record from being deleted if it has child references.
 
@@ -284,79 +284,81 @@ foreach (Computer computer in employee.Computers)
 }
 ```
 
-In addition we have `Indexer` properties which will allow you to associate an index along side the reference.
+## Relational
+
+If you want many-to-many relationships than the `Relational` column might be what you want.
+
+It doesn't store values like `Column` nor is it based on values in another table like `Reference`.
+
+It simply creates a link between records.
 
 ```cs
 // Example
 
-class Person : Record
+public sealed class Employee : Record
 {
     public static readonly Column<@string> NameColumn;
-    public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
-
+    public static readonly Column<@int> NumberColumn;
+    public static readonly Column<@long> AgeColumn;
+    public static readonly Column<@bint> PointsColumn;
+    public static readonly Column<@record<Employee>> ManagerColumn;
     public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
-    public (int, int, int) PhoneNumber 
-    { 
-        get => PhoneNumberColumn.Get(this); 
+
+    // Relational Many-To-Many
+    public static readonly Relational<Employee, Computer> ComputerRelational;
+
+    [Json] public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+    [Json] public int Number { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
+    [Json] public long Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+    [Json] public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
+    [Json] public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
+    [Json, TupleObject("Area", "Exchange", "Subscriber")]
+    public (int, int, int) PhoneNumber
+    {
+        get => PhoneNumberColumn.Get(this);
         set => PhoneNumberColumn.Set(this, value);
     }
 
-    public static readonly Reference<Child, @index<Person, @string>> ChildReferences;
-    public Indexer<Child, @string> Children => new(i => ChildReferences.For((this, i)));
+    // The junction between this record and computer records
+    [Json] public Relational<Employee, Computer>.Junc Computers { get => ComputerRelational.To(this); set { } }
 
-    static Person() => _ = ~SchemaBuilder<Person>
-        .Add(out NameColumn)
+    static Employee() => _ = ~SchemaBuilder<Employee>
+        .Add(out NameColumn, Unique: false)
+        .Add(out NumberColumn, Default: () => 5555555)
+        .Add(out AgeColumn, Check: value => value >= 18)
+        .Add(out PointsColumn)
+        .Add(out ManagerColumn)
         .Add(out PhoneNumberColumn)
-        .Add(out ChildReferences, () => Child.ParentColumn);
+        .Add(out ComputerRelational, () => Computer.EmployeeRelational);
 }
 
-class Child : Record
+public sealed class Computer : Record
 {
-    public static readonly Column<@int> AgeColumn;
-    public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+    public static readonly Column<@string> TypeColumn;
 
-    // Index Columns are inherently Unique and cannot be disabled
-    public static readonly Column<@index<Person, @string>> ParentColumn;
-    public (Person Record, string Index) Parent 
-    { 
-        get => ParentColumn.Get(this); 
-        set => ParentColumn.Set(this, value); 
-    }
+    // Relational Many-To-Many
+    public static readonly Relational<Computer, Employee> EmployeeRelational;
 
-    static Child() => _ = ~SchemaBuilder<Child>
-        .Add(out AgeColumn)
-        .Add(out ParentColumn);
+    [Json] public string Type { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
+
+    // The junction between this record and employee records
+    [Json] public Relational<Computer, Employee>.Junc Employees { get => EmployeeRelational.To(this); set { } }
+
+    static Computer() => _ = ~SchemaBuilder<Computer>
+        .Add(out EmployeeRelational, () => Employee.ComputerRelational)
+        .Add(out TypeColumn, Check: value => value != "" && value != "Dell");
 }
 
 // Usage
 
-Person person = new()
-{
-    Name = "TizzyT",
-    PhoneNumber = (555, 941, 9464)
-};
+Employee employee = new();
+employee.Computers += new Computer() { Type = "Alienware" };
 
-_ = new Child()
-{
-    Age = 12,
-    Parent = (Record: person, Index: "David")
-};
+Computer computer = new() { Type = "Origin" };
+computer.Employees += employee;
 
-_ = new Child()
-{
-    Age = 10,
-    Parent = (Record: person, Index: "Lisa")
-};
-
-Child c1 = person.Children["David"];
-Console.WriteLine(c1.Age);
-Console.WriteLine(c1.Parent.Record.Name);
-Console.WriteLine(c1.Parent.Record.PhoneNumber);
-
-Child c2 = person.Children["Lisa"];
-Console.WriteLine(c2.Age);
-Console.WriteLine(c2.Parent.Record.Name);
-Console.WriteLine(c2.Parent.Record.PhoneNumber);
+foreach (Computer comp in employee.Computers.All)
+    Console.WriteLine(comp.Type);
 ```
 
 ## Removing Records
@@ -644,7 +646,7 @@ To turn on logging, set `BijouDB.Globals.Logging` to `true`.
 # Operations Complexity
 > Getting a Record via its Id `O(1)`
 
-> Getting all Records of a Type `O(1)`
+> Getting all Records of a Type `O(1) - O(n)`
 
 > Getting all Records of a Type by value `O(1) - O(n)`
 

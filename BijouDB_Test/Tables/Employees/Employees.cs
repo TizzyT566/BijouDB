@@ -12,24 +12,15 @@ public sealed class Employee : Record
     public static readonly Column<@bint> PointsColumn;
     public static readonly Column<@record<Employee>> ManagerColumn;
     public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
-    public static readonly Reference<Computer, @record<Employee>.nullable> ComputerReferences;
 
-    // Marked with 'JsonAttribute'
+    // Relational Many-To-Many
+    public static readonly Relational<Employee, Computer> ComputersRelational;
+
     [Json] public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
     [Json] public int Number { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
     [Json] public long Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
     [Json] public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
     [Json] public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
-
-    // Marked with 'JsonAttribute' and 'TupleObjectAttribute'
     [Json, TupleObject("Area", "Exchange", "Subscriber")]
     public (int, int, int) PhoneNumber
     {
@@ -37,8 +28,8 @@ public sealed class Employee : Record
         set => PhoneNumberColumn.Set(this, value);
     }
 
-    // Marked with 'JsonAttribute'
-    [Json] public Computer[] Computers => ComputerReferences.For(this);
+    // The junction between this record and computer records
+    [Json] public Relational<Employee, Computer>.Junc Computers { get => ComputersRelational.To(this); set { } }
 
     static Employee() => _ = ~SchemaBuilder<Employee>
         .Add(out NameColumn, Unique: false)
@@ -47,5 +38,5 @@ public sealed class Employee : Record
         .Add(out PointsColumn)
         .Add(out ManagerColumn)
         .Add(out PhoneNumberColumn)
-        .Add(out ComputerReferences, () => Computer.EmployeeColumn);
+        .Add(out ComputersRelational, () => Computer.EmployeeRelational);
 }
