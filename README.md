@@ -28,8 +28,6 @@ Nuget: [BijouDB Package](https://www.nuget.org/packages/BijouDB/)
 
                          R : BijouDB.Record => @record<R>
 
-(R : BijouDB.Record, D : BijouDB.IDataType) => @index<R, D>
-
                                       sbyte => @sbyte
 
                                       short => @short
@@ -81,8 +79,6 @@ Nullable Types:
                                        long? => @long.nullable
 
                          R? : BijouDB.Record => @record<R>.nullable
-
-(R : BijouDB.Record, D : BijouDB.IDataType)? => @index<R, D>.nullable
 
                                       sbyte? => @sbyte.nullable
 
