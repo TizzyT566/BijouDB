@@ -60,7 +60,7 @@ public sealed class SchemaBuilder<R> : IDisposable
 
                     foreach (Action<Record> remove in _columns) remove(record);
 
-                    string recordPath = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
+                    string recordPath = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
                     if (File.Exists(recordPath)) File.Delete(recordPath);
                 });
             }

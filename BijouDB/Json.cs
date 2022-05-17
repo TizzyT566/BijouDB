@@ -81,13 +81,9 @@ public static class Json
     private static string ArrayToJson(object obj, HashSet<Guid> references)
     {
         object[] arr = (object[])obj;
-
         StringBuilder sb = new("[");
-
         List<string> parts = new();
-
         foreach (object item in arr) parts.Add(ToJson(item, references));
-
         return sb.Append($"{string.Join(",", parts)}]").ToString();
     }
 

@@ -3,7 +3,7 @@
 internal static class IncrementalGuid
 {
     private const int SPACING = 500;
-    private static readonly string SAVE_PATH = @$"{Globals.DB_Path}\Guid.state";
+    private static readonly string SAVE_PATH = @$"{Globals.DatabasePath}\Guid.state";
     private static readonly FileStream _saveStream;
     private static readonly byte[] _guidBytes;
     private static int _lock = 0;
@@ -11,7 +11,7 @@ internal static class IncrementalGuid
 
     static IncrementalGuid()
     {
-        Directory.CreateDirectory(Globals.DB_Path);
+        Directory.CreateDirectory(Globals.DatabasePath);
         if (File.Exists(SAVE_PATH))
         {
             _saveStream = new(SAVE_PATH, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);

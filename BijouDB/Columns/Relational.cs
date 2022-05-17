@@ -14,13 +14,15 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
         string[] types = { r1, typeof(R2).FullName };
         Array.Sort(types);
         _leads = r1 == types[0];
-        _dir = Path.Combine(Globals.DB_Path, string.Join("-", types));
+        _dir = Path.Combine(Globals.DatabasePath, string.Join("-", types));
+        Directory.CreateDirectory(_dir);
     }
 
     public Junc To(R1 record) => new(record, this);
 
     internal void Remove(Record record)
     {
+        if (!Directory.Exists(_dir)) return;
         string[] files = Directory.GetFiles(_dir, _leads ? $"{record.Id}.*" : $"*.{record.Id}");
         foreach (string file in files) File.Delete(file);
     }
@@ -60,6 +62,7 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
             get
             {
                 List<R2> records = new();
+                if (Directory.Exists(_dir)) return records.ToArray();
                 string[] files = Directory.GetFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}");
                 foreach (string file in files)
                 {

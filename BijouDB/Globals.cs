@@ -2,7 +2,8 @@
 
 public static class Globals
 {
-    public static readonly string DB_Path = Path.GetFullPath("DB");
+    public static readonly string DefaultPath = Path.GetFullPath("DB");
+
     public static readonly string ColName = "col";
     public static readonly string Rec = "rcrd";
     public static readonly string Index = "indx";
@@ -13,4 +14,5 @@ public static class Globals
 
     public static bool Logging { get; set; } = false;
     public static int SeedMask { get; set; } = 712247;
+    public static string DatabasePath { get; set; } = DefaultPath;
 }

@@ -11,7 +11,7 @@ public abstract class Record : IEqualityComparer<Record>
 
     public Record()
     {
-        string baseDir = Path.Combine(Globals.DB_Path, GetType().FullName!, Globals.Rec);
+        string baseDir = Path.Combine(Globals.DatabasePath, GetType().FullName!, Globals.Rec);
         Directory.CreateDirectory(baseDir);
         File.Create(Path.Combine(baseDir, $"{Id}.{Globals.Rec}")).Dispose();
     }
@@ -24,7 +24,7 @@ public abstract class Record : IEqualityComparer<Record>
     {
         try
         {
-            string path = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
+            string path = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
             if (!File.Exists(path)) throw new FileNotFoundException("Record is missing.");
             record = new() { _id = id };
             return true;
@@ -40,7 +40,7 @@ public abstract class Record : IEqualityComparer<Record>
     public static R[] GetAll<R>()
         where R : Record, new()
     {
-        string path = Path.Combine(Globals.DB_Path, typeof(R).FullName!, Globals.Rec);
+        string path = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec);
         if (!Directory.Exists(path)) return Array.Empty<R>();
         string[] records = Directory.GetFiles(path, Globals.RecPattern);
         R[] result = new R[records.Length];
