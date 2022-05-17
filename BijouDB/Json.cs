@@ -74,7 +74,7 @@ public static class Json
     private static string JunctionToJson(object obj, HashSet<Guid> references)
     {
         dynamic objDyn = obj;
-        object[] relations = objDyn.All();
+        object[] relations = objDyn.All;
         return ArrayToJson(relations, references);
     }
 
