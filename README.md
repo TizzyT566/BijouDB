@@ -533,12 +533,13 @@ public sealed class Employee : Record
     [Json] public BigInteger Points
     { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
         
-    [Json] // Marked with 'JsonAttribute'
-    public Employee Manager
+    // Marked with 'JsonAttribute'
+    [Json] public Employee Manager
     { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
 
     // Marked with 'JsonAttribute' and 'TupleObjectAttribute'    
-    [Json, TupleObject("Area", "Exchange", "Subscriber")] public (int, int, int) PhoneNumber
+    [TupleObject("Area", "Exchange", "Subscriber")]
+    [Json] public (int, int, int) PhoneNumber
     { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
 
     // Marked with 'JsonAttribute'

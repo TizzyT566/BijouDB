@@ -5,15 +5,17 @@ namespace BijouDB_Test.Tables;
 
 public sealed class Computer : Record
 {
-    public static readonly Column<@string> TypeColumn;
-
     // Relational Many-To-Many
     public static readonly Relational<Computer, Employee> EmployeeRelational;
+    public static readonly Column<@string> TypeColumn;
 
-    [Json] public string Type { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
-
-    // The junction between this record and employee records
-    [Json] public Relational<Computer, Employee>.Junc Employees { get => EmployeeRelational.To(this); set { } }
+    [Json]
+    public string Type
+    { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
+        
+    [Json] // The junction between this record and employee records
+    public Relational<Computer, Employee>.Junc Employees
+    { get => EmployeeRelational.To(this); set { } }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
         .Add(out EmployeeRelational, Employee.ComputersRelational)
