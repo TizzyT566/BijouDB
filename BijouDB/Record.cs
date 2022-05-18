@@ -7,7 +7,7 @@ public abstract class Record : IEqualityComparer<Record>
     private Guid? _id;
     public Guid Id => _id ??= IncrementalGuid.NextGuid();
 
-    public string Json => BijouDB.Json.ToJson(this, true, 1);
+    public string Json => BijouDB.Json.ToJson(this);
 
     public Record()
     {

@@ -9,6 +9,12 @@ public static class Json
 {
     private static readonly Dictionary<Type, Func<object, string>> _formatters = new();
 
+    private static bool _expand;
+    private static int _depth;
+    private static HashSet<Guid> _references = new();
+
+    private static int _lock;
+
     static Json()
     {
         _formatters.Add(typeof(BigInteger), o => o.ToString());
@@ -35,58 +41,74 @@ public static class Json
     /// </summary>
     /// <param name="type">The type to add a formatter for.</param>
     /// <param name="formatter">The type formatter.</param>
-    /// <returns></returns>
+    /// <returns>true if formatter was successfully added, otherwise false.</returns>
     public static bool TryAddFormatter(Type type, Func<object, string> formatter)
     {
         if (type is null) return false;
         if (typeof(Record).Equals(type)) return false;
-        if (_formatters.ContainsKey(type)) return false;
-        _formatters.Add(type, formatter);
-        return true;
+        return _formatters.TryAdd(type, formatter);
     }
 
-    public static string ToJson(this object @this, bool expand = false, int depth = int.MaxValue) =>
-        ToJson(@this, expand, depth, new());
+    public static string ToJson(this object @this, bool expand = true, int depth = 0)
+    {
+        try
+        {
+            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
+            _expand = expand;
+            _depth = depth;
+            string json = ToJson(@this);
+            _references.Clear();
+            return json;
+        }
+        catch (Exception)
+        {
+            return "null";
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _lock, 0);
+        }
+    }
 
-    internal static string ToJson(object obj, bool expand, int depth, HashSet<Guid> references)
+    internal static string ToJson(object obj)
     {
         if (obj is null) return "null";
+
+        // if record
+        if (obj is Record record) return RecordToJson(record);
+
+        // if junction
+        if (IsJunction(obj)) return JunctionToJson(obj);
 
         if (_formatters.TryGetValue(obj.GetType(), out Func<object, string> formatter))
             return formatter(obj);
 
-        // if junction
-        if (IsJunction(obj)) return JunctionToJson(obj, expand, depth, references);
-
-        // if record
-        if (obj is Record record) return RecordToJson(record, expand, depth, references);
+        // if array
+        if (obj.GetType().IsArray) return ArrayToJson(obj);
 
         // if tuple
-        if (IsTuple(obj)) return TupleToJson(obj, expand, depth, references);
-
-        // if array
-        if (obj.GetType().IsArray) return ArrayToJson(obj, expand, depth, references);
+        if (IsTuple(obj)) return TupleToJson(obj);
 
         return $"\"{obj}\"";
     }
 
-    private static string JunctionToJson(object obj, bool expand, int depth, HashSet<Guid> references)
+    private static string JunctionToJson(object obj)
     {
         dynamic objDyn = obj;
         object[] relations = objDyn.All;
-        return ArrayToJson(relations, expand, depth, references);
+        return ArrayToJson(relations);
     }
 
-    private static string ArrayToJson(object obj, bool expand, int depth, HashSet<Guid> references)
+    private static string ArrayToJson(object obj)
     {
         object[] arr = (object[])obj;
         StringBuilder sb = new("[");
         List<string> parts = new();
-        foreach (object item in arr) parts.Add(ToJson(item, expand, depth, references));
+        foreach (object item in arr) parts.Add(ToJson(item));
         return sb.Append($"{string.Join(",", parts)}]").ToString();
     }
 
-    private static string RecordToJson(Record record, bool expand, int depth, HashSet<Guid> references)
+    private static string RecordToJson(Record record)
     {
         StringBuilder sb = new("{");
         Type t = record.GetType();
@@ -95,37 +117,39 @@ public static class Json
 
         List<string> parts = new();
 
-        if (expand && depth > 0 && !references.Contains(record.Id))
+        if (_expand && _depth >= 0 && !_references.Contains(record.Id))
         {
-            references.Add(record.Id);
+            Interlocked.Decrement(ref _depth);
+            _references.Add(record.Id);
             PropertyInfo[] properties = t.GetProperties();
             foreach (PropertyInfo property in properties)
                 if (JsonAttribute.HasAttribute(property))
                 {
                     if (IsTuple(property) && TupleObjectAttribute.HasAttribute(property, out string[] labels))
-                        parts.Add($"\"{property.Name}\":{TupleObjectToJson(property.GetValue(record), expand, depth - 1, labels, references)}");
+                        parts.Add($"\"{property.Name}\":{TupleObjectToJson(property.GetValue(record), labels)}");
                     else
-                        parts.Add($"\"{property.Name}\":{ToJson(property.GetValue(record), expand, depth - 1, references)}");
+                        parts.Add($"\"{property.Name}\":{ToJson(property.GetValue(record))}");
                 }
-            references.Remove(record.Id);
+            _references.Remove(record.Id);
+            Interlocked.Increment(ref _depth);
         }
 
         return sb.Append($"{string.Join(",", parts)}}}}}").ToString();
     }
 
-    public static string TupleToJson(object obj, bool expand, int depth, HashSet<Guid> references)
+    public static string TupleToJson(object obj)
     {
         StringBuilder sb = new("[");
 
         List<string> parts = new();
 
         foreach (object item in ValueTupleValues(obj))
-            parts.Add(ToJson(item, expand, depth, references));
+            parts.Add(ToJson(item));
 
         return sb.Append($"{string.Join(",", parts)}]").ToString();
     }
 
-    public static string TupleObjectToJson(object obj, bool expand, int depth, string[] labels, HashSet<Guid> references)
+    public static string TupleObjectToJson(object obj, string[] labels)
     {
         StringBuilder sb = new("{");
 
@@ -135,7 +159,7 @@ public static class Json
         foreach (object item in ValueTupleValues(obj))
         {
             string name = i < labels.Length ? labels[i++] : i++.ToString();
-            parts.Add($"{ToJson(name, expand, depth, references)}:{ToJson(item, expand, depth, references)}");
+            parts.Add($"{ToJson(name)}:{ToJson(item)}");
         }
 
         return sb.Append($"{string.Join(",", parts)}}}").ToString();

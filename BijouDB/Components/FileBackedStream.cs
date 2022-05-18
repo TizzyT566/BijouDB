@@ -28,19 +28,15 @@ internal class FileBackedStream : Stream, IDisposable
     {
         if (count <= 0) return;
 
+        // Fallback to a file
         if (_check && ((count + _stream.Position) > _thresholdSize))
         {
-            // Fail over to a file
-            _stream.Flush();
             Stream originalStream = _stream;
 
-            _stream = new FileStream(Path.GetTempFileName(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, _thresholdSize, FileOptions.DeleteOnClose);
+            _stream = Misc.GetTemporaryFileStream(_thresholdSize);
 
             originalStream.Position = 0;
             originalStream.CopyTo(_stream);
-            originalStream.Flush();
-
-            _stream.Position = originalStream.Position;
 
             originalStream?.Close();
             originalStream?.Dispose();

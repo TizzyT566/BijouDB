@@ -4,7 +4,7 @@ internal class MaskedStream : Stream
 {
     private readonly Stream _stream;
     private readonly int _seed;
-    private Random _random;
+    private int _state;
 
     public override bool CanRead => _stream.CanRead;
     public override bool CanSeek => false;
@@ -17,15 +17,14 @@ internal class MaskedStream : Stream
         {
             if (value == _stream.Position) return;
             _stream.Position = value;
-            _random = new(_seed);
+            _state = _seed;
         }
     }
 
     public MaskedStream(Stream stream, int seed = 0)
     {
-        _seed = seed;
         _stream = stream;
-        _random = new Random(seed);
+        _state = _seed = seed;
     }
 
     public override void Flush() => _stream.Flush();
@@ -33,7 +32,7 @@ internal class MaskedStream : Stream
     public override long Seek(long offset, SeekOrigin origin)
     {
         long ret = _stream.Seek(offset, origin);
-        _random = new(_seed);
+        _state = _seed;
         return ret;
     }
 
@@ -41,23 +40,37 @@ internal class MaskedStream : Stream
     {
         if (value < _stream.Length) return;
         _stream.SetLength(value);
-        _random = new(_seed);
+        _state = _seed;
     }
 
-    public override int Read(byte[] buffer, int offset, int count)
+    // FastRand prng
+    private byte Next()
+    {
+        _state = 214013 * _state + 2531011;
+        return (byte)(((_state >> 16) & 0x7FFF) % 256);
+    }
+
+    public unsafe override int Read(byte[] buffer, int offset, int count)
     {
         int ret = _stream.Read(buffer, offset, count);
-        for (int i = 0; i < count; i++)
-            buffer[offset + i] ^= (byte)(_random.Next() % (byte.MaxValue + 1));
+        fixed (byte* ptr = buffer)
+            for (int i = 0; i < count; i++)
+                ptr[offset + i] ^= Next();
         return ret;
     }
 
-    public override void Write(byte[] buffer, int offset, int count)
+    /// <summary>
+    /// Applies a mask to array and writes it to the underlying stream.
+    /// </summary>
+    /// <param name="buffer">The array to write.</param>
+    /// <param name="offset">Where in the array to start.</param>
+    /// <param name="count">How many bytes to write.</param>
+    /// <remarks>This method modifies the source array.</remarks>
+    public unsafe override void Write(byte[] buffer, int offset, int count)
     {
-        byte[] bytes = new byte[count];
-        Array.Copy(buffer, offset, bytes, 0, count);
-        for (int i = 0; i < count; i++)
-            bytes[i] ^= (byte)(_random.Next() % (byte.MaxValue + 1));
-        _stream.Write(bytes, 0, bytes.Length);
+        fixed (byte* ptr = buffer)
+            for (int i = 0; i < count; i++)
+                ptr[i] ^= Next();
+        _stream.Write(buffer, offset, count);
     }
 }

@@ -57,7 +57,21 @@ public sealed class Column<D>
                 string binFilePath = Path.Combine(hashCollision, Globals.BinFile);
                 if (Guid.TryParse(collisionName, out index) && File.Exists(binFilePath))
                 {
-                    using FileStream fs = new(binFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
+                    FileStream fs = null!;
+
+                    SpinWait.SpinUntil(() =>
+                    {
+                        try
+                        {
+                            fs = new(binFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            return true;
+                        }
+                        catch (Exception)
+                        {
+                            return false;
+                        }
+                    });
+
                     ms.Position = 0;
                     if (Misc.StreamCompare(ms, fs)) return true;
                 }
@@ -264,7 +278,7 @@ public sealed class Column<D>
                         string crntValue = Path.GetFileName(hashCollision);
                         fs.Position = Offset;
                         fs.WriteHashValue(newHash, Guid.Parse(crntValue));
-                        fs.Flush(_tableLength);
+                        //fs.Flush(_tableLength);
                         return;
                     }
                 }
@@ -290,7 +304,7 @@ public sealed class Column<D>
         // write new info to record
         fs.Position = Offset;
         fs.WriteHashValue(newHash, newValue);
-        fs.Flush(_tableLength);
+        //fs.Flush(_tableLength);
     }
 
     internal void Remove(Record record)

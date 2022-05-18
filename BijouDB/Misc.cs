@@ -4,23 +4,23 @@ namespace BijouDB;
 
 internal static class Misc
 {
-    /// <summary>
-    /// Ensures a stream's total size.
-    /// </summary>
-    /// <param name="this">The stream to flush.</param>
-    /// <param name="size">The desired total size of the stream.</param>
-    public static void Flush(this Stream @this, long size, byte[]? padding = null)
-    {
-        // Seek to end of stream
-        if (padding is null) padding = new byte[8192];
-        @this.Position = @this.Length;
-        while (@this.Position < size)
-        {
-            int writeLength = (int)Math.Min(Math.Abs(size - @this.Position), padding.Length);
-            @this.Write(padding, 0, writeLength);
-        }
-        @this.Flush();
-    }
+    ///// <summary>
+    ///// Ensures a stream's total size.
+    ///// </summary>
+    ///// <param name="this">The stream to flush.</param>
+    ///// <param name="size">The desired total size of the stream.</param>
+    //public static void Flush(this Stream @this, long size, byte[]? padding = null)
+    //{
+    //    // Seek to end of stream
+    //    if (padding is null) padding = new byte[8192];
+    //    @this.Position = @this.Length;
+    //    while (@this.Position < size)
+    //    {
+    //        int writeLength = (int)Math.Min(Math.Abs(size - @this.Position), padding.Length);
+    //        @this.Write(padding, 0, writeLength);
+    //    }
+    //    @this.Flush();
+    //}
 
     public static bool StreamCompare(Stream s1, Stream s2)
     {
@@ -46,10 +46,8 @@ internal static class Misc
             while (((s2Total += s2Read = s2.Read(s2Buffer, s2Read, bufferLength - s2Read)) < bufferLength) && s2Read != 0) ;
             if (s1Total != s2Total) return false;
             for (int i = 0; i < s1Length; i++) if (s1Buffer[i] != s2Buffer[i]) return false;
-            if (s1Read == 0 && s2Read == 0) break;
+            if (s1Read == 0 || s2Read == 0) return true;
         }
-
-        return true;
     }
 
     public static Guid Hash(this IDataType value, Stream stream)
@@ -61,6 +59,24 @@ internal static class Misc
         Guid ret = stream.GetSkipHash();
         stream.Position = pos;
         return ret;
+    }
+
+    public static FileStream GetTemporaryFileStream(int bufferSize = 4096)
+    {
+        FileStream fs;
+
+        while (true)
+        {
+            string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), ".tmp");
+            try
+            {
+                fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, FileOptions.DeleteOnClose);
+                break;
+            }
+            catch (Exception) { }
+        }
+
+        return fs;
     }
 
     public static bool ReadHashValue(this Stream @this, out Guid hash, out Guid value)
