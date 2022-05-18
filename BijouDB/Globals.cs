@@ -2,17 +2,17 @@
 
 public static class Globals
 {
-    public static readonly string DefaultPath = Path.GetFullPath("DB");
+    internal static readonly string ColName = "col";
+    internal static readonly string Rec = "rcrd";
+    internal static readonly string Index = "indx";
+    internal static readonly string Ref = "ref";
+    internal static readonly string RefPattern = $"*.{Ref}";
+    internal static readonly string RecPattern = $"*.{Rec}";
+    internal static readonly string BinFile = "value.bin";
 
-    public static readonly string ColName = "col";
-    public static readonly string Rec = "rcrd";
-    public static readonly string Index = "indx";
-    public static readonly string Ref = "ref";
-    public static readonly string RefPattern = $"*.{Ref}";
-    public static readonly string RecPattern = $"*.{Rec}";
-    public static readonly string BinFile = "value.bin";
+    public static readonly string DefaultPath = Path.GetFullPath("DB");
+    public static string DatabasePath { get; set; } = DefaultPath;
 
     public static bool Logging { get; set; } = false;
     public static int SeedMask { get; set; } = 712247;
-    public static string DatabasePath { get; set; } = DefaultPath;
 }
