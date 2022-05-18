@@ -1,4 +1,4 @@
-![alt text](BijouDB/Icon.png "BijouDB")
+![alt text](https://raw.githubusercontent.com/TizzyT566/BijouDB/master/BijouDB/Icon.png "BijouDB")
 
 # BijouDB
 A small C# database

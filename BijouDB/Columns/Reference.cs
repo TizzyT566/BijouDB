@@ -18,7 +18,7 @@ public sealed class Reference<R, D>
     /// </summary>
     /// <param name="value">The parent record.</param>
     /// <returns>A collection with all child records.</returns>
-    public R[] For(D value) => _sourceColumn().WithValue<R>(value);
+    public R[] To(D value) => _sourceColumn().WithValue<R>(value);
 
     /// <summary>
     /// Checks to see if a record has any child references.
