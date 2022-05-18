@@ -59,7 +59,7 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
             get
             {
                 List<R2> records = new();
-                if (Directory.Exists(_dir)) return records.ToArray();
+                if (!Directory.Exists(_dir)) return records.ToArray();
                 string[] files = Directory.GetFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}");
                 foreach (string file in files)
                 {

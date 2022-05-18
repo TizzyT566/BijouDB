@@ -1,4 +1,5 @@
-﻿using BijouDB_Test.Tables;
+﻿using BijouDB;
+using BijouDB_Test.Tables;
 
 Employee employee = new();
 employee.Computers += new Computer() { Type = "Alienware" };
