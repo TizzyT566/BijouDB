@@ -225,18 +225,13 @@ using BijouDB.DataTypes;
 public class Employee : Record
 {
     public static readonly Column<@string> NameColumn;
-    public string Name
-    { 
-        get => NameColumn.Get(this);
-        set => NameColumn.Set(this, value);
-    }
-
     public static readonly Column<@int> AgeColumn;
+
+    public string Name
+    { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+
     public int Age
-    {
-        get => AgeColumn.Get(this);
-        set => AgeColumn.Set(this, value);
-    }
+    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
     
     // A Reference to 'Computer' Record
     public static readonly Reference<Computer, @record<Employee>> ComputerReferences;
@@ -252,11 +247,9 @@ public class Employee : Record
 public class Computer : Record
 {
     public static readonly Column<@record<Employee>> EmployeeColumn;
+
     public Employee Employee 
-    {
-        get => EmployeeColumn.Get(this); 
-        set => EmployeeColumn.Set(this, value); 
-    }
+    { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
         .Add(out EmployeeColumn);
@@ -323,22 +316,28 @@ public sealed class Employee : Record
     // Relational Many-To-Many
     public static readonly Relational<Employee, Computer> ComputerRelational;
 
-    [Json] public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
-    [Json] public int Number { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
-    [Json] public long Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-    [Json]
-    public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
-    [Json]
-    public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
+    [Json] public string Name
+    { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+
+    [Json] public int Number 
+    { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
+
+    [Json] public long Age
+    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+        
+    [Json] public BigInteger Points
+    { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
+        
+    [Json] public Employee Manager
+    { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
+
     [Json, TupleObject("Area", "Exchange", "Subscriber")]
     public (int, int, int) PhoneNumber
-    {
-        get => PhoneNumberColumn.Get(this);
-        set => PhoneNumberColumn.Set(this, value);
-    }
+    { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
         
-    [Json] // The junction between this record and 'Computer' records
-    public Relational<Employee, Computer>.Junc Computers { get => ComputerRelational.To(this); set { } }
+    // The junction between this record and 'Computer' records
+    [Json] public Relational<Employee, Computer>.Junc Computers
+    { get => ComputerRelational.To(this); set { } }
 
     static Employee() => _ = ~SchemaBuilder<Employee>
         .Add(out NameColumn, Unique: false)
@@ -353,14 +352,15 @@ public sealed class Employee : Record
 public sealed class Computer : Record
 {
     public static readonly Column<@string> TypeColumn;
-
     // Relational Many-To-Many
     public static readonly Relational<Computer, Employee> EmployeeRelational;
 
-    [Json] public string Type { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
+    [Json] public string Type
+    { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
         
-    [Json] // The junction between this record and employee records
-    public Relational<Computer, Employee>.Junc Employees { get => EmployeeRelational.To(this); set { } }
+    // The junction between this record and employee records
+    [Json] public Relational<Computer, Employee>.Junc Employees
+    { get => EmployeeRelational.To(this); set { } }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
         .Add(out EmployeeRelational, () => Employee.ComputerRelational)
@@ -515,27 +515,28 @@ public sealed class Employee : Record
     public static readonly Reference<Computer, @record<Employee>.nullable> ComputerReferences;
 
     // Marked with 'JsonAttribute'
-    [Json] public string Name { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+    [Json] public string Name
+    { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
 
     // Marked with 'JsonAttribute'
-    [Json] public int Number { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
+    [Json] public int Number
+    { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
 
     // Marked with 'JsonAttribute'
-    [Json] public long Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+    [Json] public long Age
+    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+        
+    // Marked with 'JsonAttribute'
+    [Json] public BigInteger Points
+    { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
         
     [Json] // Marked with 'JsonAttribute'
-    public BigInteger Points { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
-        
-    [Json] // Marked with 'JsonAttribute'
-    public Employee Manager { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
+    public Employee Manager
+    { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
 
-    // Marked with 'JsonAttribute' and 'TupleObjectAttribute'
-    [Json, TupleObject("Area", "Exchange", "Subscriber")]
-    public (int, int, int) PhoneNumber
-    {
-        get => PhoneNumberColumn.Get(this);
-        set => PhoneNumberColumn.Set(this, value);
-    }
+    // Marked with 'JsonAttribute' and 'TupleObjectAttribute'    
+    [Json, TupleObject("Area", "Exchange", "Subscriber")] public (int, int, int) PhoneNumber
+    { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
 
     // Marked with 'JsonAttribute'
     [Json] public Computer[] Computers => ComputerReferences.For(this);
@@ -557,13 +558,11 @@ public sealed class Computer : Record
 
     // Marked with 'JsonAttribute'
     [Json] public Employee? Employee
-    {
-        get => EmployeeColumn.Get(this);
-        set => EmployeeColumn.Set(this, value);
-    }
+    { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
 
     // Marked with 'JsonAttribute'
-    [Json] public string Type { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
+    [Json] public string Type
+    { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
         .Add(out EmployeeColumn)
