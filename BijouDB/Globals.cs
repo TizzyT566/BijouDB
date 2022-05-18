@@ -14,5 +14,5 @@ public static class Globals
     public static string DatabasePath { get; set; } = DefaultPath;
 
     public static bool Logging { get; set; } = false;
-    public static int SeedMask { get; set; } = 712247;
+    public static int BitMaskSeed { get; set; } = 712247;
 }

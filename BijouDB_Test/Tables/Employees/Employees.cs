@@ -38,5 +38,5 @@ public sealed class Employee : Record
         .Add(out PointsColumn)
         .Add(out ManagerColumn)
         .Add(out PhoneNumberColumn)
-        .Add(out ComputersRelational, () => Computer.EmployeeRelational);
+        .Add(out ComputersRelational, Computer.EmployeeRelational);
 }

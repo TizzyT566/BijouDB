@@ -37,11 +37,11 @@ public sealed class SchemaBuilder<R> : IDisposable
     }
 
     // relational column
-    public static SchemaBuilder<R> Add<R2>(out Relational<R, R2> column, Func<Relational<R2, R>> relationalColumn)
+    public static SchemaBuilder<R> Add<R2>(out Relational<R, R2> column, Relational<R2, R> _)
         where R2 : Record, new()
     {
         SchemaBuilder<R> builder = new();
-        column = new(relationalColumn);
+        column = new();
         builder._columns.Add(column.Remove);
         return builder;
     }
@@ -108,11 +108,11 @@ public static class SchemaBuilderExtensions
     }
 
     // relational column
-    public static SchemaBuilder<R> Add<R, R2>(this SchemaBuilder<R> @this, out Relational<R, R2> column, Func<Relational<R2, R>> relationalColumn)
+    public static SchemaBuilder<R> Add<R, R2>(this SchemaBuilder<R> @this, out Relational<R, R2> column, Relational<R2, R> _)
         where R : Record, new()
         where R2 : Record, new()
     {
-        column = new(relationalColumn);
+        column = new();
         @this._columns.Add(column.Remove);
         return @this;
     }

@@ -16,6 +16,6 @@ public sealed class Computer : Record
     [Json] public Relational<Computer, Employee>.Junc Employees { get => EmployeeRelational.To(this); set { } }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
-        .Add(out EmployeeRelational, () => Employee.ComputersRelational)
+        .Add(out EmployeeRelational, Employee.ComputersRelational)
         .Add(out TypeColumn, Check: value => value != "" && value != "Dell");
 }

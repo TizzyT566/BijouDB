@@ -108,6 +108,6 @@ public abstract class Record : IEqualityComparer<Record>
         removeDefinition(record);
     }
 
-    public bool Equals(Record x, Record y) => Equals(x.Id, y.Id);
+    public bool Equals(Record x, Record y) => x.GetType() == y.GetType() && Equals(x.Id, y.Id);
     public int GetHashCode(Record obj) => obj.Id.GetHashCode();
 }

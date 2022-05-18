@@ -5,7 +5,7 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
     private readonly string _dir;
     private readonly bool _leads;
 
-    internal Relational(Func<Relational<R2, R1>> _)
+    internal Relational()
     {
         string r1 = typeof(R1).FullName;
         string[] types = { r1, typeof(R2).FullName };
@@ -15,7 +15,7 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
         Directory.CreateDirectory(_dir);
     }
 
-    public Junc To(R1 record) => new(record, this);
+    public Junc To(R1 record) => new(record, _dir, _leads);
 
     internal void Remove(Record record)
     {
@@ -29,20 +29,18 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
         private readonly string _id, _dir;
         private readonly bool _leads;
 
-        public Junc(R1 record, Relational<R1, R2> relational)
+        public Junc(R1 record, string dir, bool leads)
         {
             _id = record.Id.ToString();
-            _dir = relational._dir;
-            _leads = relational._leads;
+            _dir = dir;
+            _leads = leads;
         }
 
         public void Add(params R2[] records)
         {
+            Directory.CreateDirectory(_dir);
             foreach (R2 record in records)
-            {
-                Directory.CreateDirectory(_dir);
                 File.Create(Path.Combine(_dir, _leads ? $"{_id}.{record.Id}" : $"{record.Id}.{_id}")).Dispose();
-            }
         }
 
         public void Remove(params R2[] records)
@@ -58,12 +56,12 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
         {
             get
             {
+                if (!Directory.Exists(_dir)) return Array.Empty<R2>();
                 List<R2> records = new();
-                if (!Directory.Exists(_dir)) return records.ToArray();
                 string[] files = Directory.GetFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}");
                 foreach (string file in files)
                 {
-                    string id = _leads ? Path.GetExtension(file).Substring(1) : Path.GetFileNameWithoutExtension(file);
+                    string id = _leads ? Path.GetExtension(file)[1..] : Path.GetFileNameWithoutExtension(file);
                     if (Record.TryGet(id, out R2? r) && r is not null) records.Add(r);
                 }
                 return records.ToArray();

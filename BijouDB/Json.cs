@@ -12,42 +12,40 @@ public static class Json
     static Json()
     {
         _formatters.Add(typeof(BigInteger), o => o.ToString());
-        _formatters.Add(typeof(byte[]), o => Q($"data:application/octet-stream;base64, {Convert.ToBase64String((byte[])o)}"));
+        _formatters.Add(typeof(byte[]), o => $"\"data:application/octet-stream;base64,{Convert.ToBase64String((byte[])o)}\"");
         _formatters.Add(typeof(bool), o => (bool)o ? "true" : "false");
         _formatters.Add(typeof(byte), o => o.ToString());
-        _formatters.Add(typeof(char), o => Q(o));
-        _formatters.Add(typeof(decimal), o => Q(o));
+        _formatters.Add(typeof(char), o => $"\"{o}\"");
+        _formatters.Add(typeof(decimal), o => $"\"{o}\"");
         _formatters.Add(typeof(float), o => o.ToString());
         _formatters.Add(typeof(int), o => o.ToString());
         _formatters.Add(typeof(long), o => o.ToString());
         _formatters.Add(typeof(sbyte), o => o.ToString());
         _formatters.Add(typeof(short), o => o.ToString());
-        _formatters.Add(typeof(string), o => Q(o));
+        _formatters.Add(typeof(string), o => $"\"{o}\"");
         _formatters.Add(typeof(DateTime), o => ((DateTime)o).Ticks.ToString());
         _formatters.Add(typeof(uint), o => o.ToString());
         _formatters.Add(typeof(ulong), o => o.ToString());
         _formatters.Add(typeof(ushort), o => o.ToString());
-        _formatters.Add(typeof(Guid), o => Q(o));
+        _formatters.Add(typeof(Guid), o => $"\"{o}\"");
     }
 
     /// <summary>
     /// Tries to add a formatter for a spicified type to Json.
     /// </summary>
     /// <param name="type">The type to add a formatter for.</param>
-    /// <param name="formater">The type formatter.</param>
+    /// <param name="formatter">The type formatter.</param>
     /// <returns></returns>
-    public static bool TryAddFormatter(Type type, Func<object, string> formater)
+    public static bool TryAddFormatter(Type type, Func<object, string> formatter)
     {
         if (type is null) return false;
         if (typeof(Record).Equals(type)) return false;
         if (_formatters.ContainsKey(type)) return false;
-        _formatters.Add(type, formater);
+        _formatters.Add(type, formatter);
         return true;
     }
 
-    private static string Q(object obj) => $"\"{obj}\"";
-
-    public static string ToJson(this object @this, bool expand, int depth) =>
+    public static string ToJson(this object @this, bool expand = false, int depth = int.MaxValue) =>
         ToJson(@this, expand, depth, new());
 
     internal static string ToJson(object obj, bool expand, int depth, HashSet<Guid> references)
@@ -69,7 +67,7 @@ public static class Json
         // if array
         if (obj.GetType().IsArray) return ArrayToJson(obj, expand, depth, references);
 
-        return Q(obj);
+        return $"\"{obj}\"";
     }
 
     private static string JunctionToJson(object obj, bool expand, int depth, HashSet<Guid> references)
@@ -93,23 +91,21 @@ public static class Json
         StringBuilder sb = new("{");
         Type t = record.GetType();
 
-        sb.Append($"{ToJson(nameof(record.Id), expand, depth, references)}:{ToJson(record.Id, expand, depth, references)},{ToJson(t.FullName, expand, depth, references)}:{{");
+        sb.Append($"\"{nameof(record.Id)}\":\"{record.Id}\",\"{t.FullName}\":{{");
 
         List<string> parts = new();
 
-        if (expand && depth > 0 & !references.Contains(record.Id))
+        if (expand && depth > 0 && !references.Contains(record.Id))
         {
             references.Add(record.Id);
             PropertyInfo[] properties = t.GetProperties();
             foreach (PropertyInfo property in properties)
                 if (JsonAttribute.HasAttribute(property))
                 {
-                    if (IsRecord(property))
-                        parts.Add($"{ToJson(property.Name, expand, depth, references)}:{ToJson(property.GetValue(record), expand, depth - 1, references)}");
-                    else if (IsTuple(property) && TupleObjectAttribute.HasAttribute(property, out string[] labels))
-                        parts.Add($"{ToJson(property.Name, expand, depth, references)}:{TupleObjectToJson(property.GetValue(record), expand, depth - 1, labels, references)}");
+                    if (IsTuple(property) && TupleObjectAttribute.HasAttribute(property, out string[] labels))
+                        parts.Add($"\"{property.Name}\":{TupleObjectToJson(property.GetValue(record), expand, depth - 1, labels, references)}");
                     else
-                        parts.Add($"{ToJson(property.Name, expand, depth, references)}:{ToJson(property.GetValue(record), expand, depth - 1, references)}");
+                        parts.Add($"\"{property.Name}\":{ToJson(property.GetValue(record), expand, depth - 1, references)}");
                 }
             references.Remove(record.Id);
         }

@@ -131,7 +131,7 @@ public sealed class Column<D>
         {
             using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.None);
             D newValue = new();
-            using MaskedStream ms = new(fs, Globals.SeedMask);
+            using MaskedStream ms = new(fs, Globals.BitMaskSeed);
             newValue.Deserialize(ms);
             ds.Add(newValue);
         }
@@ -159,7 +159,7 @@ public sealed class Column<D>
             {
                 using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
                 D newValue = new();
-                using MaskedStream ms = new(fs2, Globals.SeedMask);
+                using MaskedStream ms = new(fs2, Globals.BitMaskSeed);
                 newValue.Deserialize(ms);
                 return newValue;
             }
