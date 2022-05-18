@@ -162,7 +162,9 @@ using BijouDB.DataTypes;
 public class MyRecord : Record
 {
     public static readonly Column<@int> AgeColumn;
-    public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+
+    [Json] public int Age
+    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
 
     static MyRecord() => _ = ~SchemaBuilder<MyRecord>
         .Add(out AgeColumn);
@@ -185,7 +187,9 @@ using BijouDB.DataTypes;
 public class MyRecord : Record
 {
     public static readonly Column<@int> AgeColumn;
-    public int Age { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+
+    [Json] public int Age
+    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
 
     static MyRecord() => _ = ~SchemaBuilder<MyRecord>
         // Specify that the column is NOT unique
@@ -226,16 +230,16 @@ public class Employee : Record
 {
     public static readonly Column<@string> NameColumn;
     public static readonly Column<@int> AgeColumn;
-
-    public string Name
-    { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
-
-    public int Age
-    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-    
     // A Reference to 'Computer' Record
     public static readonly Reference<Computer, @record<Employee>> ComputerReferences;
-    public Computer[] Computers => ComputerReferences.For(this);
+
+    [Json] public string Name
+    { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+
+    [Json] public int Age
+    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+    
+    [Json] public Computer[] Computers => ComputerReferences.For(this);
 
     static Employee() => _ = ~SchemaBuilder<Employee>
         .Add(out NameColumn)
@@ -248,7 +252,7 @@ public class Computer : Record
 {
     public static readonly Column<@record<Employee>> EmployeeColumn;
 
-    public Employee Employee 
+    [Json] public Employee Employee 
     { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
@@ -312,7 +316,6 @@ public sealed class Employee : Record
     public static readonly Column<@bint> PointsColumn;
     public static readonly Column<@record<Employee>> ManagerColumn;
     public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
-
     // Relational Many-To-Many
     public static readonly Relational<Employee, Computer> ComputerRelational;
 
