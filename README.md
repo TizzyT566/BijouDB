@@ -349,14 +349,14 @@ public sealed class Employee : Record
         .Add(out PointsColumn)
         .Add(out ManagerColumn)
         .Add(out PhoneNumberColumn)
-        .Add(out ComputerRelational, () => Computer.EmployeeRelational);
+        .Add(out ComputerRelational, Computer.EmployeeRelational);
 }
 
 public sealed class Computer : Record
 {
-    public static readonly Column<@string> TypeColumn;
     // Relational Many-To-Many
     public static readonly Relational<Computer, Employee> EmployeeRelational;
+    public static readonly Column<@string> TypeColumn;
 
     [Json] public string Type
     { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
@@ -366,7 +366,7 @@ public sealed class Computer : Record
     { get => EmployeeRelational.To(this); set { } }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
-        .Add(out EmployeeRelational, () => Employee.ComputerRelational)
+        .Add(out EmployeeRelational, Employee.ComputerRelational)
         .Add(out TypeColumn, Check: value => value != "" && value != "Dell");
 }
 
