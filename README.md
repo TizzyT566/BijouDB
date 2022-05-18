@@ -1,3 +1,5 @@
+![alt text](BijouDB/Icon.png "BijouDB")
+
 # BijouDB
 A small C# database
 
