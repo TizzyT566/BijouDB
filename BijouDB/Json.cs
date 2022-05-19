@@ -49,26 +49,6 @@ public static class Json
         return _formatters.TryAdd(type, formatter);
     }
 
-    public static string ToJson(this object @this, int depth = 0, bool verbose = false)
-    {
-        try
-        {
-            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
-            _verbose = verbose;
-            _depth = depth;
-            _references.Clear();
-            return ToJson(@this);
-        }
-        catch (Exception)
-        {
-            return "null";
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _lock, 0);
-        }
-    }
-
     public static string? GetRecord(string type, string id, int depth = 0, bool verbose = false)
     {
         try
@@ -86,7 +66,7 @@ public static class Json
         }
     }
 
-    public static object? GetProperty(string type, string id, string property, int depth = 0, bool verbose = false)
+    public static string? GetProperty(string type, string id, string property, int depth = 0, bool verbose = false)
     {
         if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(id) || string.IsNullOrEmpty(property)) return null;
         try
@@ -101,6 +81,27 @@ public static class Json
         catch (Exception)
         {
             return null;
+        }
+    }
+
+    public static string ToJson(this object @this, bool verbose = false) => ToJson(@this, 0, verbose);
+    public static string ToJson(this object @this, int depth, bool verbose = false)
+    {
+        try
+        {
+            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
+            _verbose = verbose;
+            _depth = depth;
+            _references.Clear();
+            return ToJson(@this);
+        }
+        catch (Exception)
+        {
+            return "null";
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _lock, 0);
         }
     }
 

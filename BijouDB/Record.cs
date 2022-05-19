@@ -31,7 +31,7 @@ public abstract class Record : IEqualityComparer<Record>
         }
     }
 
-    public string Json => BijouDB.Json.ToJson(this);
+    public string Json => this.ToJson();
 
     static Record()
     {
