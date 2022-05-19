@@ -12,7 +12,6 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
         Array.Sort(types);
         _leads = r1 == types[0];
         _dir = Path.Combine(Globals.DatabasePath, string.Join("-", types));
-        Directory.CreateDirectory(_dir);
     }
 
     public Junc To(R1 record) => new(record, _dir, _leads);
@@ -20,8 +19,27 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
     internal void Remove(Record record)
     {
         if (!Directory.Exists(_dir)) return;
-        string[] files = Directory.GetFiles(_dir, _leads ? $"{record.Id}.*" : $"*.{record.Id}");
-        foreach (string file in files) File.Delete(file);
+        string[] files;
+        try
+        {
+            files = Directory.GetFiles(_dir, _leads ? $"{record.Id}.*" : $"*.{record.Id}");
+        }
+        catch (Exception ex)
+        {
+            ex.Log();
+            return;
+        }
+        foreach (string file in files)
+        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (Exception ex)
+            {
+                ex.Log();
+            }
+        }
     }
 
     public struct Junc
@@ -38,24 +56,66 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
 
         public void Add(params R2[] records)
         {
-            Directory.CreateDirectory(_dir);
+            try
+            {
+                Directory.CreateDirectory(_dir);
+            }
+            catch (Exception ex)
+            {
+                ex.Log();
+                return;
+            }
             foreach (R2 record in records)
-                File.Create(Path.Combine(_dir, _leads ? $"{_id}.{record.Id}" : $"{record.Id}.{_id}")).Dispose();
+            {
+                try
+                {
+                    File.Create(Path.Combine(_dir, _leads ? $"{_id}.{record.Id}" : $"{record.Id}.{_id}")).Dispose();
+                }
+                catch (Exception ex)
+                {
+                    ex.Log();
+                }
+            }
         }
 
         public void Remove(params R2[] records)
         {
             foreach (R2 record in records)
             {
-                string path = Path.Combine(_dir, _leads ? $"{_id}.{record.Id}" : $"{record.Id}.{_id}");
-                if (File.Exists(path)) File.Delete(path);
+                try
+                {
+                    File.Delete(Path.Combine(_dir, _leads ? $"{_id}.{record.Id}" : $"{record.Id}.{_id}"));
+                }
+                catch (Exception ex)
+                {
+                    ex.Log();
+                }
             }
         }
 
         public void Clear()
         {
-            foreach (string path in Directory.GetFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}"))
-                if (File.Exists(path)) File.Delete(path);
+            string[] files;
+            try
+            {
+                files = Directory.GetFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}");
+            }
+            catch (Exception ex)
+            {
+                ex.Log();
+                return;
+            }
+            foreach (string path in files)
+            {
+                try
+                {
+                    File.Delete(path);
+                }
+                catch (Exception ex)
+                {
+                    ex.Log();
+                }
+            }
         }
 
         public R2[] All
@@ -64,11 +124,28 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
             {
                 if (!Directory.Exists(_dir)) return Array.Empty<R2>();
                 List<R2> records = new();
-                string[] files = Directory.GetFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}");
+                string[] files;
+                try
+                {
+                    files = Directory.GetFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}");
+                }
+                catch (Exception ex)
+                {
+                    ex.Log();
+                    return Array.Empty<R2>();
+                }
                 foreach (string file in files)
                 {
-                    string id = _leads ? Path.GetExtension(file)[1..] : Path.GetFileNameWithoutExtension(file);
-                    if (Record.TryGet(id, out R2? r) && r is not null) records.Add(r);
+                    try
+                    {
+
+                        string id = _leads ? Path.GetExtension(file)[1..] : Path.GetFileNameWithoutExtension(file);
+                        if (Record.TryGet(id, out R2? r) && r is not null) records.Add(r);
+                    }
+                    catch (Exception ex)
+                    {
+                        ex.Log();
+                    }
                 }
                 return records.ToArray();
             }

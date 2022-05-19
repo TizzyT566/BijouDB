@@ -15,4 +15,54 @@ public static class Globals
 
     public static bool Logging { get; set; } = false;
     public static int BitMaskSeed { get; set; } = 712247;
+
+    private static int _consoleLock = 0;
+
+    public enum LogLevel
+    {
+        Error = -1,
+        Success = 0,
+        Information = 1,
+        Warning = 2
+    }
+
+    public static Exception Log(this Exception @this, LogLevel level = LogLevel.Error)
+    {
+        if (Logging)
+        {
+            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _consoleLock, 1) == 0);
+            ConsoleColor prev = Console.ForegroundColor;
+            Console.ForegroundColor = level switch
+            {
+                LogLevel.Success => ConsoleColor.Green,
+                LogLevel.Warning => ConsoleColor.Yellow,
+                LogLevel.Error => ConsoleColor.Red,
+                _ => ConsoleColor.White
+            };
+            Console.WriteLine(@this.Message);
+            Console.ForegroundColor = prev;
+            Interlocked.Exchange(ref _consoleLock, 0);
+        }
+        return @this;
+    }
+
+    public static string Log(this string @this, LogLevel level = LogLevel.Information)
+    {
+        if (Logging)
+        {
+            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _consoleLock, 1) == 0);
+            ConsoleColor prev = Console.ForegroundColor;
+            Console.ForegroundColor = level switch
+            {
+                LogLevel.Success => ConsoleColor.Green,
+                LogLevel.Warning => ConsoleColor.Yellow,
+                LogLevel.Error => ConsoleColor.Red,
+                _ => ConsoleColor.White
+            };
+            Console.WriteLine(@this);
+            Console.ForegroundColor = prev;
+            Interlocked.Exchange(ref _consoleLock, 0);
+        }
+        return @this;
+    }
 }

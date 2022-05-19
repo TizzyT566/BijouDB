@@ -31,17 +31,28 @@ internal class FileBackedStream : Stream, IDisposable
         // Fallback to a file
         if (_check && ((count + _stream.Position) > _thresholdSize))
         {
-            Stream originalStream = _stream;
+            try
+            {
+                FileStream newStream;
 
-            _stream = Misc.GetTemporaryFileStream(_thresholdSize);
+                newStream = Misc.GetTemporaryFileStream(_thresholdSize);
 
-            originalStream.Position = 0;
-            originalStream.CopyTo(_stream);
+                _stream.Position = 0;
+                _stream.CopyTo(newStream);
 
-            originalStream?.Close();
-            originalStream?.Dispose();
+                Stream oldStream = _stream;
 
-            _check = false;
+                _stream = newStream;
+
+                oldStream?.Close();
+                oldStream?.Dispose();
+
+                _check = false;
+            }
+            catch (Exception ex)
+            {
+                ex.Log();
+            }
         }
 
         _stream.Write(buffer, offset, count);

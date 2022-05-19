@@ -1,13 +1,14 @@
 ﻿using System.Reflection;
+using static BijouDB.Globals;
 
 namespace BijouDB;
 
 public abstract class Record : IEqualityComparer<Record>
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
-    private static readonly Dictionary<string, Type> _types = new();
+    internal static readonly Dictionary<string, Type> _types = new();
 
-    private Guid? _id;
+    internal Guid? _id;
     public Guid Id
     {
         get
@@ -15,9 +16,16 @@ public abstract class Record : IEqualityComparer<Record>
             if (_id is null)
             {
                 _id ??= IncrementalGuid.NextGuid();
-                string baseDir = Path.Combine(Globals.DatabasePath, GetType().FullName!, Globals.Rec);
-                Directory.CreateDirectory(baseDir);
-                File.Create(Path.Combine(baseDir, $"{Id}.{Globals.Rec}")).Dispose();
+                try
+                {
+                    string baseDir = Path.Combine(DatabasePath, GetType().FullName!, Rec);
+                    Directory.CreateDirectory(baseDir);
+                    File.Create(Path.Combine(baseDir, $"{Id}.{Rec}")).Dispose();
+                }
+                catch (Exception ex)
+                {
+                    ex.Log();
+                }
             }
             return (Guid)_id;
         }
@@ -41,13 +49,13 @@ public abstract class Record : IEqualityComparer<Record>
     {
         try
         {
-            string path = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
+            string path = Path.Combine(DatabasePath, typeof(R).FullName!, Rec, $"{id}.{Rec}");
             record = new() { _id = id };
             return true;
         }
         catch (Exception ex)
         {
-            if (Globals.Logging) Console.WriteLine(ex.ToString());
+            ex.Log();
             record = null;
             return false;
         }
@@ -62,7 +70,7 @@ public abstract class Record : IEqualityComparer<Record>
     /// Gets all available Record types in the current application.
     /// </summary>
     /// <returns>A string array with the full name of available record types.</returns>
-    public static string[] Types => _types.Values.Select<Type, string>(t => t.FullName).ToArray();
+    public static string[] Types => _types.Values.Select(t => t.FullName).ToArray();
 
     public string[] PropertyNames()
     {
@@ -71,45 +79,12 @@ public abstract class Record : IEqualityComparer<Record>
         return props.Select(p => $"{type.FullName}.{p.Name}").ToArray();
     }
 
-    public static Record? Get(string type, string id)
-    {
-        try
-        {
-            Type t = _types[type];
-            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
-            dynamic obj = ci.Invoke(null);
-            obj._id = Guid.Parse(id);
-            return BijouDB.Json.ToJson(obj);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    public static object? GetProperty(string type, string id, string property)
-    {
-        if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(id) || string.IsNullOrEmpty(property)) return null;
-        try
-        {
-            Type t = _types[type];
-            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
-            dynamic obj = ci.Invoke(null);
-            obj._id = Guid.Parse(id);
-            return BijouDB.Json.ToJson(t.GetProperty(property).GetValue(obj));
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
     public static R[] GetAll<R>()
         where R : Record, new()
     {
-        string path = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec);
+        string path = Path.Combine(DatabasePath, typeof(R).FullName!, Rec);
         if (!Directory.Exists(path)) return Array.Empty<R>();
-        string[] records = Directory.GetFiles(path, Globals.RecPattern);
+        string[] records = Directory.GetFiles(path, RecPattern);
         R[] result = new R[records.Length];
         for (int i = 0; i < records.Length; i++)
         {
@@ -162,7 +137,7 @@ public abstract class Record : IEqualityComparer<Record>
         catch (Exception ex)
         {
             exception = ex;
-            if (Globals.Logging) Console.WriteLine(ex.Message);
+            if (Logging) Console.WriteLine(ex.Message);
             return false;
         }
     }
@@ -170,9 +145,8 @@ public abstract class Record : IEqualityComparer<Record>
     public void Remove() => Remove(this);
     public static void Remove(Record record)
     {
-        if (!_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition) || removeDefinition is null)
-            throw new Exception($"Missing 'Remove()' definition for {record.GetType().FullName}");
-        removeDefinition(record);
+        if (_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition) && removeDefinition is not null)
+            removeDefinition(record);
     }
 
     public bool Equals(Record x, Record y) => x.GetType() == y.GetType() && Equals(x.Id, y.Id);

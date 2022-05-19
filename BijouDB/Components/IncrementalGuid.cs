@@ -3,28 +3,40 @@
 internal static class IncrementalGuid
 {
     private const int SPACING = 500;
-    private static readonly string SAVE_PATH = @$"{Globals.DatabasePath}\Guid.state";
     private static readonly FileStream _saveStream;
     private static readonly byte[] _guidBytes;
+    private static string SavePath => @$"{Globals.DatabasePath}\Guid.state";
     private static int _lock = 0;
     private static int _count = 0;
 
     static IncrementalGuid()
     {
-        Directory.CreateDirectory(Globals.DatabasePath);
-        if (File.Exists(SAVE_PATH))
+        try
         {
-            _saveStream = new(SAVE_PATH, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            _ = Directory.CreateDirectory(Globals.DatabasePath);
+        }
+        catch (Exception ex)
+        {
+            ex.Log();
+            throw ex;
+        }
+
+        if (File.Exists(SavePath))
+        {
+            _saveStream = new(SavePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             _guidBytes = new byte[16];
             if (!_saveStream.TryFill(_guidBytes))
-                throw new Exception($"{nameof(SAVE_PATH)} must be 16 bytes in size.");
+            {
+                Exception ex = new($"{nameof(SavePath)} must be 16 bytes in size.");
+                ex.Log();
+                throw ex;
+            }
             Increment(SPACING);
         }
         else
         {
-            _saveStream = new(SAVE_PATH, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            _saveStream = new(SavePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             _guidBytes = new byte[16];
-            //Random.Shared.NextBytes(_guidBytes); // uncomment to enable random intial state.
         }
         Save();
     }
@@ -46,10 +58,20 @@ internal static class IncrementalGuid
     public static void Save()
     {
         while (Interlocked.Exchange(ref _lock, 1) == 1) ;
-        _saveStream.Position = 0;
-        _saveStream.Write(_guidBytes, 0, 16);
-        _saveStream.Flush();
-        Interlocked.Exchange(ref _lock, 0);
+        try
+        {
+            _saveStream.Position = 0;
+            _saveStream.Write(_guidBytes, 0, 16);
+            _saveStream.Flush();
+        }
+        catch (Exception ex)
+        {
+            ex.Log();
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _lock, 0);
+        }
     }
 
     public static Guid NextGuid()
@@ -60,6 +82,6 @@ internal static class IncrementalGuid
         Interlocked.Exchange(ref _lock, 0);
         Interlocked.Increment(ref _count);
         if (Interlocked.CompareExchange(ref _count, 0, SPACING) == SPACING) Save();
-        return guid != Guid.Empty ? guid : NextGuid();
+        return guid;
     }
 }

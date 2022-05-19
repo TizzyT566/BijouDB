@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Reflection;
 using System.Text;
+using static BijouDB.Globals;
 
 namespace BijouDB;
 
@@ -55,9 +56,8 @@ public static class Json
             SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
             _verbose = verbose;
             _depth = depth;
-            string json = ToJson(@this);
             _references.Clear();
-            return json;
+            return ToJson(@this);
         }
         catch (Exception)
         {
@@ -66,6 +66,41 @@ public static class Json
         finally
         {
             Interlocked.Exchange(ref _lock, 0);
+        }
+    }
+
+    public static string? GetRecord(string type, string id, int depth = 0, bool verbose = false)
+    {
+        try
+        {
+            Type t = Record._types[type];
+            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
+            dynamic obj = ci.Invoke(null);
+            obj._id = Guid.Parse(id);
+            string json = Json.ToJson(obj, depth, verbose);
+            return json;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    public static object? GetProperty(string type, string id, string property, int depth = 0, bool verbose = false)
+    {
+        if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(id) || string.IsNullOrEmpty(property)) return null;
+        try
+        {
+            Type t = Record._types[type];
+            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
+            dynamic obj = ci.Invoke(null);
+            obj._id = Guid.Parse(id);
+            string prop = Json.ToJson(t.GetProperty(property).GetValue(obj), depth, verbose);
+            return prop;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 

@@ -56,12 +56,20 @@ public sealed class SchemaBuilder<R> : IDisposable
                 {
                     foreach (Func<Record, bool> referenceCheck in _references)
                         if (referenceCheck(record))
-                            throw new Exception("There are references to the current record.");
+                        {
+                            return;
+                        }
 
-                    foreach (Action<Record> remove in _columns) remove(record);
-
-                    string recordPath = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
-                    if (File.Exists(recordPath)) File.Delete(recordPath);
+                    try
+                    {
+                        foreach (Action<Record> remove in _columns) remove(record);
+                        string recordPath = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
+                        File.Delete(recordPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        ex.Log();
+                    }
                 });
             }
             disposedValue = true;

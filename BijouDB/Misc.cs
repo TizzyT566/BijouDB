@@ -4,24 +4,6 @@ namespace BijouDB;
 
 internal static class Misc
 {
-    ///// <summary>
-    ///// Ensures a stream's total size.
-    ///// </summary>
-    ///// <param name="this">The stream to flush.</param>
-    ///// <param name="size">The desired total size of the stream.</param>
-    //public static void Flush(this Stream @this, long size, byte[]? padding = null)
-    //{
-    //    // Seek to end of stream
-    //    if (padding is null) padding = new byte[8192];
-    //    @this.Position = @this.Length;
-    //    while (@this.Position < size)
-    //    {
-    //        int writeLength = (int)Math.Min(Math.Abs(size - @this.Position), padding.Length);
-    //        @this.Write(padding, 0, writeLength);
-    //    }
-    //    @this.Flush();
-    //}
-
     public static bool StreamCompare(Stream s1, Stream s2)
     {
         long? s1Length = null, s2Length = null;
@@ -63,18 +45,22 @@ internal static class Misc
 
     public static FileStream GetTemporaryFileStream(int bufferSize = 4096)
     {
-        FileStream fs;
+        FileStream fs = null!;
 
-        while (true)
-        {
-            string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), ".tmp");
-            try
+        SpinWait.SpinUntil(() =>
             {
-                fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, FileOptions.DeleteOnClose);
-                break;
-            }
-            catch (Exception) { }
-        }
+                try
+                {
+                    string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), ".tmp");
+                    fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, FileOptions.DeleteOnClose);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    ex.Log();
+                    return false;
+                }
+            });
 
         return fs;
     }

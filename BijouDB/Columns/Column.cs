@@ -47,35 +47,45 @@ public sealed class Column<D>
         using FileBackedStream ms = new();
         hash = data.Hash(ms);
 
-        // hash lookup
-        string hashDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.ToString());
-        if (Directory.Exists(hashDir))
+        try
         {
-            foreach (string hashCollision in Directory.EnumerateDirectories(hashDir))
+            // hash lookup
+            string hashDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.ToString());
+            if (Directory.Exists(hashDir))
             {
-                string collisionName = Path.GetFileNameWithoutExtension(hashCollision);
-                string binFilePath = Path.Combine(hashCollision, Globals.BinFile);
-                if (Guid.TryParse(collisionName, out index) && File.Exists(binFilePath))
+                foreach (string hashCollision in Directory.EnumerateDirectories(hashDir))
                 {
-                    FileStream fs = null!;
-
-                    SpinWait.SpinUntil(() =>
+                    string collisionName = Path.GetFileNameWithoutExtension(hashCollision);
+                    string binFilePath = Path.Combine(hashCollision, Globals.BinFile);
+                    if (Guid.TryParse(collisionName, out index) && File.Exists(binFilePath))
                     {
-                        try
-                        {
-                            fs = new(binFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                            return true;
-                        }
-                        catch (Exception)
-                        {
-                            return false;
-                        }
-                    });
+                        FileStream fs = null!;
 
-                    ms.Position = 0;
-                    if (Misc.StreamCompare(ms, fs)) return true;
+                        if (SpinWait.SpinUntil(() =>
+                        {
+                            try
+                            {
+                                fs = new(binFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                                return true;
+                            }
+                            catch (Exception ex)
+                            {
+                                ex.Log();
+                                return false;
+                            }
+                        }, 10000))
+                        {
+                            ms.Position = 0;
+                            if (Misc.StreamCompare(ms, fs)) return true;
+                        }
+                        return false;
+                    }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            ex.Log();
         }
         index = IncrementalGuid.NextGuid();
         return false;
@@ -162,23 +172,24 @@ public sealed class Column<D>
     public D Get<R>(R record)
         where R : Record
     {
-        if (record.Id == Guid.Empty) throw new Exception("Unexpected record state.");
-        string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
-        if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
-        using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.None);
-        fs.Position = Offset;
-        if (fs.ReadHashValue(out Guid crntHash, out Guid crntValue))
+        if (record.Id != Guid.Empty)
         {
-            string crntBinPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
-            if (File.Exists(crntBinPath))
+            string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
+            if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
+            using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.None);
+            fs.Position = Offset;
+            if (fs.ReadHashValue(out Guid crntHash, out Guid crntValue))
             {
-                using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
-                D newValue = new();
-                using MaskedStream ms = new(fs2, Globals.BitMaskSeed);
-                newValue.Deserialize(ms);
-                return newValue;
+                string crntBinPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
+                if (File.Exists(crntBinPath))
+                {
+                    using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
+                    D newValue = new();
+                    using MaskedStream ms = new(fs2, Globals.BitMaskSeed);
+                    newValue.Deserialize(ms);
+                    return newValue;
+                }
             }
-            //else throw new FileNotFoundException("Value for DataType is missing, database maybe corrupted.");
         }
         return _default is null ? default! : _default();
     }
@@ -194,7 +205,11 @@ public sealed class Column<D>
     public void Set<R>(R record, D value)
         where R : Record
     {
-        if (record.Id == Guid.Empty) throw new Exception("Unexpected record state.");
+        if (record.Id == Guid.Empty)
+        {
+            new Exception("Unexpected record state, Id is empty.").Log();
+            return;
+        }
 
         if (_check is not null && !_check(value)) throw new CheckContraintException();
 
@@ -307,7 +322,7 @@ public sealed class Column<D>
         // write new info to record
         fs.Position = Offset;
         fs.WriteHashValue(newHash, newValue);
-        //fs.Flush(_tableLength);
+        fs.Flush();
     }
 
     internal void Remove(Record record)

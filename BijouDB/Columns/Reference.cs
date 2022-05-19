@@ -49,8 +49,18 @@ public sealed class Reference<R, D>
         else return false;
 
         // hash lookup
-        string hashDir = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Index, _sourceColumn()._name, hash.ToString());
-        if (Directory.Exists(hashDir))
+        string hashDir;
+        try
+        {
+            hashDir = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Index, _sourceColumn()._name, hash.ToString());
+        }
+        catch (Exception ex)
+        {
+            ex.Log();
+            return false;
+        }
+
+        try
         {
             foreach (string hashCollision in Directory.EnumerateDirectories(hashDir))
             {
@@ -69,6 +79,10 @@ public sealed class Reference<R, D>
                     }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            ex?.Log();
         }
         return false;
     }
