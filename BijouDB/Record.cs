@@ -1,19 +1,36 @@
-﻿namespace BijouDB;
+﻿using System.Reflection;
+
+namespace BijouDB;
 
 public abstract class Record : IEqualityComparer<Record>
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
+    private static readonly Dictionary<string, Type> _types = new();
 
     private Guid? _id;
-    public Guid Id => _id ??= IncrementalGuid.NextGuid();
+    public Guid Id
+    {
+        get
+        {
+            if (_id is null)
+            {
+                _id ??= IncrementalGuid.NextGuid();
+                string baseDir = Path.Combine(Globals.DatabasePath, GetType().FullName!, Globals.Rec);
+                Directory.CreateDirectory(baseDir);
+                File.Create(Path.Combine(baseDir, $"{Id}.{Globals.Rec}")).Dispose();
+            }
+            return (Guid)_id;
+        }
+    }
 
     public string Json => BijouDB.Json.ToJson(this);
 
-    public Record()
+    static Record()
     {
-        string baseDir = Path.Combine(Globals.DatabasePath, GetType().FullName!, Globals.Rec);
-        Directory.CreateDirectory(baseDir);
-        File.Create(Path.Combine(baseDir, $"{Id}.{Globals.Rec}")).Dispose();
+        Type recordType = typeof(Record);
+        foreach (Type type in Assembly.GetEntryAssembly().GetTypes())
+            if (!type.IsAbstract && recordType.IsAssignableFrom(type) && type.FullName is not null)
+                _types.Add(type.FullName, type);
     }
 
     public static bool TryGet<R>(string id, out R? record)
@@ -25,7 +42,6 @@ public abstract class Record : IEqualityComparer<Record>
         try
         {
             string path = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-            if (!File.Exists(path)) throw new FileNotFoundException("Record is missing.");
             record = new() { _id = id };
             return true;
         }
@@ -34,6 +50,57 @@ public abstract class Record : IEqualityComparer<Record>
             if (Globals.Logging) Console.WriteLine(ex.ToString());
             record = null;
             return false;
+        }
+    }
+
+    public void Save()
+    {
+        if (Id == Guid.Empty) throw new Exception("Unexpected record state.");
+    }
+
+    /// <summary>
+    /// Gets all available Record types in the current application.
+    /// </summary>
+    /// <returns>A string array with the full name of available record types.</returns>
+    public static string[] Types => _types.Values.Select<Type, string>(t => t.FullName).ToArray();
+
+    public string[] PropertyNames()
+    {
+        Type type = GetType();
+        PropertyInfo[] props = type.GetProperties();
+        return props.Select(p => $"{type.FullName}.{p.Name}").ToArray();
+    }
+
+    public static Record? Get(string type, string id)
+    {
+        try
+        {
+            Type t = _types[type];
+            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
+            dynamic obj = ci.Invoke(null);
+            obj._id = Guid.Parse(id);
+            return BijouDB.Json.ToJson(obj);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    public static object? GetProperty(string type, string id, string property)
+    {
+        if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(id) || string.IsNullOrEmpty(property)) return null;
+        try
+        {
+            Type t = _types[type];
+            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
+            dynamic obj = ci.Invoke(null);
+            obj._id = Guid.Parse(id);
+            return BijouDB.Json.ToJson(t.GetProperty(property).GetValue(obj));
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 

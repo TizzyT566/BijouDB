@@ -8,10 +8,9 @@ namespace BijouDB;
 public static class Json
 {
     private static readonly Dictionary<Type, Func<object, string>> _formatters = new();
-
-    private static bool _expand;
+    private static readonly HashSet<Guid> _references = new();
+    private static bool _verbose;
     private static int _depth;
-    private static HashSet<Guid> _references = new();
 
     private static int _lock;
 
@@ -49,12 +48,12 @@ public static class Json
         return _formatters.TryAdd(type, formatter);
     }
 
-    public static string ToJson(this object @this, bool expand = true, int depth = 0)
+    public static string ToJson(this object @this, int depth = 0, bool verbose = false)
     {
         try
         {
             SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
-            _expand = expand;
+            _verbose = verbose;
             _depth = depth;
             string json = ToJson(@this);
             _references.Clear();
@@ -117,19 +116,22 @@ public static class Json
 
         List<string> parts = new();
 
-        if (_expand && _depth >= 0 && !_references.Contains(record.Id))
+        if (_depth >= 0 && !_references.Contains(record.Id))
         {
             Interlocked.Decrement(ref _depth);
             _references.Add(record.Id);
+
             PropertyInfo[] properties = t.GetProperties();
             foreach (PropertyInfo property in properties)
-                if (JsonAttribute.HasAttribute(property))
+                if (JsonAttribute.HasAttribute(property, out bool verbose))
                 {
+                    if (verbose && !_verbose) continue;
                     if (IsTuple(property) && TupleObjectAttribute.HasAttribute(property, out string[] labels))
                         parts.Add($"\"{property.Name}\":{TupleObjectToJson(property.GetValue(record), labels)}");
                     else
                         parts.Add($"\"{property.Name}\":{ToJson(property.GetValue(record))}");
                 }
+
             _references.Remove(record.Id);
             Interlocked.Increment(ref _depth);
         }

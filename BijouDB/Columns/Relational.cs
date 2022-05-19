@@ -52,6 +52,12 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
             }
         }
 
+        public void Clear()
+        {
+            foreach (string path in Directory.GetFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}"))
+                if (File.Exists(path)) File.Delete(path);
+        }
+
         public R2[] All
         {
             get

@@ -162,6 +162,7 @@ public sealed class Column<D>
     public D Get<R>(R record)
         where R : Record
     {
+        if (record.Id == Guid.Empty) throw new Exception("Unexpected record state.");
         string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
         if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
         using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.None);
@@ -193,6 +194,8 @@ public sealed class Column<D>
     public void Set<R>(R record, D value)
         where R : Record
     {
+        if (record.Id == Guid.Empty) throw new Exception("Unexpected record state.");
+
         if (_check is not null && !_check(value)) throw new CheckContraintException();
 
         string baseDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec);
