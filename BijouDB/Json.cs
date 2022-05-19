@@ -70,7 +70,7 @@ public static class Json
         }
     }
 
-    internal static string ToJson(object obj)
+    private static string ToJson(object obj)
     {
         if (obj is null) return "null";
 
@@ -137,7 +137,7 @@ public static class Json
         return sb.Append($"{string.Join(",", parts)}}}}}").ToString();
     }
 
-    public static string TupleToJson(object obj)
+    private static string TupleToJson(object obj)
     {
         StringBuilder sb = new("[");
 
@@ -149,7 +149,7 @@ public static class Json
         return sb.Append($"{string.Join(",", parts)}]").ToString();
     }
 
-    public static string TupleObjectToJson(object obj, string[] labels)
+    private static string TupleObjectToJson(object obj, string[] labels)
     {
         StringBuilder sb = new("{");
 
