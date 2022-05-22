@@ -1,6 +1,4 @@
-﻿using BijouDB.DataTypes;
-
-namespace BijouDB;
+﻿namespace BijouDB;
 
 public sealed class SchemaBuilder<R> : IDisposable
     where R : Record, new()

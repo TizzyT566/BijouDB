@@ -2,7 +2,6 @@
 using System.Numerics;
 using System.Reflection;
 using System.Text;
-using static BijouDB.Globals;
 
 namespace BijouDB;
 
