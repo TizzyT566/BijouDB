@@ -2,7 +2,7 @@
 
 using BijouDB.Exceptions;
 
-namespace BijouDB.DataTypes;
+namespace BijouDB;
 
 public struct @uint : IDataType
 {

@@ -3,7 +3,7 @@
 using System.Text;
 using BijouDB.Exceptions;
 
-namespace BijouDB.DataTypes;
+namespace BijouDB;
 
 public struct @string : IDataType
 {

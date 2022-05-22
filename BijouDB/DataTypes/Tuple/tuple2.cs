@@ -2,7 +2,7 @@
 
 using BijouDB.Exceptions;
 
-namespace BijouDB.DataTypes;
+namespace BijouDB;
 
 public struct @tuple<D1, D2> : IDataType
     where D1 : IDataType, new()

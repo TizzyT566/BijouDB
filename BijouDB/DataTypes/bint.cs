@@ -3,7 +3,7 @@
 using System.Numerics;
 using BijouDB.Exceptions;
 
-namespace BijouDB.DataTypes;
+namespace BijouDB;
 
 public struct @bint : IDataType
 {

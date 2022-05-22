@@ -3,7 +3,7 @@
 using BijouDB.Exceptions;
 using static BijouDB.Record;
 
-namespace BijouDB.DataTypes;
+namespace BijouDB;
 
 public struct @record<R> : IDataType
     where R : Record, new()
