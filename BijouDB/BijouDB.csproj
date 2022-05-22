@@ -12,6 +12,7 @@
 		<Version>3.0.0.0</Version>
 		<PackageIcon>Icon.png</PackageIcon>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<PackageLicenseFile>C:\Users\tizzy\source\repos\BijouDB\LICENSE</PackageLicenseFile>
 	</PropertyGroup>
 
 	<ItemGroup>
