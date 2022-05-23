@@ -10,7 +10,7 @@ public sealed class SchemaBuilder<R> : IDisposable
     internal readonly List<Action<Record>> _columns = new();
 
     // indexed column
-    public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<R, D> Default = default!, Func<D, bool> Check = null!)
+    public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!)
         where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();

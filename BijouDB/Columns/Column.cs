@@ -19,9 +19,9 @@ public sealed class Column<D>
 
     private readonly bool _unique;
     private readonly Func<D> _default;
-    private readonly Func<Record, D, bool> _check;
+    private readonly Func<D, bool> _check;
 
-    internal Column(LengthRef tableLengthRef, string columnName, Type type, bool unique, Func<D> @default, Func<Record, D, bool> check)
+    internal Column(LengthRef tableLengthRef, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check)
     {
         Offset = _tableLength = tableLengthRef;
         _name = columnName;
@@ -211,7 +211,7 @@ public sealed class Column<D>
             return;
         }
 
-        if (_check is not null && !_check(record, value)) throw new CheckContraintException();
+        if (_check is not null && !_check(value)) throw new CheckContraintException();
 
         string baseDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec);
         Directory.CreateDirectory(baseDir);
