@@ -139,7 +139,7 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
                     try
                     {
 
-                        string id = _leads ? Path.GetExtension(file)[1..] : Path.GetFileNameWithoutExtension(file);
+                        string id = _leads ? Path.GetExtension(file).Substring(1) : Path.GetFileNameWithoutExtension(file);
                         if (Record.TryGet(id, out R2? r) && r is not null) records.Add(r);
                     }
                     catch (Exception ex)

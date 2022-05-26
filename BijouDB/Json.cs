@@ -45,7 +45,21 @@ public static class Json
     {
         if (type is null) return false;
         if (typeof(Record).Equals(type)) return false;
-        return _formatters.TryAdd(type, formatter);
+        try
+        {
+            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
+            if(_formatters.ContainsKey(type)) return false;
+            _formatters.Add(type, formatter);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _lock, 0);
+        }
     }
 
     public static string? GetRecord(string type, string id, int depth = 0, bool verbose = false)
