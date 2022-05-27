@@ -13,13 +13,14 @@ internal static class SkipHash
     /// <returns>A Guid which represents the SkipHash.</returns>
     /// <remarks>Inputs of 256 bytes or less will be read in its entirety.</remarks>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public static Guid GetSkipHash(this Stream @this)
+    public static Guid GetSkipHash(this Stream @this, HashAlgorithm? algorithm = null)
     {
         long hashingSize = @this.Length - @this.Position; // Intentionally throws NotSupportedException if stream isn't seekable
-        using MD5 md5 = MD5.Create();
+        using HashAlgorithm hash = algorithm ?? MD5.Create();
+        if (hash.HashSize != 128) throw new Exception("HashAlgorithm must be 128bits.");
         int _samples;
 
-        if (hashingSize <= 256) return new(md5.ComputeHash(@this));
+        if (hashingSize <= 256) return new(hash.ComputeHash(@this));
         else _samples = (int)(((hashingSize - 32) / Math.Sqrt(hashingSize)) + 2);
 
         double position = 0, offset = (hashingSize - 16.0) / (_samples - 1.0);
@@ -35,6 +36,6 @@ internal static class SkipHash
             @this.Position = (long)Math.Round(position);
         }
         ms.Position = 0;
-        return new(md5.ComputeHash(ms));
+        return new(hash.ComputeHash(ms));
     }
 }

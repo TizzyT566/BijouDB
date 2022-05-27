@@ -27,12 +27,81 @@ public static class Json
         _formatters.Add(typeof(long), o => o.ToString());
         _formatters.Add(typeof(sbyte), o => o.ToString());
         _formatters.Add(typeof(short), o => o.ToString());
-        _formatters.Add(typeof(string), o => $"\"{o}\"");
+        _formatters.Add(typeof(string), o => ProcessString(o));
         _formatters.Add(typeof(DateTime), o => ((DateTime)o).Ticks.ToString());
         _formatters.Add(typeof(uint), o => o.ToString());
         _formatters.Add(typeof(ulong), o => o.ToString());
         _formatters.Add(typeof(ushort), o => o.ToString());
         _formatters.Add(typeof(Guid), o => $"\"{o}\"");
+    }
+
+    private static string ProcessString(object obj)
+    {
+        string input = (string)obj;
+        char[] chars = new char[input.Length * 2];
+        chars[0] = '\"';
+        int i = 1;
+        foreach(char c in input)
+        {
+            switch(c)
+            {
+                case '\"':
+                    {
+                        chars[i++] = '\\';
+                        chars[i++] = '\"';
+                        break;
+                    }
+                case '\\':
+                    {
+                        chars[i++] = '\\';
+                        chars[i++] = '\\';
+                        break;
+                    }
+                case '/':
+                    {
+                        chars[i++] = '\\';
+                        chars[i++] = '/';
+                        break;
+                    }
+                case '\b':
+                    {
+                        chars[i++] = '\\';
+                        chars[i++] = 'b';
+                        break;
+                    }
+                case '\f':
+                    {
+                        chars[i++] = '\\';
+                        chars[i++] = 'f';
+                        break;
+                    }
+                case '\n':
+                    {
+                        chars[i++] = '\\';
+                        chars[i++] = 'n';
+                        break;
+                    }
+                case '\r':
+                    {
+                        chars[i++] = '\\';
+                        chars[i++] = 'r';
+                        break;
+                    }
+                case '\t':
+                    {
+                        chars[i++] = '\\';
+                        chars[i++] = 't';
+                        break;
+                    }
+                    default:
+                    {
+                        chars[i++] = c;
+                        break;
+                    }
+            }
+        }
+        chars[i++] = '\"';
+        return new string(chars, 0, i);
     }
 
     /// <summary>
