@@ -38,7 +38,7 @@ public static class Json
     private static string ProcessString(object obj)
     {
         string input = (string)obj;
-        char[] chars = new char[input.Length * 2];
+        char[] chars = new char[2 + input.Length * 2];
         chars[0] = '\"';
         int i = 1;
         foreach(char c in input)
