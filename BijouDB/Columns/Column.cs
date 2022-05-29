@@ -78,6 +78,9 @@ public sealed class Column<D>
                             ms.Position = 0;
                             if (Misc.StreamCompare(ms, fs)) return true;
                         }
+
+                        fs?.Dispose();
+
                         return false;
                     }
                 }
