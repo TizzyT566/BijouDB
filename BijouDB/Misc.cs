@@ -52,7 +52,7 @@ internal static class Misc
                 try
                 {
                     string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), ".tmp");
-                    fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.None, bufferSize, FileOptions.DeleteOnClose);
+                    fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Read, bufferSize, FileOptions.DeleteOnClose);
                     return true;
                 }
                 catch (Exception ex)

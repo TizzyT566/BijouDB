@@ -23,7 +23,7 @@ internal static class IncrementalGuid
 
         if (File.Exists(SavePath))
         {
-            _saveStream = new(SavePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            _saveStream = new(SavePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
             _guidBytes = new byte[16];
             if (!_saveStream.TryFill(_guidBytes))
             {
@@ -35,7 +35,7 @@ internal static class IncrementalGuid
         }
         else
         {
-            _saveStream = new(SavePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            _saveStream = new(SavePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
             _guidBytes = new byte[16];
         }
         Save();

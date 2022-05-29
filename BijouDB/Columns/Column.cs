@@ -156,7 +156,7 @@ public sealed class Column<D>
         string[] uniqueValues = Directory.GetFiles(colDir, Globals.BinFile, SearchOption.AllDirectories);
         foreach (string uniqueValue in uniqueValues)
         {
-            using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.None);
+            using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.Read);
             D newValue = new();
             using MaskedStream ms = new(fs, Globals.BitMaskSeed);
             newValue.Deserialize(ms);
@@ -179,14 +179,14 @@ public sealed class Column<D>
         {
             string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
             if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
-            using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.None);
+            using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             fs.Position = Offset;
             if (fs.ReadHashValue(out Guid crntHash, out Guid crntValue))
             {
                 string crntBinPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, crntHash.ToString(), crntValue.ToString(), Globals.BinFile);
                 if (File.Exists(crntBinPath))
                 {
-                    using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
+                    using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                     D newValue = new();
                     using MaskedStream ms = new(fs2, Globals.BitMaskSeed);
                     newValue.Deserialize(ms);
@@ -224,7 +224,7 @@ public sealed class Column<D>
         Guid newHash = value.Hash(ms);
 
         // Read previous value
-        using FileStream fs = new(Path.Combine(baseDir, $"{record.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        using FileStream fs = new(Path.Combine(baseDir, $"{record.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
 
         // Old hash/value exists, read it and delete its reference
         fs.Position = Offset;
@@ -242,7 +242,7 @@ public sealed class Column<D>
                 {
                     if (File.Exists(oldBinPath))
                     {
-                        using FileStream fs2 = new(oldBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
+                        using FileStream fs2 = new(oldBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                         ms.Position = 0;
                         if (Misc.StreamCompare(ms, fs2))
                         {
@@ -286,7 +286,7 @@ public sealed class Column<D>
                 string crntBinPath = Path.Combine(hashCollision, Globals.BinFile);
                 if (File.Exists(crntBinPath))
                 {
-                    using FileStream fsCollision = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.None);
+                    using FileStream fsCollision = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                     ms.Position = 0;
                     if (Misc.StreamCompare(ms, fsCollision))
                     {
@@ -312,7 +312,7 @@ public sealed class Column<D>
         string newBinDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, newHash.ToString(), newValue.ToString());
         Directory.CreateDirectory(newBinDir);
         string newBinPath = Path.Combine(newBinDir, Globals.BinFile);
-        using FileStream fs3 = new(newBinPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+        using FileStream fs3 = new(newBinPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
         ms.Position = 0;
         ms.CopyTo(fs3);
         fs3.Flush();
@@ -335,7 +335,7 @@ public sealed class Column<D>
 
         if (!File.Exists(recordPath)) return;
 
-        using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.None);
+        using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         fs.Position = Offset;
 
         if (fs.Length - Offset >= 32 && fs.ReadHashValue(out Guid hash, out Guid index))
