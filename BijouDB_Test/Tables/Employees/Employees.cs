@@ -34,7 +34,7 @@ public sealed class Employee : Record
     { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
 
     // The junction between this record and computer records
-    [Json(true)] public Relational<Employee, Computer>.Junc Computers
+    [Json(2)] public Relational<Employee, Computer>.Junc Computers
     { get => ComputersRelational.To(this); set { } }
 
     static Employee() => _ = ~SchemaBuilder<Employee>

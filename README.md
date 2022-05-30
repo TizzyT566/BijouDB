@@ -651,6 +651,13 @@ Output (formatted, actual output is minimal):
 }
 ```
 
+If you require more control over how much and what data to show then you can use the 'ToJson()' method.
+It has two parameters.
+
+1) Depth : How deep should the json serialization go when returning data.
+
+2) Level : What is the maximum level for properties to be included in the serialization.
+
 ## Storing Data
 
 The database can be made to store arbitrary data.

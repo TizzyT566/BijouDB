@@ -9,7 +9,7 @@ public static class Json
 {
     private static readonly Dictionary<Type, Func<object, string>> _formatters = new();
     private static readonly HashSet<Guid> _references = new();
-    private static bool _verbose;
+    private static int _level;
     private static int _depth;
 
     private static int _lock;
@@ -41,9 +41,9 @@ public static class Json
         char[] chars = new char[2 + input.Length * 2];
         chars[0] = '\"';
         int i = 1;
-        foreach(char c in input)
+        foreach (char c in input)
         {
-            switch(c)
+            switch (c)
             {
                 case '\"':
                     {
@@ -93,7 +93,7 @@ public static class Json
                         chars[i++] = 't';
                         break;
                     }
-                    default:
+                default:
                     {
                         chars[i++] = c;
                         break;
@@ -117,7 +117,7 @@ public static class Json
         try
         {
             SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
-            if(_formatters.ContainsKey(type)) return false;
+            if (_formatters.ContainsKey(type)) return false;
             _formatters.Add(type, formatter);
             return true;
         }
@@ -131,7 +131,7 @@ public static class Json
         }
     }
 
-    public static string? GetRecord(string type, string id, int depth = 0, bool verbose = false)
+    public static string? GetRecord(string type, string id, int depth = 0, int level = 0)
     {
         try
         {
@@ -139,7 +139,7 @@ public static class Json
             ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
             dynamic obj = ci.Invoke(null);
             obj._id = Guid.Parse(id);
-            string json = Json.ToJson(obj, depth, verbose);
+            string json = Json.ToJson(obj, depth, level);
             return json;
         }
         catch (Exception)
@@ -148,7 +148,7 @@ public static class Json
         }
     }
 
-    public static string? GetProperty(string type, string id, string property, int depth = 0, bool verbose = false)
+    public static string? GetProperty(string type, string id, string property, int depth = 0, int level = 0)
     {
         if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(id) || string.IsNullOrEmpty(property)) return null;
         try
@@ -157,7 +157,7 @@ public static class Json
             ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
             dynamic obj = ci.Invoke(null);
             obj._id = Guid.Parse(id);
-            string prop = Json.ToJson(t.GetProperty(property).GetValue(obj), depth, verbose);
+            string prop = Json.ToJson(t.GetProperty(property).GetValue(obj), depth, level);
             return prop;
         }
         catch (Exception)
@@ -166,13 +166,13 @@ public static class Json
         }
     }
 
-    public static string ToJson(this object @this, bool verbose = false) => ToJson(@this, 0, verbose);
-    public static string ToJson(this object @this, int depth, bool verbose = false)
+    public static string ToJson(this object @this, int level = 0) => ToJson(@this, 0, level);
+    public static string ToJson(this object @this, int depth, int level = 0)
     {
         try
         {
             SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
-            _verbose = verbose;
+            _level = level;
             _depth = depth;
             _references.Clear();
             return ToJson(@this);
@@ -241,9 +241,9 @@ public static class Json
 
             PropertyInfo[] properties = t.GetProperties();
             foreach (PropertyInfo property in properties)
-                if (JsonAttribute.HasAttribute(property, out bool verbose))
+                if (JsonAttribute.HasAttribute(property, out int level))
                 {
-                    if (verbose && !_verbose) continue;
+                    if (level > _level) continue;
                     if (IsTuple(property) && TupleObjectAttribute.HasAttribute(property, out string[] labels))
                         parts.Add($"\"{property.Name}\":{TupleObjectToJson(property.GetValue(record), labels)}");
                     else

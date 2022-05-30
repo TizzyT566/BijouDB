@@ -12,7 +12,7 @@ public sealed class Computer : Record
     public string Type
     { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
         
-    [Json(true)] // The junction between this record and employee records
+    [Json(1)] // The junction between this record and employee records
     public Relational<Computer, Employee>.Junc Employees
     { get => EmployeeRelational.To(this); set { } }
 

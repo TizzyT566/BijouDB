@@ -5,20 +5,20 @@ namespace BijouDB;
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
 public class JsonAttribute : Attribute
 {
-    public bool _verbose;
+    public int _level;
 
-    public JsonAttribute(bool verbose = false) => _verbose = verbose;
+    public JsonAttribute(int level = 0) => _level = level;
 
-    public static bool HasAttribute(PropertyInfo propertyInfo, out bool verbose)
+    public static bool HasAttribute(PropertyInfo propertyInfo, out int level)
     {
         bool ret = propertyInfo.GetCustomAttributes<JsonAttribute>().Any();
         if (ret)
         {
             JsonAttribute attr = propertyInfo.GetCustomAttributes<JsonAttribute>().First();
-            verbose = attr._verbose;
+            level = attr._level;
             return true;
         }
-        verbose = false;
+        level = -1;
         return false;
     }
 }

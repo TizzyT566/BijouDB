@@ -7,4 +7,4 @@ employee.Computers += new Computer() { Type = "Alienware" };
 Computer computer = new();
 computer.Employees += employee;
 
-Console.WriteLine(computer.Json);
+Console.WriteLine(employee.ToJson(2));
