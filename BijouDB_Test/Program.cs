@@ -1,10 +1,13 @@
 ﻿using BijouDB;
 using BijouDB_Test.Tables;
 
-Employee employee = new();
-employee.Computers += new Computer() { Type = "Alienware" };
+Employee employee = new()
+{
+    Name = "TizzyT"
+};
 
-Computer computer = new();
-computer.Employees += employee;
+Employee[] employees = Record.GetAll<Employee>();
+foreach (Employee e in employees)
+    Console.WriteLine(e.Json);
 
 Console.WriteLine(employee.ToJson(2));

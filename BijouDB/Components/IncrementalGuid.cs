@@ -77,8 +77,8 @@ internal static class IncrementalGuid
     public static Guid NextGuid()
     {
         while (Interlocked.Exchange(ref _lock, 1) == 1) ;
-        Guid guid = new(_guidBytes);
         Increment(1);
+        Guid guid = new(_guidBytes);
         Interlocked.Exchange(ref _lock, 0);
         Interlocked.Increment(ref _count);
         if (Interlocked.CompareExchange(ref _count, 0, SPACING) == SPACING) Save();
