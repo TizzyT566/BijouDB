@@ -1,3 +1,5 @@
+> :warning: **BijouDB 4.0.0.0 is NOT backwards compatible!!!**
+
 ![alt text](https://raw.githubusercontent.com/TizzyT566/BijouDB/master/BijouDB/Icon.png "BijouDB")
 
 # BijouDB
