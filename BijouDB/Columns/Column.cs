@@ -14,7 +14,6 @@ public sealed class Column<D>
 
     internal readonly string _name;
 
-    private readonly LengthRef _tableLength;
     private readonly Type _type;
 
     private readonly bool _unique;
@@ -23,7 +22,7 @@ public sealed class Column<D>
 
     internal Column(LengthRef tableLengthRef, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check)
     {
-        Offset = _tableLength = tableLengthRef;
+        Offset = tableLengthRef;
         _name = columnName;
         _type = type;
         _unique = unique;
