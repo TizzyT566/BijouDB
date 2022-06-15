@@ -3,11 +3,11 @@ using BijouDB_Test.Tables;
 
 Employee employee = new()
 {
-    Name = "DanTran"
+    Name = "DanTran3"
 };
 
 Employee[] employees = Record.GetAll<Employee>();
 foreach (Employee e in employees)
     Console.WriteLine(e.Json);
 
-Console.WriteLine(employee.ToJson(2));
+Console.WriteLine(employee.ToJson(0));
