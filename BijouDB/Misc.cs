@@ -32,13 +32,15 @@ internal static class Misc
         }
     }
 
-    public static Guid Hash(this IDataType value, Stream stream)
+    public static string PaddedString(this ulong @this) => @this.ToString().PadLeft(20, '0');
+
+    public static ulong Hash(this IDataType value, Stream stream)
     {
         long pos = stream.Position;
         using MaskedStream ms = new(stream, Globals.BitMaskSeed);
         value.Serialize(ms);
         stream.Position = 0;
-        Guid ret = stream.GetSkipHash();
+        ulong ret = stream.GetSkipHash();
         stream.Position = pos;
         return ret;
     }
@@ -65,13 +67,13 @@ internal static class Misc
         return fs;
     }
 
-    public static bool ReadHashValue(this Stream @this, out Guid hash, out Guid value)
+    public static bool ReadHashValue(this Stream @this, out ulong hash, out Guid value)
     {
-        byte[] prevHashBytes = new byte[16];
+        byte[] prevHashBytes = new byte[8];
         byte[] prevValueBytes = new byte[16];
         if (@this.TryFill(prevHashBytes) && @this.TryFill(prevValueBytes))
         {
-            hash = new(prevHashBytes);
+            hash = BitConverter.ToUInt64(prevHashBytes, 0);
             value = new(prevValueBytes);
             return true;
         }
@@ -80,9 +82,9 @@ internal static class Misc
         return false;
     }
 
-    public static void WriteHashValue(this Stream @this, in Guid newHash, in Guid newValue)
+    public static void WriteHashValue(this Stream @this, in ulong newHash, in Guid newValue)
     {
-        @this.Write(newHash.ToByteArray(), 0, 16);
+        @this.Write(BitConverter.GetBytes(newHash), 0, 8);
         @this.Write(newValue.ToByteArray(), 0, 16);
     }
 

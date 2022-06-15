@@ -32,7 +32,7 @@ public sealed class Reference<R, D>
 
         using FileBackedStream ms = new();
 
-        Guid hash;
+        ulong hash;
 
         // ugly check, refactor in the future ...
         if (typeof(@record<S>) == target)
@@ -51,7 +51,7 @@ public sealed class Reference<R, D>
         string hashDir;
         try
         {
-            hashDir = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Index, _sourceColumn()._name, hash.ToString());
+            hashDir = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Index, _sourceColumn()._name, hash.PaddedString());
         }
         catch (Exception ex)
         {

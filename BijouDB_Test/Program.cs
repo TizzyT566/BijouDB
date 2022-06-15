@@ -3,7 +3,7 @@ using BijouDB_Test.Tables;
 
 Employee employee = new()
 {
-    Name = "TizzyT"
+    Name = "DanTran"
 };
 
 Employee[] employees = Record.GetAll<Employee>();
