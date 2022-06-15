@@ -1,4 +1,4 @@
-> :warning: **BijouDB 4.0.0.0 is NOT backwards compatible!!!**
+> :bangbang: **BijouDB 4.0.0.0 is NOT backwards compatible** :bangbang:
 
 ![alt text](https://raw.githubusercontent.com/TizzyT566/BijouDB/master/BijouDB/Icon.png "BijouDB")
 
