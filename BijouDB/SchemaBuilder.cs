@@ -18,7 +18,7 @@ public sealed class SchemaBuilder<R> : IDisposable
 
         column = new(builder.Length, columnName, typeof(R), Unique, Default, Check);
         builder._columns.Add(column.Remove);
-        builder.Length += 32;
+        builder.Length += 24;
         builder._count++;
         return builder;
     }
@@ -97,7 +97,7 @@ public static class SchemaBuilderExtensions
         string columnName = $"{Globals.ColName}_{@this._count}";
         column = new(@this.Length, columnName, typeof(R), Unique, Default, Check);
         @this._columns.Add(column.Remove);
-        @this.Length += 32;
+        @this.Length += 24;
         @this._count++;
         return @this;
     }

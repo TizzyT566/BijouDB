@@ -61,11 +61,6 @@ public abstract class Record : IEqualityComparer<Record>
         }
     }
 
-    public void Save()
-    {
-        if (Id == Guid.Empty) throw new Exception("Unexpected record state.");
-    }
-
     /// <summary>
     /// Gets all available Record types in the current application.
     /// </summary>

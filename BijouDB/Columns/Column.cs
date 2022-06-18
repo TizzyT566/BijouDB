@@ -227,7 +227,7 @@ public sealed class Column<D>
 
         // Old hash/value exists, read it and delete its reference
         fs.Position = Offset;
-        if (fs.Length - Offset >= 32 && fs.ReadHashValue(out ulong oldHash, out Guid oldValue))
+        if (fs.Length - Offset >= 24 && fs.ReadHashValue(out ulong oldHash, out Guid oldValue))
         {
             // check if old hash/value is valid
             if (oldValue != Guid.Empty)
@@ -337,7 +337,7 @@ public sealed class Column<D>
         using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         fs.Position = Offset;
 
-        if (fs.Length - Offset >= 32 && fs.ReadHashValue(out ulong hash, out Guid index))
+        if (fs.Length - Offset >= 24 && fs.ReadHashValue(out ulong hash, out Guid index))
         {
             // Go to indexed location, delete reference file
             string hashDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString());
