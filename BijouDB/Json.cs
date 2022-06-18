@@ -9,15 +9,12 @@ public static class Json
 {
     private static readonly Dictionary<Type, Func<object, string>> _formatters = new();
     private static readonly HashSet<Guid> _references = new();
-    private static int _level;
-    private static int _depth;
-
-    private static int _lock;
+    private static int _level, _depth, _lock;
 
     static Json()
     {
         _formatters.Add(typeof(BigInteger), o => o.ToString());
-        _formatters.Add(typeof(byte[]), o => $"\"data:application/octet-stream;base64,{Convert.ToBase64String((byte[])o)}\"");
+        _formatters.Add(typeof(byte[]), o => $"\"{Convert.ToBase64String((byte[])o)}\"");
         _formatters.Add(typeof(bool), o => (bool)o ? "true" : "false");
         _formatters.Add(typeof(byte), o => o.ToString());
         _formatters.Add(typeof(char), o => $"\"{o}\"");
