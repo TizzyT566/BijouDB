@@ -10,19 +10,17 @@ namespace BijouDB;
 public sealed class Column<D>
     where D : IDataType, new()
 {
-    internal long Offset { get; }
-
     internal readonly string _name;
 
-    private readonly Type _type;
-
+    private readonly long _offset;
     private readonly bool _unique;
+    private readonly Type _type;
     private readonly Func<D> _default;
     private readonly Func<D, bool> _check;
 
-    internal Column(LengthRef tableLengthRef, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check)
+    internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check)
     {
-        Offset = tableLengthRef;
+        _offset = offset;
         _name = columnName;
         _type = type;
         _unique = unique;
@@ -58,7 +56,7 @@ public sealed class Column<D>
                     string binFilePath = Path.Combine(hashCollision, Globals.BinFile);
                     if (Guid.TryParse(collisionName, out index) && File.Exists(binFilePath))
                     {
-                        FileStream fs = null!;
+                        FileStream? fs = null;
 
                         if (SpinWait.SpinUntil(() =>
                         {
@@ -75,7 +73,7 @@ public sealed class Column<D>
                         }, 10000))
                         {
                             ms.Position = 0;
-                            if (Misc.StreamCompare(ms, fs)) return true;
+                            if (Misc.StreamCompare(ms, fs!)) return true;
                         }
 
                         fs?.Dispose();
@@ -179,7 +177,7 @@ public sealed class Column<D>
             string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
             if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
             using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            fs.Position = Offset;
+            fs.Position = _offset;
             if (fs.ReadHashValue(out ulong crntHash, out Guid crntValue))
             {
                 string crntBinPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, crntHash.PaddedString(), crntValue.ToString(), Globals.BinFile);
@@ -226,8 +224,8 @@ public sealed class Column<D>
         using FileStream fs = new(Path.Combine(baseDir, $"{record.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
 
         // Old hash/value exists, read it and delete its reference
-        fs.Position = Offset;
-        if (fs.Length - Offset >= 24 && fs.ReadHashValue(out ulong oldHash, out Guid oldValue))
+        fs.Position = _offset;
+        if (fs.Length - _offset >= 24 && fs.ReadHashValue(out ulong oldHash, out Guid oldValue))
         {
             // check if old hash/value is valid
             if (oldValue != Guid.Empty)
@@ -296,7 +294,7 @@ public sealed class Column<D>
 
                         File.Create(Path.Combine(hashCollision, $"{record.Id}.{Globals.Ref}")).Dispose();
                         string crntValue = Path.GetFileName(hashCollision);
-                        fs.Position = Offset;
+                        fs.Position = _offset;
                         fs.WriteHashValue(newHash, Guid.Parse(crntValue));
                         //fs.Flush(_tableLength);
                         return;
@@ -322,7 +320,7 @@ public sealed class Column<D>
         if (Globals.Logging) Console.WriteLine($"Created new reference: {newRef}");
 
         // write new info to record
-        fs.Position = Offset;
+        fs.Position = _offset;
         fs.WriteHashValue(newHash, newValue);
         fs.Flush();
     }
@@ -335,9 +333,9 @@ public sealed class Column<D>
         if (!File.Exists(recordPath)) return;
 
         using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        fs.Position = Offset;
+        fs.Position = _offset;
 
-        if (fs.Length - Offset >= 24 && fs.ReadHashValue(out ulong hash, out Guid index))
+        if (fs.Length - _offset >= 24 && fs.ReadHashValue(out ulong hash, out Guid index))
         {
             // Go to indexed location, delete reference file
             string hashDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString());
