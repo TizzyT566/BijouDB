@@ -9,7 +9,7 @@
 		<RepositoryUrl>https://github.com/TizzyT566/BijouDB</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<Authors>TizzyT</Authors>
-		<Version>4.0.0.4</Version>
+		<Version>4.0.0.5</Version>
 		<PackageIcon>Icon.png</PackageIcon>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
@@ -22,6 +22,7 @@
 
 	<ItemGroup>
 	  <Compile Remove="Exceptions\OperationStatus.cs" />
+	  <Compile Remove="LengthRef.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -4,7 +4,7 @@ public sealed class SchemaBuilder<R> : IDisposable
     where R : Record, new()
 {
     private bool disposedValue;
-    internal LengthRef Length = new();
+    internal long Length = 0;
     internal int _count = 0;
     internal readonly List<Func<Record, bool>> _references = new();
     internal readonly List<Action<Record>> _columns = new();
