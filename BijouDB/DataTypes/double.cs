@@ -4,7 +4,7 @@ using BijouDB.Exceptions;
 
 namespace BijouDB;
 
-public class @double : IDataType
+public struct @double : IDataType
 {
     private double _value;
 
