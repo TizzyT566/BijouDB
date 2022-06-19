@@ -24,6 +24,8 @@ Nuget: [BijouDB Package](https://www.nuget.org/packages/BijouDB/)
 
                                     decimal => @decimal
 
+                                     double => @double
+
                                       float => @float
 
                                         int => @int
@@ -75,6 +77,8 @@ Nullable Types:
                                    DateTime? => @time.nullable
 
                                     decimal? => @decimal.nullable
+
+                                     double? => @double.nullable
 
                                       float? => @float.nullable
 
