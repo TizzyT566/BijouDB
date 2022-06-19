@@ -19,6 +19,7 @@ public static class Json
         _formatters.Add(typeof(byte), o => o.ToString());
         _formatters.Add(typeof(char), o => $"\"{o}\"");
         _formatters.Add(typeof(decimal), o => $"\"{o}\"");
+        _formatters.Add(typeof(double), o => o.ToString());
         _formatters.Add(typeof(float), o => o.ToString());
         _formatters.Add(typeof(int), o => o.ToString());
         _formatters.Add(typeof(long), o => o.ToString());
