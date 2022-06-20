@@ -4,7 +4,7 @@ namespace BijouDB_Test.Tables;
 
 public sealed class Computer : Record
 {
-    public static readonly Reference<Employee, Computer> EmployeeReferences;
+    public static readonly Reference<Computer, Employee> EmployeeReferences;
 
     public Employee[] Employees
     { get => EmployeeReferences.To(this); }
