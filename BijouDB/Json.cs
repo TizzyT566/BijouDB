@@ -164,8 +164,7 @@ public static class Json
         }
     }
 
-    public static string ToJson(this object @this, int level = 0) => ToJson(@this, 0, level);
-    public static string ToJson(this object @this, int depth, int level = 0)
+    public static string ToJson(this object @this, int depth = 0, int level = 0)
     {
         try
         {
