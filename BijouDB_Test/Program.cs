@@ -6,7 +6,8 @@ for(int i = 0; i < 5; i++)
 {
     _ = new Employee
     {
-        Computer = cpu
+        Computer = cpu,
+        BigInt = System.Numerics.BigInteger.Parse("416274654132468546418749643154954374412811432848549456432413484756413164968475345468158473574354544549")
     };
 }
 

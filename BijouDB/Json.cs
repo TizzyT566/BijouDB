@@ -13,7 +13,7 @@ public static class Json
 
     static Json()
     {
-        _formatters.Add(typeof(BigInteger), o => o.ToString());
+        _formatters.Add(typeof(BigInteger), o => $"{o}n");
         _formatters.Add(typeof(byte[]), o => $"\"{Convert.ToBase64String((byte[])o)}\"");
         _formatters.Add(typeof(bool), o => (bool)o ? "true" : "false");
         _formatters.Add(typeof(byte), o => o.ToString());
