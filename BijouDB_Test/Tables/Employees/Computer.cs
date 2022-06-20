@@ -4,19 +4,11 @@ namespace BijouDB_Test.Tables;
 
 public sealed class Computer : Record
 {
-    // Relational Many-To-Many
-    public static readonly Relational<Computer, Employee> EmployeeRelational;
-    public static readonly Column<@string> TypeColumn;
+    public static readonly Reference<Employee, Computer> EmployeeReferences;
 
-    [Json]
-    public string Type
-    { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
-        
-    [Json(1)] // The junction between this record and employee records
-    public Relational<Computer, Employee>.Junc Employees
-    { get => EmployeeRelational.To(this); set { } }
+    public Employee[] Employees
+    { get => EmployeeReferences.To(this); }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
-        .Add(out EmployeeRelational, Employee.ComputersRelational)
-        .Add(out TypeColumn, Check: value => value != "" && value != "Dell");
+        .Add(out EmployeeReferences, () => Employee.ComputerColumn);
 }

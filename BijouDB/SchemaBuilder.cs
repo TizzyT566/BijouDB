@@ -24,9 +24,9 @@ public sealed class SchemaBuilder<R> : IDisposable
     }
 
     // column which references other records which are related
-    public static SchemaBuilder<R> Add<RSource, D>(out Reference<RSource, D> column, Func<Column<D>> referenceColumn, bool restricted = true)
+    public static SchemaBuilder<R> Add<RSource, RTarget>(out Reference<RSource, RTarget> column, Func<Column<@record<RTarget>>> referenceColumn, bool restricted = true)
         where RSource : Record, new()
-        where D : IDataType, new()
+        where RTarget : Record, new()
     {
         SchemaBuilder<R> builder = new();
         column = new(referenceColumn);
@@ -103,10 +103,10 @@ public static class SchemaBuilderExtensions
     }
 
     // column which references other records which are related
-    public static SchemaBuilder<R> Add<R, RSource, D>(this SchemaBuilder<R> @this, out Reference<RSource, D> column, Func<Column<D>> referenceColumn, bool restricted = true)
+    public static SchemaBuilder<R> Add<R, RSource, RTarget>(this SchemaBuilder<R> @this, out Reference<RSource, RTarget> column, Func<Column<@record<RTarget>>> referenceColumn, bool restricted = true)
         where R : Record, new()
         where RSource : Record, new()
-        where D : IDataType, new()
+        where RTarget : Record, new()
     {
         column = new(referenceColumn);
         if (restricted) @this._references.Add(column.HasRecords<R>);
