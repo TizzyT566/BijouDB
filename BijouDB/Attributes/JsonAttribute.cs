@@ -5,7 +5,7 @@ namespace BijouDB;
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
 public class JsonAttribute : Attribute
 {
-    public int _level;
+    private int _level;
 
     public JsonAttribute(int level = 0) => _level = level;
 
