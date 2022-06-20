@@ -68,7 +68,7 @@ public struct @bint : IDataType
             }
         }
 
-        public static implicit operator BigInteger?(nullable value) => value._value;
+        public static implicit operator BigInteger?(nullable value) => value?._value;
         public static implicit operator nullable(BigInteger? value) => new(value);
     }
 }

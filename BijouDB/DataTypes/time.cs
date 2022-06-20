@@ -70,7 +70,7 @@ public struct @time : IDataType
             }
         }
 
-        public static implicit operator DateTime?(nullable value) => value._value;
+        public static implicit operator DateTime?(nullable value) => value?._value;
         public static implicit operator nullable(DateTime? value) => new(value);
     }
 }

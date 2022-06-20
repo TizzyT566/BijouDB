@@ -70,7 +70,7 @@ public struct @short : IDataType
             }
         }
 
-        public static implicit operator short?(nullable value) => value._value;
+        public static implicit operator short?(nullable value) => value?._value;
         public static implicit operator nullable(short? value) => new(value);
     }
 }

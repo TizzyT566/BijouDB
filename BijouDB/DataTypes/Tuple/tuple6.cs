@@ -96,7 +96,7 @@ public struct @tuple<D1, D2, D3, D4, D5, D6> : IDataType
             }
         }
 
-        public static implicit operator (D1, D2, D3, D4, D5, D6)?(nullable value) => value._value;
+        public static implicit operator (D1, D2, D3, D4, D5, D6)?(nullable value) => value?._value;
         public static implicit operator nullable((D1, D2, D3, D4, D5, D6)? value) => new(value);
     }
 }

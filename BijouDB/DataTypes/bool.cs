@@ -66,7 +66,7 @@ public struct @bool : IDataType
             }
         }
 
-        public static implicit operator bool?(@nullable value) => value._value;
+        public static implicit operator bool?(@nullable value) => value?._value;
         public static implicit operator @nullable(bool? value) => new(value);
     }
 }

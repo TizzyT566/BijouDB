@@ -69,7 +69,7 @@ public struct @sbyte : IDataType
             }
         }
 
-        public static implicit operator sbyte?(nullable value) => value._value;
+        public static implicit operator sbyte?(nullable value) => value?._value;
         public static implicit operator nullable(sbyte? value) => new(value);
     }
 }

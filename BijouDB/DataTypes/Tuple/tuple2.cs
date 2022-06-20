@@ -75,7 +75,7 @@ public struct @tuple<D1, D2> : IDataType
             }
         }
 
-        public static implicit operator (D1, D2)?(nullable value) => value._value;
+        public static implicit operator (D1, D2)?(nullable value) => value?._value;
         public static implicit operator nullable((D1, D2)? value) => new(value);
     }
 }

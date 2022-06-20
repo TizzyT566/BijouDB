@@ -70,7 +70,7 @@ public struct @ulong : IDataType
             }
         }
 
-        public static implicit operator ulong?(nullable value) => value._value;
+        public static implicit operator ulong?(nullable value) => value?._value;
         public static implicit operator nullable(ulong? value) => new(value);
     }
 }

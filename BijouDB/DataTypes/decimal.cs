@@ -90,7 +90,7 @@ public struct @decimal : IDataType
             }
         }
 
-        public static implicit operator decimal?(nullable value) => value._value;
+        public static implicit operator decimal?(nullable value) => value?._value;
         public static implicit operator nullable(decimal? value) => new(value);
     }
 }

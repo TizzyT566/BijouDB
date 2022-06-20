@@ -76,7 +76,7 @@ public struct @record<R> : IDataType
             }
         }
 
-        public static implicit operator R?(nullable value) => value._value;
+        public static implicit operator R?(nullable value) => value?._value;
         public static implicit operator nullable(R? value) => new(value);
     }
 }

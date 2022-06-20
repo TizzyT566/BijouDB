@@ -70,7 +70,7 @@ public struct @long : IDataType
             }
         }
 
-        public static implicit operator long?(nullable value) => value._value;
+        public static implicit operator long?(nullable value) => value?._value;
         public static implicit operator nullable(long? value) => new(value);
     }
 }

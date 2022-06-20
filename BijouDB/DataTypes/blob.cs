@@ -67,7 +67,7 @@ public struct @blob : IDataType
             }
         }
 
-        public static implicit operator byte[]?(nullable value) => value._value;
+        public static implicit operator byte[]?(nullable value) => value?._value;
         public static implicit operator nullable(byte[]? value) => new(value);
     }
 }

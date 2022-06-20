@@ -70,7 +70,7 @@ public struct @uint : IDataType
             }
         }
 
-        public static implicit operator uint?(nullable value) => value._value;
+        public static implicit operator uint?(nullable value) => value?._value;
         public static implicit operator nullable(uint? value) => new(value);
     }
 }

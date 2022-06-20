@@ -68,7 +68,7 @@ public struct @string : IDataType
             }
         }
 
-        public static implicit operator string?(nullable value) => value._value;
+        public static implicit operator string?(nullable value) => value?._value;
         public static implicit operator nullable(string? value) => new(value);
     }
 }
