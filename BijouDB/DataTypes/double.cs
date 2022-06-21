@@ -66,7 +66,7 @@ public struct @double : IDataType
             else
             {
                 stream.WriteByte(byte.MaxValue);
-                stream.Write(BitConverter.GetBytes((float)_value), 0, 8);
+                stream.Write(BitConverter.GetBytes((double)_value), 0, 8);
             }
         }
 
