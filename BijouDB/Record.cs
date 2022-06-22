@@ -4,7 +4,7 @@ using static BijouDB.Globals;
 
 namespace BijouDB;
 
-public abstract class Record : IEqualityComparer<Record>, IEnumerable<Record>
+public abstract class Record : IEqualityComparer<Record>
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
     internal static readonly Dictionary<string, Type> _types = new();
