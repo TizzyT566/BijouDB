@@ -1,5 +1,6 @@
 ﻿using BijouDB.Components;
 using BijouDB.Exceptions;
+using System.Collections.Generic;
 
 namespace BijouDB;
 
@@ -96,31 +97,19 @@ public sealed class Column<D>
     /// </summary>
     /// <typeparam name="R">The return record type.</typeparam>
     /// <param name="value">The value to search records with.</param>
-    /// <param name="records">An array of records which contains the specified value.</param>
-    public void WithValue<R>(D value, out R[] records)
-        where R : Record, new() =>
-        records = WithValue<R>(value);
-
+    /// <returns>An enumerable of all records containing the value specified.</returns>
     /// <summary>
-    /// Get records with the specified value.
-    /// </summary>
-    /// <typeparam name="R">The return record type.</typeparam>
-    /// <param name="value">The value to search records with.</param>
-    /// <returns>A array of all records containing the value specified.</returns>
-    /// <summary>
-    public R[] WithValue<R>(D value)
+    public IEnumerable<R> WithValue<R>(D value)
         where R : Record, new()
     {
-        List<R> records = new();
         if (ValueIndex<R>(value, out ulong hash, out Guid index))
         {
             string dataMatchPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
                 if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
                     if (Record.TryGet(id, out R? record))
-                        records.Add(record!);
+                        yield return record!;
         }
-        return records.ToArray();
     }
 
     /// <summary>
@@ -144,22 +133,21 @@ public sealed class Column<D>
     /// <summary>
     /// Gets an array of unique values stored in the column.
     /// </summary>
-    /// <returns>An array of unique values stored in the column.</returns>
-    public D[] UniqueValues()
+    /// <returns>An enumerable of unique values stored in the column.</returns>
+    public IEnumerable<D> UniqueValues()
     {
-        List<D> ds = new();
         string colDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name);
-        if (!Directory.Exists(colDir)) return ds.ToArray();
-        string[] uniqueValues = Directory.GetFiles(colDir, Globals.BinFile, SearchOption.AllDirectories);
-        foreach (string uniqueValue in uniqueValues)
+        if (Directory.Exists(colDir))
         {
-            using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.Read);
-            D newValue = new();
-            using MaskedStream ms = new(fs, Globals.BitMaskSeed);
-            newValue.Deserialize(ms);
-            ds.Add(newValue);
+            foreach (string uniqueValue in Directory.EnumerateFiles(colDir, Globals.BinFile, SearchOption.AllDirectories))
+            {
+                using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using MaskedStream ms = new(fs, Globals.BitMaskSeed);
+                D newValue = new();
+                newValue.Deserialize(ms);
+                yield return newValue;
+            }
         }
-        return ds.ToArray();
     }
 
     /// <summary>

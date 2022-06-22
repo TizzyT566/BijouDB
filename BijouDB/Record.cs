@@ -74,19 +74,18 @@ public abstract class Record : IEqualityComparer<Record>
         return props.Select(p => $"{type.FullName}.{p.Name}").ToArray();
     }
 
-    public static R[] GetAll<R>()
+    public static IEnumerator<R> GetAll<R>()
         where R : Record, new()
     {
         string path = Path.Combine(DatabasePath, typeof(R).FullName!, Rec);
-        if (!Directory.Exists(path)) return Array.Empty<R>();
-        string[] records = Directory.GetFiles(path, RecPattern);
-        R[] result = new R[records.Length];
-        for (int i = 0; i < records.Length; i++)
+        if (Directory.Exists(path))
         {
-            string recordName = Path.GetFileNameWithoutExtension(records[i]);
-            result[i] = new() { _id = Guid.Parse(recordName) };
+            foreach (string record in Directory.EnumerateFiles(path, RecPattern))
+            {
+                string recordName = Path.GetFileNameWithoutExtension(record);
+                yield return new() { _id = Guid.Parse(recordName) };
+            }
         }
-        return result;
     }
 
     public static R[] WithValues<R>(params R[][] columnMatches)
