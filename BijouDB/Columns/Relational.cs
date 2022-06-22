@@ -118,36 +118,19 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
             }
         }
 
-        public R2[] All
+        public IEnumerable<R2> All
         {
             get
             {
-                if (!Directory.Exists(_dir)) return Array.Empty<R2>();
-                List<R2> records = new();
-                string[] files;
-                try
+                if (Directory.Exists(_dir))
                 {
-                    files = Directory.GetFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}");
-                }
-                catch (Exception ex)
-                {
-                    ex.Log();
-                    return Array.Empty<R2>();
-                }
-                foreach (string file in files)
-                {
-                    try
+                    foreach (string file in Directory.EnumerateFiles(_dir, _leads ? $"{_id}.*" : $"*.{_id}"))
                     {
-
                         string id = _leads ? Path.GetExtension(file).Substring(1) : Path.GetFileNameWithoutExtension(file);
-                        if (Record.TryGet(id, out R2? r) && r is not null) records.Add(r);
-                    }
-                    catch (Exception ex)
-                    {
-                        ex.Log();
+                        if (Record.TryGet(id, out R2? r) && r is not null)
+                            yield return r;
                     }
                 }
-                return records.ToArray();
             }
         }
 

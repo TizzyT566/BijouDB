@@ -1,17 +1,12 @@
 ﻿using BijouDB_Test.Tables;
+using BijouDB;
 
-//Computer cpu = new();
+Computer cpu = new();
 
-//for(int i = 0; i < 5; i++)
-//{
-//    _ = new Employee
-//    {
-//        Computer = cpu,
-//        BigInt = System.Numerics.BigInteger.Parse("416274654132468546418749643154954374412811432848549456432413484756413164968475345468158473574354544549")
-//    };
-//}
+//Employee employee = new();
+//employee.Computers += cpu;-
 
-foreach(Employee e in BijouDB.Record.GetAll<Employee>())
+foreach (Computer e in Record.GetAll<Computer>())
 {
-    Console.WriteLine(e.Json);
+    Console.WriteLine(e.ToJson(0));
 }

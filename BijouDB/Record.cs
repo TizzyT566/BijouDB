@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Reflection;
+﻿using System.Reflection;
 using static BijouDB.Globals;
 
 namespace BijouDB;
@@ -75,6 +74,11 @@ public abstract class Record : IEqualityComparer<Record>
         return props.Select(p => $"{type.FullName}.{p.Name}").ToArray();
     }
 
+    /// <summary>
+    /// Get all entries for a particular record.
+    /// </summary>
+    /// <typeparam name="R">The record type.</typeparam>
+    /// <returns>An enumerable for all records of a particular type.</returns>
     public static IEnumerable<R> GetAll<R>()
         where R : Record, new()
     {

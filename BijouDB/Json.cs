@@ -164,7 +164,8 @@ public static class Json
         }
     }
 
-    public static string ToJson(this object @this, int depth = 0, int level = 0)
+    // Gets the Json representation of an object which has a formatter.
+    public static string ToJson(this object @this, int depth = 1, int level = 0)
     {
         try
         {
@@ -200,6 +201,9 @@ public static class Json
         // if array
         if (obj.GetType().IsArray) return ArrayToJson(obj);
 
+        // if IEnumerable
+        if (obj is IEnumerable) return EnumerableToJson(obj);
+
         // if tuple
         if (IsTuple(obj)) return TupleToJson(obj);
 
@@ -209,8 +213,10 @@ public static class Json
     private static string JunctionToJson(object obj)
     {
         dynamic objDyn = obj;
-        object[] relations = objDyn.All;
-        return ArrayToJson(relations);
+        StringBuilder sb = new("[");
+        List<string> parts = new();
+        foreach (object item in objDyn.All) parts.Add(ToJson(item));
+        return sb.Append($"{string.Join(",", parts)}]").ToString();
     }
 
     private static string ArrayToJson(object obj)
@@ -219,6 +225,15 @@ public static class Json
         StringBuilder sb = new("[");
         List<string> parts = new();
         foreach (object item in arr) parts.Add(ToJson(item));
+        return sb.Append($"{string.Join(",", parts)}]").ToString();
+    }
+
+    private static string EnumerableToJson(object obj)
+    {
+        StringBuilder sb = new("[");
+        List<string> parts = new();
+        foreach (object item in (IEnumerable<object>)obj)
+            parts.Add(ToJson(item));
         return sb.Append($"{string.Join(",", parts)}]").ToString();
     }
 
@@ -231,7 +246,7 @@ public static class Json
 
         List<string> parts = new();
 
-        if (_depth >= 0 && !_references.Contains(record.Id))
+        if (_depth > 0 && !_references.Contains(record.Id))
         {
             Interlocked.Decrement(ref _depth);
             _references.Add(record.Id);
