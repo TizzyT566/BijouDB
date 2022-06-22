@@ -6,7 +6,7 @@ public sealed class Computer : Record
 {
     public static readonly Reference<Computer, Employee> EmployeeReferences;
 
-    public Employee[] Employees
+    public IEnumerable<Employee> Employees
     { get => EmployeeReferences.To(this); }
 
     static Computer() => _ = ~SchemaBuilder<Computer>

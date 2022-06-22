@@ -17,7 +17,7 @@ public sealed class Reference<R, RReturn>
     /// </summary>
     /// <param name="value">The parent record.</param>
     /// <returns>A collection with all child records.</returns>
-    public RReturn[] To(R value) => _sourceColumn().WithValue<RReturn>(value);
+    public IEnumerable<RReturn> To(R value) => _sourceColumn().WithValue<RReturn>(value);
 
     /// <summary>
     /// Checks to see if a record has any child references.
