@@ -1,9 +1,10 @@
-﻿using System.Reflection;
+﻿using System.Collections;
+using System.Reflection;
 using static BijouDB.Globals;
 
 namespace BijouDB;
 
-public abstract class Record : IEqualityComparer<Record>
+public abstract class Record : IEqualityComparer<Record>, IEnumerable<Record>
 {
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
     internal static readonly Dictionary<string, Type> _types = new();
@@ -74,7 +75,7 @@ public abstract class Record : IEqualityComparer<Record>
         return props.Select(p => $"{type.FullName}.{p.Name}").ToArray();
     }
 
-    public static IEnumerator<R> GetAll<R>()
+    public static IEnumerable<R> GetAll<R>()
         where R : Record, new()
     {
         string path = Path.Combine(DatabasePath, typeof(R).FullName!, Rec);
