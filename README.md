@@ -699,7 +699,7 @@ and in which case simply accessing the records Id property will store the record
 This means that during lookups for default values like null, 0, "", '\0', etc will NOT contain any
 records which do not have the respective property set. This behavior will be remedied if/when
 'Required Properties' feature is out but until then you can simply create a parameterless public
-constructor setting any/all the properties you want to automatically set upon construction.
+constructor setting any/all the properties you want.
 ```
 ```cs
 // Example
