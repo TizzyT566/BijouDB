@@ -5,7 +5,7 @@ namespace BijouDB_Test.Tables;
 public sealed class Employee : Record
 {
     public static readonly Column<@string> NameColumn;
-    public static readonly Reference<Computer, @record<Employee>.nullable> ComputerReference;
+    public static readonly Reference<@record<Employee>.nullable, Computer> ComputerReference;
 
     //[Json]
     //public Relational<Employee, Computer>.Junc Computers

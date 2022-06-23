@@ -9,7 +9,7 @@
 		<RepositoryUrl>https://github.com/TizzyT566/BijouDB</RepositoryUrl>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<Authors>TizzyT</Authors>
-		<Version>4.0.1.5</Version>
+		<Version>4.0.1.6</Version>
 		<PackageIcon>Icon.png</PackageIcon>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>

@@ -2,9 +2,9 @@
 
 namespace BijouDB;
 
-public sealed class Reference<R, D>
-    where R : Record, new()
+public sealed class Reference<D, R>
     where D : IDataType, new()
+    where R : Record, new()
 {
     private readonly Func<Column<D>> _sourceColumn;
 
