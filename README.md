@@ -216,7 +216,9 @@ You can keep the relationship but allow deleting even if references exist by set
 
 parameter to false in the `Add( ... , bool restricted)` method for references, default is true.
 
-You can create a `Reference` specifying the `Record` it references and the generic type of that column.
+You can create a `Reference` specifying the Column type you want to reference and the `Record`
+
+that column exists in.
 
 As a convention you should end the field with `References`.
 
@@ -237,7 +239,7 @@ public class Employee : Record
     public static readonly Column<@string> NameColumn;
     public static readonly Column<@int> AgeColumn;
     // A Reference to 'Computer' Record
-    public static readonly Reference<Computer, @record<Employee>> ComputerReferences;
+    public static readonly Reference<@record<Employee>, Computer> ComputerReferences;
 
     [Json] public string Name
     { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
@@ -516,7 +518,7 @@ public sealed class Employee : Record
     public static readonly Column<@bint> PointsColumn;
     public static readonly Column<@record<Employee>> ManagerColumn;
     public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
-    public static readonly Reference<Computer, @record<Employee>.nullable> ComputerReferences;
+    public static readonly Reference<@record<Employee>.nullable, Computer> ComputerReferences;
 
     // Marked with 'JsonAttribute'
     [Json] public string Name
