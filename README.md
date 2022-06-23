@@ -222,7 +222,7 @@ As a convention you should end the field with `References`.
 
 Create a property with the type of the referenced Record. This property should be an array `[]`.
 
-Use the `For()` method passing in `this`.
+Use the `To()` method passing in `this`.
 
 You then use an overload for the `Add()` method for references. References do NOT have contraints.
 
@@ -245,7 +245,7 @@ public class Employee : Record
     [Json] public int Age
     { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
     
-    [Json] public IEnumerable<Computer> Computers => ComputerReferences.For(this);
+    [Json] public IEnumerable<Computer> Computers => ComputerReferences.To(this);
 
     static Employee() => _ = ~SchemaBuilder<Employee>
         .Add(out NameColumn)
@@ -452,19 +452,14 @@ foreach (Employee employee in Employee.AgeColumn.WithValue<Employee>(19))
 If you know the Type and value of multiple columns then you use the previous method along side `BijouDB.Record.WithValues()` to get all records matching the values you know.
 
 ```cs
-public static R[] WithValues<R>(params R[][] columnMatches) { }
+public static IEnumerable<R> WithValues<R>(params IEnumerabl<R>[] columnMatches) { }
 
 // Example
 // Find Employees with the name 'TizzyT' and that are 30 years old
-
-// Get all records with Name 'TizzyT'
-Employee[] nameMatches = Employee.NameColumn.WithValue<Employee>("TizzyT").ToArray();
-
-// Get all records with age 30
-Employee[] ageMatches = Employee.AgeColumn.WithValue<Employee>(30).ToArray();
-
-// Combine matches
-foreach(Employee employee in Record.WithValues<Employee>(nameMatches, ageMatches))
+foreach(Employee employee in Record.WithValues<Employee>(
+    Employee.NameColumn.WithValue<Employee>("TizzyT"), // Get all records with Name 'TizzyT'
+    Employee.AgeColumn.WithValue<Employee>(30) // Get all records with age 30
+))
 {
     // Manipulate record here
 }
