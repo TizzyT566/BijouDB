@@ -24,8 +24,9 @@ public sealed class SchemaBuilder<R> : IDisposable
     }
 
     // column which references other records which are related
-    public static SchemaBuilder<R> Add<RReturn>(out Reference<R, RReturn> column, Func<Column<@record<R>>> referenceColumn, bool restricted = true)
-        where RReturn : Record, new()
+    public static SchemaBuilder<R> Add<RSource, D>(out Reference<RSource, D> column, Func<Column<D>> referenceColumn, bool restricted = true)
+        where RSource : Record, new()
+        where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();
         column = new(referenceColumn);
@@ -48,14 +49,11 @@ public sealed class SchemaBuilder<R> : IDisposable
         if (!disposedValue)
         {
             if (disposing)
-            {
                 Record.AddRemoveDefinition<R>(record =>
                 {
                     foreach (Func<Record, bool> referenceCheck in _references)
                         if (referenceCheck(record))
-                        {
                             return;
-                        }
 
                     try
                     {
@@ -68,7 +66,7 @@ public sealed class SchemaBuilder<R> : IDisposable
                         ex.Log();
                     }
                 });
-            }
+
             disposedValue = true;
         }
     }
@@ -102,9 +100,10 @@ public static class SchemaBuilderExtensions
     }
 
     // column which references other records which are related
-    public static SchemaBuilder<R> Add<R, RReturn>(this SchemaBuilder<R> @this, out Reference<R, RReturn> column, Func<Column<@record<R>>> referenceColumn, bool restricted = true)
+    public static SchemaBuilder<R> Add<R, RSource, D>(this SchemaBuilder<R> @this, out Reference<RSource, D> column, Func<Column<D>> referenceColumn, bool restricted = true)
         where R : Record, new()
-        where RReturn : Record, new()
+        where RSource : Record, new()
+        where D : IDataType, new()
     {
         column = new(referenceColumn);
         if (restricted) @this._references.Add(column.HasRecords<R>);

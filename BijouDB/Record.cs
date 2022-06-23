@@ -93,7 +93,7 @@ public abstract class Record : IEqualityComparer<Record>
         }
     }
 
-    public static R[] WithValues<R>(params R[][] columnMatches)
+    public static IEnumerable<R> WithValues<R>(params IEnumerable<R>[] columnMatches)
         where R : Record, new()
     {
         if (columnMatches.Length == 1)
@@ -102,8 +102,8 @@ public abstract class Record : IEqualityComparer<Record>
 
         // Turn all arrays into hashsets for fast lookup
         List<HashSet<R>> hashSets = new();
-        foreach (R[] arr in columnMatches)
-            if (arr is not null && arr.Length > 0) hashSets.Add(new HashSet<R>(arr));
+        foreach (IEnumerable<R> arr in columnMatches)
+            if (arr is not null) hashSets.Add(new HashSet<R>(arr));
 
         // start with the smallest collection
         hashSets.Sort((x, y) => x.Count.CompareTo(y.Count));

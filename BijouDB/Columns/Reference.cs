@@ -2,22 +2,22 @@
 
 namespace BijouDB;
 
-public sealed class Reference<R, RReturn>
+public sealed class Reference<R, D>
     where R : Record, new()
-    where RReturn : Record, new()
+    where D : IDataType, new()
 {
-    private readonly Func<Column<@record<R>>> _sourceColumn;
+    private readonly Func<Column<D>> _sourceColumn;
 
-    internal Column<@record<R>> SourceColumn => _sourceColumn();
+    internal Column<D> SourceColumn => _sourceColumn();
 
-    internal Reference(Func<Column<@record<R>>> sourceColumn) => _sourceColumn = sourceColumn;
+    internal Reference(Func<Column<D>> sourceColumn) => _sourceColumn = sourceColumn;
 
     /// <summary>
     /// Gets all child records referenced by this column.
     /// </summary>
     /// <param name="value">The parent record.</param>
     /// <returns>A collection with all child records.</returns>
-    public IEnumerable<RReturn> To(R value) => _sourceColumn().WithValue<RReturn>(value);
+    public IEnumerable<R> To(D value) => _sourceColumn().WithValue<R>(value);
 
     /// <summary>
     /// Checks to see if a record has any child references.
@@ -28,7 +28,7 @@ public sealed class Reference<R, RReturn>
     public bool HasRecords<S>(Record record)
         where S : Record, new()
     {
-        Type target = typeof(R);
+        Type target = typeof(D);
 
         using FileBackedStream ms = new();
 
@@ -51,7 +51,7 @@ public sealed class Reference<R, RReturn>
         string hashDir;
         try
         {
-            hashDir = Path.Combine(Globals.DatabasePath, typeof(RReturn).FullName!, Globals.Index, _sourceColumn()._name, hash.PaddedString());
+            hashDir = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Index, _sourceColumn()._name, hash.PaddedString());
         }
         catch (Exception ex)
         {
@@ -73,7 +73,7 @@ public sealed class Reference<R, RReturn>
                     {
                         string dataMatchPath = Path.Combine(hashDir, index.ToString());
                         foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
-                            if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id) && Record.TryGet<RReturn>(id, out _))
+                            if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id) && Record.TryGet<R>(id, out _))
                                 return true;
                     }
                 }

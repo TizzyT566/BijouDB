@@ -4,12 +4,12 @@ namespace BijouDB_Test.Tables;
 
 public sealed class Computer : Record
 {
-    public static readonly Relational<Computer, Employee> EmployeeRelational;
+    public static readonly Column<@record<Employee>.nullable> EmployeeColumn;
 
     [Json]
-    public Relational<Computer, Employee>.Junc Employees
-    { get => EmployeeRelational.To(this); set => EmployeeRelational.To(this); }
+    public Employee? Employee
+    { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
-        .Add(out EmployeeRelational, Employee.ComputerRelational);
+        .Add(out EmployeeColumn);
 }

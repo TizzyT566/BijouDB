@@ -245,7 +245,7 @@ public class Employee : Record
     [Json] public int Age
     { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
     
-    [Json] public Computer[] Computers => ComputerReferences.For(this);
+    [Json] public IEnumerable<Computer> Computers => ComputerReferences.For(this);
 
     static Employee() => _ = ~SchemaBuilder<Employee>
         .Add(out NameColumn)
@@ -424,7 +424,7 @@ if (BijouDB.Record.TryGet("0e758669-33ee-847e-d0e8-f5e89cc2b5c2", out Employee? 
 If you know only the `Type` and wish to get all Records of that type you can use `BijouDB.Record.GetAll<R>()` method.
 
 ```cs
-public static R[] GetAll<R>() { }
+public static IEnumerable<R> GetAll<R>() { }
 
 // Example
 // Gets all Employee records
@@ -439,7 +439,7 @@ If you know the `Type` of the Record and the value to one of its columns you can
 `WithValue<R>( ... )` method.
 
 ```cs
-public R[] WithValue<R>(D data) { }
+public IEnumerable<R> WithValue<R>(D data) { }
 
 // Example
 // Gets all Employee records where the age is 19
@@ -458,10 +458,10 @@ public static R[] WithValues<R>(params R[][] columnMatches) { }
 // Find Employees with the name 'TizzyT' and that are 30 years old
 
 // Get all records with Name 'TizzyT'
-Employee[] nameMatches = Employee.NameColumn.WithValue<Employee>("TizzyT");
+Employee[] nameMatches = Employee.NameColumn.WithValue<Employee>("TizzyT").ToArray();
 
 // Get all records with age 30
-Employee[] ageMatches = Employee.AgeColumn.WithValue<Employee>(30);
+Employee[] ageMatches = Employee.AgeColumn.WithValue<Employee>(30).ToArray();
 
 // Combine matches
 foreach(Employee employee in Record.WithValues<Employee>(nameMatches, ageMatches))
@@ -475,7 +475,7 @@ If you want to know what unique values a column has you can call the respective 
 This will give you an array of all unique values found in that column.
 
 ```cs
-public D[] UniqueValues() { }
+public IEnumerable<D> UniqueValues() { }
 
 // Example
 // Get a list of all unique ages in Employee.AgeColumn
@@ -549,7 +549,7 @@ public sealed class Employee : Record
     { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
 
     // Marked with 'JsonAttribute'
-    [Json] public Computer[] Computers => ComputerReferences.For(this);
+    [Json] public IEnumerable<Computer?> Computers => ComputerReferences.For(this);
 
     static Employee() => _ = ~SchemaBuilder<Employee>
         .Add(out NameColumn, Unique: false)
