@@ -686,3 +686,38 @@ To turn on logging, set `BijouDB.Globals.Logging` to `true`.
 > Removing a Record `O(1)`
 
 > Getting References `O(1) - O(n)`
+
+# Gotchas
+### New Records are only stored once accessed (either by reading a property, or setting a property)
+```
+This prevents users from creating empty records and/or creating records which aren't used which
+will clutter up the database. This behavior though maybe undesireable in certain situations
+and in which case simply accessing the records Id property will store the record in the database.
+```
+### Only explicitly set values are indexed, This is a performance related design decision
+```
+This means that during lookups for default values like null, 0, "", '\0', etc will NOT contain any
+records which do not have the respective property set. This behavior will be remedied if/when
+'Required Properties' feature is out but until then you can simply create a parameterless public
+constructor setting any/all the properties you want to automatically set upon construction.
+```
+```cs
+// Example
+public sealed class Computer : Record
+{
+    public static readonly Column<@record<Employee>.nullable> EmployeeColumn;
+
+    static Computer() => _ = ~SchemaBuilder<Computer>
+        .Add(out EmployeeColumn);
+
+    [Json]
+    public Employee? Employee
+    { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
+
+    // Contructor which explicitly sets properties upon construction
+    public Computer()
+    {
+        Employee = default;
+    }
+}
+```
