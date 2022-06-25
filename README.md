@@ -655,6 +655,7 @@ Output (formatted, actual output is minimal):
 ```
 
 If you require more control over how much and what data to show then you can use the 'ToJson()' method.
+
 It has two parameters.
 
 1) Depth : How deep should the json serialization go when returning data.
@@ -686,6 +687,8 @@ To turn on logging, set `BijouDB.Globals.Logging` to `true`.
 > Removing a Record `O(1)`
 
 > Getting References `O(1) - O(n)`
+
+> Getting Relationals `O(log n) - O(n)`
 
 # Gotchas
 ### New Records are only stored once accessed (either by reading a property, or setting a property)
