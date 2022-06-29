@@ -4,12 +4,12 @@ public sealed class Relational<R1, R2> where R1 : Record, new() where R2 : Recor
 {
     private readonly string _dir;
 
-    internal Relational()
+    internal Relational(string colName)
     {
         string r1 = typeof(R1).FullName;
         string[] types = { r1, typeof(R2).FullName };
         Array.Sort(types);
-        _dir = Path.Combine(Globals.DatabasePath, string.Join("-", types));
+        _dir = Path.Combine(Globals.DatabasePath, string.Join("-", types) + colName);
     }
 
     public Junc To(R1 record) => new(record, _dir);

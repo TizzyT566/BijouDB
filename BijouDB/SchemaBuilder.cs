@@ -14,12 +14,10 @@ public sealed class SchemaBuilder<R> : IDisposable
         where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();
-        string columnName = $"{Globals.ColName}_{builder._count}";
 
-        column = new(builder.Length, columnName, typeof(R), Unique, Default, Check);
+        column = new(builder.Length, $"{Globals.ColName}_{builder._count++}", typeof(R), Unique, Default, Check);
         builder._columns.Add(column.Remove);
         builder.Length += 24;
-        builder._count++;
         return builder;
     }
 
@@ -29,6 +27,7 @@ public sealed class SchemaBuilder<R> : IDisposable
         where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();
+        builder._count++;
         column = new(referenceColumn);
         if (restricted) builder._references.Add(column.HasRecords<R>);
         return builder;
@@ -39,7 +38,7 @@ public sealed class SchemaBuilder<R> : IDisposable
         where R2 : Record, new()
     {
         SchemaBuilder<R> builder = new();
-        column = new();
+        column = new($"_{builder._count++}");
         builder._columns.Add(column.Remove);
         return builder;
     }
@@ -91,11 +90,9 @@ public static class SchemaBuilderExtensions
         where R : Record, new()
         where D : IDataType, new()
     {
-        string columnName = $"{Globals.ColName}_{@this._count}";
-        column = new(@this.Length, columnName, typeof(R), Unique, Default, Check);
+        column = new(@this.Length, $"{Globals.ColName}_{@this._count++}", typeof(R), Unique, Default, Check);
         @this._columns.Add(column.Remove);
         @this.Length += 24;
-        @this._count++;
         return @this;
     }
 
@@ -106,6 +103,7 @@ public static class SchemaBuilderExtensions
         where D : IDataType, new()
     {
         column = new(referenceColumn);
+        @this._count++;
         if (restricted) @this._references.Add(column.HasRecords<R>);
         return @this;
     }
@@ -115,7 +113,7 @@ public static class SchemaBuilderExtensions
         where R : Record, new()
         where R2 : Record, new()
     {
-        column = new();
+        column = new($"_{@this._count++}");
         @this._columns.Add(column.Remove);
         return @this;
     }

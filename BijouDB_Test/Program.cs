@@ -4,25 +4,15 @@ Employee tz1 = new()
 {
     Name = "TizzyT1"
 };
-
-Computer computer = new()
+Employee tz2 = new()
 {
-    Name = "HP"
+    Name = "TizzyT1"
 };
-
-tz1.Computers += computer;
-
-Console.WriteLine(tz1.Json);
-
-Console.WriteLine();
-
-Console.WriteLine(computer.Json);
-
-computer.Remove();
+Employee tz3 = new()
+{
+    Name = "TizzyT1"
+};
+tz1.Friends += tz2;
+tz1.Enemies += tz3;
 
 Console.WriteLine(tz1.Json);
-
-Console.WriteLine();
-
-Console.WriteLine(computer.Json);
-
