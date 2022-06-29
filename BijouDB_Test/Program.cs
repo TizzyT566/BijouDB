@@ -1,16 +1,28 @@
 ﻿using BijouDB_Test.Tables;
-using BijouDB;
 
-Employee employee = new();
-
-_ = new Computer()
+Employee tz1 = new()
 {
-    Employee = employee
+    Name = "TizzyT1"
 };
 
-_ = new Computer()
+Computer computer = new()
 {
-    Employee = employee
+    Name = "HP"
 };
 
-Console.WriteLine(employee.Computers.ToJson(0));
+tz1.Computers += computer;
+
+Console.WriteLine(tz1.Json);
+
+Console.WriteLine();
+
+Console.WriteLine(computer.Json);
+
+computer.Remove();
+
+Console.WriteLine(tz1.Json);
+
+Console.WriteLine();
+
+Console.WriteLine(computer.Json);
+

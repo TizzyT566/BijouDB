@@ -222,7 +222,7 @@ that column exists in.
 
 As a convention you should end the field with `References`.
 
-Create a property with the type of the referenced Record. This property should be an array `[]`.
+Create a property with the type of the referenced Record. This property should be an `IEnumerable<T>`.
 
 Use the `To()` method passing in `this`.
 
