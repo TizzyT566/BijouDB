@@ -163,7 +163,6 @@ This pattern automatically disposes the SchemaBuilder at the end and ensures pro
 ## Example
 ```csharp
 using BijouDB;
-using BijouDB.DataTypes;
 
 public class MyRecord : Record
 {
@@ -188,7 +187,6 @@ The order does't matter and you don't have to provide every constraint.
 
 ```csharp
 using BijouDB;
-using BijouDB.DataTypes;
 
 public class MyRecord : Record
 {
@@ -232,7 +230,6 @@ Instead you have to specifically point it to the column in the referenced Record
 
 ```csharp
 using BijouDB;
-using BijouDB.DataTypes;
 
 public class Employee : Record
 {
