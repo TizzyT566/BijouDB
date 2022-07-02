@@ -1,6 +1,5 @@
 ﻿using BijouDB.Components;
 using BijouDB.Exceptions;
-using System.Collections.Generic;
 
 namespace BijouDB;
 
@@ -19,7 +18,12 @@ public sealed class Column<D>
     private readonly Func<D> _default;
     private readonly Func<D, bool> _check;
 
-    internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check)
+    // Triggers
+    private readonly Action? _beforeGet;
+    private readonly Action<D>? _afterGet, _beforeSet, _afterSet;
+
+    internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check,
+        Action? beforeGet, Action<D>? afterGet, Action<D>? beforeSet, Action<D>? afterSet)
     {
         _offset = offset;
         _name = columnName;
@@ -27,6 +31,11 @@ public sealed class Column<D>
         _unique = unique;
         _default = @default;
         _check = check;
+
+        _beforeGet = beforeGet;
+        _afterGet = afterGet;
+        _beforeSet = beforeSet;
+        _afterSet = afterSet;
     }
 
     /// <summary>
@@ -160,6 +169,7 @@ public sealed class Column<D>
     public D Get<R>(R record)
         where R : Record
     {
+        _beforeGet?.Invoke();
         if (record.Id != Guid.Empty)
         {
             string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
@@ -175,11 +185,14 @@ public sealed class Column<D>
                     D newValue = new();
                     using MaskedStream ms = new(fs2, Globals.BitMaskSeed);
                     newValue.Deserialize(ms);
+                    _afterGet?.Invoke(newValue);
                     return newValue;
                 }
             }
         }
-        return _default is null ? default! : _default();
+        D result = _default is null ? default! : _default();
+        _afterGet?.Invoke(result);
+        return result;
     }
 
     /// <summary>
@@ -200,6 +213,8 @@ public sealed class Column<D>
         }
 
         if (_check is not null && !_check(value)) throw new CheckContraintException();
+
+        _beforeSet?.Invoke(value);
 
         string baseDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec);
         Directory.CreateDirectory(baseDir);
@@ -233,6 +248,7 @@ public sealed class Column<D>
                         {
                             // values match so no need to continue
                             if (Globals.Logging) Console.WriteLine("value is the same, skipping.");
+                            _afterSet?.Invoke(value);
                             return;
                         }
                     }
@@ -284,7 +300,7 @@ public sealed class Column<D>
                         string crntValue = Path.GetFileName(hashCollision);
                         fs.Position = _offset;
                         fs.WriteHashValue(newHash, Guid.Parse(crntValue));
-                        //fs.Flush(_tableLength);
+                        _afterSet?.Invoke(value);
                         return;
                     }
                 }
@@ -311,6 +327,8 @@ public sealed class Column<D>
         fs.Position = _offset;
         fs.WriteHashValue(newHash, newValue);
         fs.Flush();
+
+        _afterSet?.Invoke(value);
     }
 
     internal void Remove(Record record)

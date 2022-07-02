@@ -10,12 +10,15 @@ public sealed class SchemaBuilder<R> : IDisposable
     internal readonly List<Action<Record>> _columns = new();
 
     // indexed column
-    public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!)
+    public static SchemaBuilder<R> Add<D>(out Column<D> column,
+        bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!,
+        Action? BeforeGet = null, Action<D>? AfterGet = null, Action<D>? BeforSet = null, Action<D>? AfterSet = null)
         where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();
 
-        column = new(builder.Length, $"{Globals.ColName}_{builder._count++}", typeof(R), Unique, Default, Check);
+        column = new(builder.Length, $"{Globals.ColName}_{builder._count++}", typeof(R), Unique, Default, Check,
+            BeforeGet, AfterGet, BeforSet, AfterSet);
         builder._columns.Add(column.Remove);
         builder.Length += 24;
         return builder;
@@ -86,11 +89,14 @@ public sealed class SchemaBuilder<R> : IDisposable
 public static class SchemaBuilderExtensions
 {
     // indexed column
-    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> @this, out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!)
+    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> @this, out Column<D> column,
+        bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!,
+        Action? BeforeGet = null, Action<D>? AfterGet = null, Action<D>? BeforeSet = null, Action<D>? AfterSet = null)
         where R : Record, new()
         where D : IDataType, new()
     {
-        column = new(@this.Length, $"{Globals.ColName}_{@this._count++}", typeof(R), Unique, Default, Check);
+        column = new(@this.Length, $"{Globals.ColName}_{@this._count++}", typeof(R), Unique, Default, Check,
+            BeforeGet, AfterGet, BeforeSet, AfterSet);
         @this._columns.Add(column.Remove);
         @this.Length += 24;
         return @this;

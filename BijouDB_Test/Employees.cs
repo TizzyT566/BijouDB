@@ -24,4 +24,9 @@ public sealed class Employee : Record
         .Add(out NameColumn)
         .Add(out FriendRelational, FriendRelational!)
         .Add(out EnemyRelational, FriendRelational!);
+
+    public override void AfterRemove()
+    {
+        base.AfterRemove();
+    }
 }
