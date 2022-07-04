@@ -22,12 +22,12 @@ public sealed class SchemaBuilder<R> : IDisposable
     /// <param name="BeforeSet">Specifies a trigger before setting a value.</param>
     /// <param name="AfterSet">Specifies a trigger after setting a value.</param>
     /// <returns></returns>
-    public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!)
+    public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!, bool Cache = false)
         where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();
 
-        column = new(builder.Length, $"{Globals.ColName}_{builder._count++}", typeof(R), Unique, Default, Check);
+        column = new(builder.Length, $"{Globals.ColName}_{builder._count++}", typeof(R), Unique, Default, Check, Cache);
         builder._columns.Add(column.Remove);
         builder.Length += 24;
         return builder;
@@ -98,11 +98,11 @@ public sealed class SchemaBuilder<R> : IDisposable
 public static class SchemaBuilderExtensions
 {
     // indexed column
-    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> @this, out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!)
+    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> @this, out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!, bool Cache = false)
         where R : Record, new()
         where D : IDataType, new()
     {
-        column = new(@this.Length, $"{Globals.ColName}_{@this._count++}", typeof(R), Unique, Default, Check);
+        column = new(@this.Length, $"{Globals.ColName}_{@this._count++}", typeof(R), Unique, Default, Check, Cache);
         @this._columns.Add(column.Remove);
         @this.Length += 24;
         return @this;

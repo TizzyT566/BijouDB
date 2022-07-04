@@ -88,13 +88,11 @@ public abstract class Record : IEqualityComparer<Record>
     {
         string path = Path.Combine(DatabasePath, typeof(R).FullName!, Rec);
         if (Directory.Exists(path))
-        {
             foreach (string record in Directory.EnumerateFiles(path, RecPattern))
             {
                 string recordName = Path.GetFileNameWithoutExtension(record);
                 yield return new() { _id = Guid.Parse(recordName) };
             }
-        }
     }
 
     public static IEnumerable<R> WithValues<R>(params IEnumerable<R>[] columnMatches)

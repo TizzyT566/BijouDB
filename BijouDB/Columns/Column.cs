@@ -18,7 +18,9 @@ public sealed class Column<D>
     private readonly Func<D> _default;
     private readonly Func<D, bool> _check;
 
-    internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check)
+    private readonly Dictionary<Guid, D>? _cache;
+
+    internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check, bool cache)
     {
         _offset = offset;
         _name = columnName;
@@ -26,6 +28,7 @@ public sealed class Column<D>
         _unique = unique;
         _default = @default;
         _check = check;
+        if (cache) _cache = new();
     }
 
     /// <summary>
@@ -97,7 +100,6 @@ public sealed class Column<D>
     /// <typeparam name="R">The return record type.</typeparam>
     /// <param name="value">The value to search records with.</param>
     /// <returns>An enumerable of all records containing the value specified.</returns>
-    /// <summary>
     public IEnumerable<R> WithValue<R>(D value)
         where R : Record, new()
     {
@@ -105,9 +107,8 @@ public sealed class Column<D>
         {
             string dataMatchPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
-                if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id))
-                    if (Record.TryGet(id, out R? record))
-                        yield return record!;
+                if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id) && Record.TryGet(id, out R? record))
+                    yield return record!;
         }
     }
 
@@ -159,8 +160,13 @@ public sealed class Column<D>
     public D Get<R>(R record)
         where R : Record
     {
-        if (record.Id != Guid.Empty)
+        Guid id = record.Id;
+
+        if (id != Guid.Empty)
         {
+            // check for cache
+            if (_cache is not null && _cache.TryGetValue(record.Id, out D value)) return value;
+
             string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
             if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
             using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -174,6 +180,10 @@ public sealed class Column<D>
                     D newValue = new();
                     using MaskedStream ms = new(fs2, Globals.BitMaskSeed);
                     newValue.Deserialize(ms);
+
+                    // set for cache
+                    if (_cache is not null) _cache[id] = newValue;
+
                     return newValue;
                 }
             }
@@ -192,7 +202,9 @@ public sealed class Column<D>
     public void Set<R>(R record, D value)
         where R : Record
     {
-        if (record.Id == Guid.Empty)
+        Guid id = record.Id;
+
+        if (id == Guid.Empty)
         {
             new Exception("Unexpected record state, Id is empty.").Log();
             return;
@@ -208,7 +220,7 @@ public sealed class Column<D>
         ulong newHash = value.Hash(ms);
 
         // Read previous value
-        using FileStream fs = new(Path.Combine(baseDir, $"{record.Id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+        using FileStream fs = new(Path.Combine(baseDir, $"{id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
 
         // Old hash/value exists, read it and delete its reference
         fs.Position = _offset;
@@ -241,7 +253,7 @@ public sealed class Column<D>
                     try
                     {
                         // values differ, delete reference
-                        File.Delete(Path.Combine(oldBinDir, $"{record.Id}.{Globals.Ref}"));
+                        File.Delete(Path.Combine(oldBinDir, $"{id}.{Globals.Ref}"));
 
                         // if value has no more references, delete it
                         if (Directory.GetFiles(oldBinDir, Globals.RefPattern).Length == 0)
@@ -279,7 +291,7 @@ public sealed class Column<D>
                             foreach (string match in Directory.EnumerateFiles(hashCollision, Globals.RefPattern))
                                 throw new UniqueConstraintException<D>();
 
-                        File.Create(Path.Combine(hashCollision, $"{record.Id}.{Globals.Ref}")).Dispose();
+                        File.Create(Path.Combine(hashCollision, $"{id}.{Globals.Ref}")).Dispose();
                         string crntValue = Path.GetFileName(hashCollision);
                         fs.Position = _offset;
                         fs.WriteHashValue(newHash, Guid.Parse(crntValue));
@@ -300,8 +312,11 @@ public sealed class Column<D>
         ms.CopyTo(fs3);
         fs3.Flush();
 
+        // set for cache
+        if (_cache is not null) _cache[id] = value;
+
         // add reference
-        string newRef = Path.Combine(newBinDir, $"{record.Id}.{Globals.Ref}");
+        string newRef = Path.Combine(newBinDir, $"{id}.{Globals.Ref}");
         File.Create(newRef).Dispose();
         if (Globals.Logging) Console.WriteLine($"Created new reference: {newRef}");
 
@@ -313,8 +328,10 @@ public sealed class Column<D>
 
     internal void Remove(Record record)
     {
+        Guid id = record.Id;
+
         // Read record file
-        string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
+        string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
 
         if (!File.Exists(recordPath)) return;
 
@@ -326,10 +343,13 @@ public sealed class Column<D>
             // Go to indexed location, delete reference file
             string hashDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString());
             string indexedDir = Path.Combine(hashDir, index.ToString());
-            string refPath = Path.Combine(indexedDir, $"{record.Id}.{Globals.Ref}");
+            string refPath = Path.Combine(indexedDir, $"{id}.{Globals.Ref}");
 
             if (File.Exists(refPath))
                 File.Delete(refPath);
+
+            // remove from cache
+            if (_cache is not null) _cache.Remove(id);
 
             // If no more references delete indexed folder
             if (Directory.Exists(indexedDir))
