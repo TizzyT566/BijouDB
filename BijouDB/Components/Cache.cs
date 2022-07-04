@@ -51,25 +51,23 @@ internal class Cache<D> where D : IDataType
             Interlocked.Exchange(ref _lock, 0);
             return;
         }
-        else
+
+        // make sure there is enough space for the new node
+        while (_dict.Count >= _count)
         {
-            // make sure there is enough space for the new node
-            while (_dict.Count >= _count)
-            {
-                Node? tail = _tail;
-                if (tail is null) break;
-                _tail = tail._prev;
-                _dict.Remove(tail._key);
-            }
-
-            Node newNode = new(key, value, _head);
-
-            _head = newNode;
-            _dict.Add(key, newNode);
-
-            if (_head._next is not null) _head._next = _head;
-            Interlocked.Exchange(ref _lock, 0);
+            Node? tail = _tail;
+            if (tail is null) break;
+            _tail = tail._prev;
+            _dict.Remove(tail._key);
         }
+
+        Node newNode = new(key, value, _head);
+
+        _head = newNode;
+        _dict.Add(key, newNode);
+
+        if (_head._next is not null) _head._next = _head;
+        Interlocked.Exchange(ref _lock, 0);
     }
 
     internal void Remove(Guid key)
