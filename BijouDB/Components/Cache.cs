@@ -7,7 +7,7 @@ internal class Cache<D> where D : IDataType
     private Node? _head, _tail;
     private int _lock;
 
-    public Cache(int count) => _count = count;
+    public Cache(int count) => count = count > 0 ? count : throw new InvalidOperationException("Unexpected Error, Cache must be greater than 0.");
 
     internal void Set(Guid key, D? value)
     {
@@ -57,7 +57,7 @@ internal class Cache<D> where D : IDataType
             while (_dict.Count > 0 && _dict.Count >= _count)
             {
                 Node? tail = _tail;
-                if (tail is null) return;
+                if (tail is null) break;
                 _tail = tail._prev;
                 _dict.Remove(tail._key);
             }
