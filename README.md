@@ -3,12 +3,15 @@
 ![alt text](https://raw.githubusercontent.com/TizzyT566/BijouDB/master/BijouDB/Icon.png "BijouDB")
 
 # BijouDB
+
 A small C# database
 
 Nuget: [BijouDB Package](https://www.nuget.org/packages/BijouDB/)
 
 # Features
+
 ## DataTypes => Synonymous Wrapper
+
 ```
                                  BigInteger => @bint
 
@@ -116,6 +119,7 @@ Nullable Types:
 ```
 
 ## Constraints
+
 > Unique `Ensures that a column has all unique values`
 
 > Default `Specifies a default for unset values`
@@ -129,6 +133,7 @@ Nullable Types:
 > Cache `Caches a record's property for quicker retrieval`
 
 ## Custom DataTypes
+
 You can create your own data types by implementing the interface `BijouDB.IDataType`
 
 ```csharp
@@ -142,6 +147,7 @@ public interface IDataType
 ```
 
 # Usage
+
 To get started simply create a new class which inherits from `BijouDB.Record`.
 
 Create a static readonly field to act as a column, specify a BijouDB datatype.
@@ -163,6 +169,7 @@ Do this for each of your columns and finally preceed the SchemaBuilder with `_ =
 This pattern automatically disposes the SchemaBuilder at the end and ensures proper init and disposal.
 
 ## Example
+
 ```csharp
 using BijouDB;
 
@@ -179,6 +186,7 @@ public class MyRecord : Record
 ```
 
 ## Specifying Constraints
+
 Use the SchemaBuilder to add constraints to your columns.
 
 Place the constraints on columns by passing arguments to the `Add()` method.
@@ -229,6 +237,7 @@ public class MyRecord : Record
 ```
 
 ## References
+
 In SQL we have `PRIMARY KEY` and `FOREIGN KEY` to link relationships between tables.
 
 Here we have the concept of  references. Its very similar in concept but is a one-many relationship.
@@ -413,6 +422,7 @@ foreach (Computer comp in employee.Computers.All)
 ```
 
 ## Removing Records
+
 All Records have the following methods to be removed from the database.
 ```cs
 // Removes the Record from the database with no exception handling (you have to do so manually)
@@ -431,6 +441,7 @@ public bool TryRemove(out Exception? exception);
 ```
 
 ## Getting Records
+
 If you know the `Type` and `Id` (represented as a `Guid`) use the `BijouDB.Record.TryGet<R>( ... )` method.
 
 ```cs
@@ -693,11 +704,13 @@ To mitigate a vulnerability due to malicious data being stored, data is stored w
 The mask is generated using a seed. The seed can be changed at `BijouDB.Globals.SeedMask`, default is 712247. 
 
 ## Logging
+
 There was very minimal effor put into logging. It is disabled by default.
 
 To turn on logging, set `BijouDB.Globals.Logging` to `true`.
 
 # Operations Complexity
+
 > Getting a Record via its Id `O(1)`
 
 > Getting all Records of a Type `O(1) - O(n)`
@@ -713,13 +726,17 @@ To turn on logging, set `BijouDB.Globals.Logging` to `true`.
 > Getting Relationals `O(log n) - O(n)`
 
 # Gotchas
+
 ### New Records are only stored once accessed (either by reading a property, or setting a property)
+
 ```
 This prevents users from creating empty records and/or creating records which aren't used which
 will clutter up the database. This behavior though maybe undesireable in certain situations
 and in which case simply accessing the records Id property will store the record in the database.
 ```
+
 ### Only explicitly set values are indexed, This is a performance related design decision
+
 ```
 This means that during lookups for default values like null, 0, "", '\0', etc will NOT contain any
 records which do not have the respective property set. This behavior will be remedied if/when
