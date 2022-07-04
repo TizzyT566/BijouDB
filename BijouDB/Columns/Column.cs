@@ -1,6 +1,5 @@
 ﻿using BijouDB.Components;
 using BijouDB.Exceptions;
-using System.Collections.Concurrent;
 
 namespace BijouDB;
 
@@ -19,9 +18,9 @@ public sealed class Column<D>
     private readonly Func<D> _default;
     private readonly Func<D, bool> _check;
 
-    private readonly ConcurrentDictionary<Guid, D>? _cache;
+    private readonly Cache<D>? _cache;
 
-    internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check, bool cache)
+    internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check, int cache)
     {
         _offset = offset;
         _name = columnName;
@@ -29,7 +28,7 @@ public sealed class Column<D>
         _unique = unique;
         _default = @default;
         _check = check;
-        if (cache) _cache = new();
+        if (cache > 0) _cache = new(cache);
     }
 
     /// <summary>
@@ -166,7 +165,7 @@ public sealed class Column<D>
         if (id != Guid.Empty)
         {
             // check for cache
-            if (_cache is not null && _cache.TryGetValue(record.Id, out D value)) return value;
+            if (_cache is not null && _cache.TryGet(id, out D? value)) return value!;
 
             string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
             if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
@@ -183,7 +182,7 @@ public sealed class Column<D>
                     newValue.Deserialize(ms);
 
                     // set for cache
-                    if (_cache is not null) _cache[id] = newValue;
+                    if (_cache is not null) _cache.Set(id, newValue);
 
                     return newValue;
                 }
@@ -314,7 +313,7 @@ public sealed class Column<D>
         fs3.Flush();
 
         // set for cache
-        if (_cache is not null) _cache[id] = value;
+        if (_cache is not null) _cache.Set(id, value);
 
         // add reference
         string newRef = Path.Combine(newBinDir, $"{id}.{Globals.Ref}");
@@ -350,7 +349,7 @@ public sealed class Column<D>
                 File.Delete(refPath);
 
             // remove from cache
-            _cache?.TryRemove(id, out _);
+            _cache?.Remove(id);
 
             // If no more references delete indexed folder
             if (Directory.Exists(indexedDir))

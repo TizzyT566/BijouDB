@@ -126,6 +126,8 @@ Nullable Types:
 
 > PRIMARY KEY and FOREIGN KEY is replicated loosely with `Reference`
 
+> Cache 'Caches a record's property for quicker retrieval'
+
 ## Custom DataTypes
 You can create your own data types by implementing the interface `BijouDB.IDataType`
 
@@ -200,6 +202,26 @@ public class MyRecord : Record
         // Specify that valid values must be 18 or larger
         // Specify that the default value is 18
         .Add(out AgeColumn, Unique: false, Check: (record, value) => value >= 18, Default: () => 18);
+}
+```
+
+Caching is enabled by default with 128 cache size. To disable caching set this to 0 or under.
+```csharp
+using BijouDB;
+
+public class MyRecord : Record
+{
+    public static readonly Column<@int> AgeColumn;
+
+    [Json] public int Age
+    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
+
+    static MyRecord() => _ = ~SchemaBuilder<MyRecord>
+        // Specify that the column is NOT unique
+        // Specify that valid values must be 18 or larger
+        // Specify that the default value is 18
+        // Disable caching
+        .Add(out AgeColumn, Unique: false, Check: (record, value) => value >= 18, Default: () => 18, Cache: 0);
 }
 ```
 

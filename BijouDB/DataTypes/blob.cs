@@ -8,7 +8,18 @@ public struct @blob : IDataType
 {
     private byte[] _value;
 
-    private @blob(byte[] value) => _value = value ?? Array.Empty<byte>();
+    private @blob(byte[] value)
+    {
+        if (value is null)
+        {
+            _value = Array.Empty<byte>();
+        }
+        else
+        {
+            _value = new byte[value.Length];
+            Array.Copy(value, 0, _value, 0, value.Length);
+        }
+    }
 
     public void Deserialize(Stream stream)
     {
@@ -28,7 +39,18 @@ public struct @blob : IDataType
     {
         private byte[]? _value;
 
-        private nullable(byte[]? value) => _value = value;
+        private nullable(byte[]? value)
+        {
+            if (value is null)
+            {
+                _value = null;
+            }
+            else
+            {
+                _value = new byte[value.Length];
+                Array.Copy(value, 0, _value, 0, value.Length);
+            }
+        }
 
         public nullable() => _value = null;
 

@@ -22,7 +22,7 @@ public sealed class SchemaBuilder<R> : IDisposable
     /// <param name="BeforeSet">Specifies a trigger before setting a value.</param>
     /// <param name="AfterSet">Specifies a trigger after setting a value.</param>
     /// <returns></returns>
-    public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!, bool Cache = false)
+    public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!, int Cache = 128)
         where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();
@@ -98,7 +98,7 @@ public sealed class SchemaBuilder<R> : IDisposable
 public static class SchemaBuilderExtensions
 {
     // indexed column
-    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> @this, out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!, bool Cache = false)
+    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> @this, out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!, int Cache = 128)
         where R : Record, new()
         where D : IDataType, new()
     {

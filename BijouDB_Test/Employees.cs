@@ -21,17 +21,7 @@ public sealed class Employee : Record
     { get => EnemyRelational.To(this); set { } }
 
     static Employee() => _ = ~SchemaBuilder<Employee>
-        .Add(out NameColumn, BeforeGet: () => Console.WriteLine("Got Something"))
+        .Add(out NameColumn)
         .Add(out FriendRelational, FriendRelational!)
         .Add(out EnemyRelational, FriendRelational!);
-
-    public override void BeforeAdd()
-    {
-        Console.WriteLine($"Added {Id}");
-    }
-
-    public override void AfterRemove()
-    {
-        Console.WriteLine($"Removed {Id}");
-    }
 }

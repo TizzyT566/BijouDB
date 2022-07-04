@@ -1,20 +1,23 @@
 ﻿using BijouDB_Test.Tables;
 
-Employee tz1 = new()
-{
-    Name = "TizzyT1"
-};
-Employee tz2 = new()
-{
-    Name = "TizzyT1"
-};
-Employee tz3 = new()
-{
-    Name = "TizzyT1"
-};
-tz1.Friends += tz2;
-tz1.Enemies += tz3;
+int iterations = 1000;
 
-Console.WriteLine(tz1.Json);
+Employee tz = new()
+{
+    Name = "TizzyT"
+};
 
-tz1.Remove();
+long start = System.Diagnostics.Stopwatch.GetTimestamp();
+
+string name = null!;
+
+for (int i = 0; i < iterations; i++)
+{
+    name = tz.Name;
+}
+
+long stop = System.Diagnostics.Stopwatch.GetTimestamp();
+
+Console.WriteLine(TimeSpan.FromTicks(stop - start).TotalMilliseconds);
+Console.WriteLine(name);
+
