@@ -54,7 +54,7 @@ internal class Cache<D> where D : IDataType
         else
         {
             // make sure there is enough space for the new node
-            while (_dict.Count > 0 && _dict.Count >= _count)
+            while (_dict.Count >= _count)
             {
                 Node? tail = _tail;
                 if (tail is null) break;
