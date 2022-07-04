@@ -90,49 +90,48 @@ internal class Cache<D> where D : IDataType
     {
         while (Interlocked.Exchange(ref _lock, 1) == 1) ;
 
-        if (_dict.TryGetValue(key, out Node node))
+        if (!_dict.TryGetValue(key, out Node node))
         {
-            value = node._value;
+            Interlocked.Exchange(ref _lock, 0);
+            value = default;
+            return false;
+        }
 
-            if (node == _head)
-            {
-                Interlocked.Exchange(ref _lock, 0);
-                return true;
-            }
+        value = node._value;
 
-            if (node == _tail)
-            {
-                _tail = node._prev;
+        if (node == _head)
+        {
+            Interlocked.Exchange(ref _lock, 0);
+            return true;
+        }
 
-                if (node._prev is not null)
-                    node._prev._next = null;
+        if (node == _tail)
+        {
+            _tail = node._prev;
 
-                node._next = _head;
-                node._prev = null;
-
-                _head = node;
-
-                Interlocked.Exchange(ref _lock, 0);
-                return true;
-            }
-
-            if (node._prev is not null) node._prev._next = node._next;
-            if (node._next is not null) node._next._prev = node._prev;
+            if (node._prev is not null)
+                node._prev._next = null;
 
             node._next = _head;
             node._prev = null;
 
-            if (_head is null) _head = _tail = node;
-            else _head = node;
+            _head = node;
 
             Interlocked.Exchange(ref _lock, 0);
             return true;
         }
 
-        Interlocked.Exchange(ref _lock, 0);
+        if (node._prev is not null) node._prev._next = node._next;
+        if (node._next is not null) node._next._prev = node._prev;
 
-        value = default;
-        return false;
+        node._next = _head;
+        node._prev = null;
+
+        if (_head is null) _head = _tail = node;
+        else _head = node;
+
+        Interlocked.Exchange(ref _lock, 0);
+        return true;
     }
 
     public class Node

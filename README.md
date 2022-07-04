@@ -183,7 +183,9 @@ Use the SchemaBuilder to add constraints to your columns.
 
 Place the constraints on columns by passing arguments to the `Add()` method.
 
-Provide the label of the constraint `Unique:` or `Default:` or `Check:` followed by the value for the constraint.
+Provide the label of the constraint `Unique:` or `Default:` or `Check:` or `Cache:`
+
+followed by the value for the constraint.
 
 The order does't matter and you don't have to provide every constraint.
 
@@ -206,6 +208,7 @@ public class MyRecord : Record
 ```
 
 Caching is enabled by default with 128 cache size. To disable caching set this to 0 or under.
+
 ```csharp
 using BijouDB;
 

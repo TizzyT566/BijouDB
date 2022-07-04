@@ -1,6 +1,6 @@
 ﻿using BijouDB_Test.Tables;
 
-int iterations = 1000;
+int iterations = 100000;
 
 Employee tz = new()
 {
