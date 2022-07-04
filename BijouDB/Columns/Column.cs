@@ -1,5 +1,6 @@
 ﻿using BijouDB.Components;
 using BijouDB.Exceptions;
+using System.Collections.Concurrent;
 
 namespace BijouDB;
 
@@ -18,7 +19,7 @@ public sealed class Column<D>
     private readonly Func<D> _default;
     private readonly Func<D, bool> _check;
 
-    private readonly Dictionary<Guid, D>? _cache;
+    private readonly ConcurrentDictionary<Guid, D>? _cache;
 
     internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check, bool cache)
     {
@@ -349,7 +350,7 @@ public sealed class Column<D>
                 File.Delete(refPath);
 
             // remove from cache
-            if (_cache is not null) _cache.Remove(id);
+            _cache?.TryRemove(id, out _);
 
             // If no more references delete indexed folder
             if (Directory.Exists(indexedDir))
