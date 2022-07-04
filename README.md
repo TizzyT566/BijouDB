@@ -126,7 +126,7 @@ Nullable Types:
 
 > PRIMARY KEY and FOREIGN KEY is replicated loosely with `Reference`
 
-> Cache 'Caches a record's property for quicker retrieval'
+> Cache `Caches a record's property for quicker retrieval`
 
 ## Custom DataTypes
 You can create your own data types by implementing the interface `BijouDB.IDataType`
