@@ -21,7 +21,7 @@ public sealed class Employee : Record
     { get => EnemyRelational.To(this); set { } }
 
     static Employee() => _ = ~SchemaBuilder<Employee>
-        .Add(out NameColumn)
+        .Add(out NameColumn, Cache: 1)
         .Add(out FriendRelational, FriendRelational!)
         .Add(out EnemyRelational, FriendRelational!);
 }

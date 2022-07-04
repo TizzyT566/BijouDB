@@ -62,7 +62,7 @@ internal class Cache<D> where D : IDataType
                 _dict.Remove(tail._key);
             }
 
-            Node newNode = new Node(key, value, _head);
+            Node newNode = new(key, value, _head);
 
             _head = newNode;
             _dict.Add(key, newNode);

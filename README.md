@@ -201,7 +201,7 @@ public class MyRecord : Record
         // Specify that the column is NOT unique
         // Specify that valid values must be 18 or larger
         // Specify that the default value is 18
-        .Add(out AgeColumn, Unique: false, Check: (record, value) => value >= 18, Default: () => 18);
+        .Add(out AgeColumn, Unique: false, Check: value => value >= 18, Default: () => 18);
 }
 ```
 
@@ -221,7 +221,7 @@ public class MyRecord : Record
         // Specify that valid values must be 18 or larger
         // Specify that the default value is 18
         // Disable caching
-        .Add(out AgeColumn, Unique: false, Check: (record, value) => value >= 18, Default: () => 18, Cache: 0);
+        .Add(out AgeColumn, Unique: false, Check: value => value >= 18, Default: () => 18, Cache: 0);
 }
 ```
 
