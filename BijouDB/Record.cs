@@ -23,9 +23,7 @@ public abstract class Record : IEqualityComparer<Record>
                     string path = Path.Combine(baseDir, $"{Id}.{Rec}");
                     if (!File.Exists(path))
                     {
-                        BeforeAdd();
                         File.Create(path).Dispose();
-                        AfterAdd();
                     }
                 }
                 catch (Exception ex)
@@ -43,29 +41,8 @@ public abstract class Record : IEqualityComparer<Record>
     {
         Type recordType = typeof(Record);
         foreach (Type type in Assembly.GetEntryAssembly().GetTypes())
-            if (!type.IsAbstract && recordType.IsAssignableFrom(type) && type.FullName is not null)
+            if (!type.IsAbstract && recordType.IsAssignableFrom(type) && !string.IsNullOrEmpty(type.FullName))
                 _types.Add(type.FullName, type);
-    }
-
-    public virtual void BeforeAdd()
-    {
-        if (Logging)
-            Console.WriteLine($"Creating '{GetType().FullName}' record {_id}.");
-    }
-    public virtual void AfterAdd()
-    {
-        if (Logging)
-            Console.WriteLine($"Created {GetType().FullName} record {_id}.");
-    }
-    public virtual void BeforeRemove()
-    {
-        if (Logging)
-            Console.WriteLine($"Removing {GetType().FullName} record {_id}.");
-    }
-    public virtual void AfterRemove()
-    {
-        if (Logging)
-            Console.WriteLine($"Removed {GetType().FullName} record {_id}.");
     }
 
     public static bool TryGet<R>(string id, out R? record)
@@ -171,13 +148,8 @@ public abstract class Record : IEqualityComparer<Record>
     public void Remove() => Remove(this);
     public static void Remove<R>(R record) where R : Record
     {
-        if (_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition))
-        {
-            record.BeforeRemove();
-            if (removeDefinition is not null)
-                removeDefinition(record);
-            record.AfterRemove();
-        }
+        if (_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition) && removeDefinition is not null)
+            removeDefinition(record);
     }
 
     public bool Equals(Record x, Record y) => x.GetType() == y.GetType() && Equals(x.Id, y.Id);

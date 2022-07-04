@@ -9,16 +9,25 @@ public sealed class SchemaBuilder<R> : IDisposable
     internal readonly List<Func<Record, bool>> _references = new();
     internal readonly List<Action<Record>> _columns = new();
 
-    // indexed column
-    public static SchemaBuilder<R> Add<D>(out Column<D> column,
-        bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!,
-        Action? BeforeGet = null, Action<D>? AfterGet = null, Action<D>? BeforSet = null, Action<D>? AfterSet = null)
+    /// <summary>
+    /// Adds a Column to the record.
+    /// </summary>
+    /// <typeparam name="D">The IDataType of the Column.</typeparam>
+    /// <param name="column">The Column to build.</param>
+    /// <param name="Unique">Specifies whether values set in the column are unique.</param>
+    /// <param name="Default">Specifies a default value for the column if a record doesn't have a value set.</param>
+    /// <param name="Check">Value constraint logic.</param>
+    /// <param name="BeforeGet">Specifies a trigger before getting a value.</param>
+    /// <param name="AfterGet">Specifies a trigger after getting a value.</param>
+    /// <param name="BeforeSet">Specifies a trigger before setting a value.</param>
+    /// <param name="AfterSet">Specifies a trigger after setting a value.</param>
+    /// <returns></returns>
+    public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!)
         where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();
 
-        column = new(builder.Length, $"{Globals.ColName}_{builder._count++}", typeof(R), Unique, Default, Check,
-            BeforeGet, AfterGet, BeforSet, AfterSet);
+        column = new(builder.Length, $"{Globals.ColName}_{builder._count++}", typeof(R), Unique, Default, Check);
         builder._columns.Add(column.Remove);
         builder.Length += 24;
         return builder;
@@ -89,14 +98,11 @@ public sealed class SchemaBuilder<R> : IDisposable
 public static class SchemaBuilderExtensions
 {
     // indexed column
-    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> @this, out Column<D> column,
-        bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!,
-        Action? BeforeGet = null, Action<D>? AfterGet = null, Action<D>? BeforeSet = null, Action<D>? AfterSet = null)
+    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> @this, out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!)
         where R : Record, new()
         where D : IDataType, new()
     {
-        column = new(@this.Length, $"{Globals.ColName}_{@this._count++}", typeof(R), Unique, Default, Check,
-            BeforeGet, AfterGet, BeforeSet, AfterSet);
+        column = new(@this.Length, $"{Globals.ColName}_{@this._count++}", typeof(R), Unique, Default, Check);
         @this._columns.Add(column.Remove);
         @this.Length += 24;
         return @this;

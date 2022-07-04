@@ -16,3 +16,5 @@ tz1.Friends += tz2;
 tz1.Enemies += tz3;
 
 Console.WriteLine(tz1.Json);
+
+tz1.Remove();
