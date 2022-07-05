@@ -39,7 +39,31 @@ internal class Cache<D> where D : IDataType
         }
         else
         {
-            Evict();
+            while (_dict.Count >= _count)
+            {
+                switch (_dict.Count)
+                {
+                    case 1:
+                        {
+                            _dict.Remove(_head!._key);
+                            _head = null;
+                            break;
+                        }
+                    case 2:
+                        {
+                            _dict.Remove(_head!._prev!._key);
+                            _head!._next = null;
+                            _head._prev = _head;
+                            break;
+                        }
+                    default:
+                        {
+                            _dict.Remove(_head!._prev!._key);
+                            _head!._prev = _head!._prev!._prev;
+                            break;
+                        }
+                }
+            }
 
             Node newNode = new(key, value);
             if (_head is null)
@@ -115,35 +139,6 @@ internal class Cache<D> where D : IDataType
 
         node._next = _head;
         _head = node;
-    }
-
-    private void Evict()
-    {
-        while (_dict.Count >= _count)
-        {
-            switch (_dict.Count)
-            {
-                case 1:
-                    {
-                        _dict.Remove(_head!._key);
-                        _head = null;
-                        break;
-                    }
-                case 2:
-                    {
-                        _dict.Remove(_head!._prev!._key);
-                        _head!._next = null;
-                        _head._prev = _head;
-                        break;
-                    }
-                default:
-                    {
-                        _dict.Remove(_head!._prev!._key);
-                        _head!._prev = _head!._prev!._prev;
-                        break;
-                    }
-            }
-        }
     }
 
     public class Node
