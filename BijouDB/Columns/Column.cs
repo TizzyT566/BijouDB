@@ -294,6 +294,10 @@ public sealed class Column<D>
                         string crntValue = Path.GetFileName(hashCollision);
                         fs.Position = _offset;
                         fs.WriteHashValue(newHash, Guid.Parse(crntValue));
+
+                        // set for cache
+                        if (_cache is not null) _cache.Set(id, value);
+
                         return;
                     }
                 }

@@ -79,8 +79,16 @@ internal class Cache<D> where D : IDataType
             }
             else if (node == _head!._prev)
             {
-                _head._prev = _head._prev._prev;
-                _head._prev!._prev!._next = null;
+                if (node == _head._next)
+                {
+                    _head._next = null;
+                    _head._prev = _head;
+                }
+                else
+                {
+                    _head._prev = _head._prev._prev;
+                    _head._prev!._next = null;
+                }
             }
             else
             {

@@ -1,6 +1,6 @@
 ﻿using BijouDB_Test.Tables;
 
-int iterations = 100000;
+//int iterations = 100000;
 
 Employee tz1 = new()
 {
@@ -14,6 +14,8 @@ Employee tz3 = new()
 {
     Name = "TizzyT3"
 };
+
+string meh = tz1.Name;
 
 tz2.Remove();
 
