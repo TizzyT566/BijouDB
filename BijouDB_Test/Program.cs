@@ -1,6 +1,6 @@
 ﻿using BijouDB_Test.Tables;
 
-//int iterations = 100000;
+int iterations = 100000;
 
 Employee tz1 = new()
 {
@@ -15,25 +15,21 @@ Employee tz3 = new()
     Name = "TizzyT3"
 };
 
-string meh = tz1.Name;
+long start = System.Diagnostics.Stopwatch.GetTimestamp();
 
-tz2.Remove();
+string name1 = null!, name2 = null!, name3 = null!;
 
-//long start = System.Diagnostics.Stopwatch.GetTimestamp();
+for (int i = 0; i < iterations; i++)
+{
+    name1 = tz1.Name;
+    name2 = tz2.Name;
+    name3 = tz3.Name;
+}
 
-//string name1 = null!, name2 = null!, name3 = null!;
+long stop = System.Diagnostics.Stopwatch.GetTimestamp();
 
-//for (int i = 0; i < iterations; i++)
-//{
-//    name1 = tz1.Name;
-//    name2 = tz2.Name;
-//    name3 = tz3.Name;
-//}
-
-//long stop = System.Diagnostics.Stopwatch.GetTimestamp();
-
-//Console.WriteLine(TimeSpan.FromTicks(stop - start).TotalMilliseconds);
-//Console.WriteLine(name1);
-//Console.WriteLine(name2);
-//Console.WriteLine(name3);
+Console.WriteLine(TimeSpan.FromTicks(stop - start).TotalMilliseconds);
+Console.WriteLine(name1);
+Console.WriteLine(name2);
+Console.WriteLine(name3);
 
