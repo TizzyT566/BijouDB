@@ -15,21 +15,23 @@ Employee tz3 = new()
     Name = "TizzyT3"
 };
 
-long start = System.Diagnostics.Stopwatch.GetTimestamp();
+tz2.Remove();
 
-string name1 = null!, name2 = null!, name3 = null!;
+//long start = System.Diagnostics.Stopwatch.GetTimestamp();
 
-for (int i = 0; i < iterations; i++)
-{
-    name1 = tz1.Name;
-    name2 = tz2.Name;
-    name3 = tz3.Name;
-}
+//string name1 = null!, name2 = null!, name3 = null!;
 
-long stop = System.Diagnostics.Stopwatch.GetTimestamp();
+//for (int i = 0; i < iterations; i++)
+//{
+//    name1 = tz1.Name;
+//    name2 = tz2.Name;
+//    name3 = tz3.Name;
+//}
 
-Console.WriteLine(TimeSpan.FromTicks(stop - start).TotalMilliseconds);
-Console.WriteLine(name1);
-Console.WriteLine(name2);
-Console.WriteLine(name3);
+//long stop = System.Diagnostics.Stopwatch.GetTimestamp();
+
+//Console.WriteLine(TimeSpan.FromTicks(stop - start).TotalMilliseconds);
+//Console.WriteLine(name1);
+//Console.WriteLine(name2);
+//Console.WriteLine(name3);
 
