@@ -12,6 +12,7 @@
 		<Version>4.0.1.9-preview.0.0.2</Version>
 		<PackageIcon>Icon.png</PackageIcon>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 	</PropertyGroup>
 
 	<ItemGroup>

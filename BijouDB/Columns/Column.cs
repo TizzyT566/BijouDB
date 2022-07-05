@@ -17,7 +17,6 @@ public sealed class Column<D>
     private readonly Type _type;
     private readonly Func<D> _default;
     private readonly Func<D, bool> _check;
-
     private readonly Cache<D>? _cache;
 
     internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check, int cache)
