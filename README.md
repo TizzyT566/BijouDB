@@ -146,6 +146,8 @@ public interface IDataType
 }
 ```
 
+Refer to the source for some examples: [Built-in DataTypes](https://github.com/TizzyT566/BijouDB/tree/master/BijouDB/DataTypes)
+
 # Usage
 
 To get started simply create a new class which inherits from `BijouDB.Record`.
@@ -502,10 +504,10 @@ foreach(Employee employee in Record.WithValues<Employee>(
 
 If you want to know what unique values a column has you can call the respective column's `UniqueValues()` method.
 
-This will give you an array of all unique values found in that column.
+This will give you an Enumerable of all unique values found in that column.
 
 ```cs
-public IEnumerable<D> UniqueValues() { }
+public IEnumerable<D> UniqueValues()
 
 // Example
 // Get a list of all unique ages in Employee.AgeColumn
@@ -732,10 +734,11 @@ To turn on logging, set `BijouDB.Globals.Logging` to `true`.
 ```
 This prevents users from creating empty records and/or creating records which aren't used which
 will clutter up the database. This behavior though maybe undesireable in certain situations
-and in which case simply accessing the records Id property will store the record in the database.
+and in which case simply accessing the records Id property in a constructor will store the record
+in the database.
 ```
 
-### Only explicitly set values are indexed, This is a performance related design decision
+### Only explicitly set values are indexed (Values not set will not be visible in lookups)
 
 ```
 This means that during lookups for default values like null, 0, "", '\0', etc will NOT contain any

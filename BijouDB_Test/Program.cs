@@ -1,4 +1,5 @@
-﻿using BijouDB_Test.Tables;
+﻿using BijouDB;
+using BijouDB_Test.Tables;
 
 int iterations = 100000;
 
@@ -29,7 +30,8 @@ for (int i = 0; i < iterations; i++)
 long stop = System.Diagnostics.Stopwatch.GetTimestamp();
 
 Console.WriteLine(TimeSpan.FromTicks(stop - start).TotalMilliseconds);
-Console.WriteLine(name1);
-Console.WriteLine(name2);
-Console.WriteLine(name3);
 
+foreach(Employee e in Record.GetAll<Employee>())
+{
+    Console.WriteLine(e.Json);
+}
