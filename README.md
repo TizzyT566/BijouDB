@@ -773,14 +773,10 @@ public sealed class Employee : Record
 
 ### ~~Do NOT access column properties inside of the contructor of records.~~ (FIXED)
 <details><summary>Show description</summary>
-<p>
-```
 Because of how BijouDB is designed, normally a Record's Id is only set after the constructor has ran.
 Except when setting a column on a Record that has yet to have an Id set. To be able to ensure that
 Records always have an Id, the Get/Set methods sets the Id to a newly generated one. This is normally
 fine except for when you are trying to retrieve a Record. This causes BijouDB to generate a new Record
 and return that newly generated Record instead of specified one. Only Get/Set properties outside of the
 constructor.
-```
-</p>
 </details>
