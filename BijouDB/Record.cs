@@ -9,32 +9,37 @@ public abstract class Record : IEqualityComparer<Record>
     internal static readonly Dictionary<string, Type> _types = new();
 
     internal Guid? _id;
+    /// <summary>
+    /// The Record's Id.
+    /// </summary>
     public Guid Id
     {
         get
         {
             if (_id is null)
             {
-                _id ??= IncrementalGuid.NextGuid();
                 try
                 {
+                    _id = IncrementalGuid.NextGuid();
                     string baseDir = Path.Combine(DatabasePath, GetType().FullName!, Rec);
                     Directory.CreateDirectory(baseDir);
                     string path = Path.Combine(baseDir, $"{Id}.{Rec}");
-                    if (!File.Exists(path))
-                    {
-                        File.Create(path).Dispose();
-                    }
+                    while (File.Exists(path))
+                        _id = IncrementalGuid.NextGuid();
+                    File.Create(path).Dispose();
                 }
                 catch (Exception ex)
                 {
-                    ex.Log();
+                    throw ex.Log();
                 }
             }
             return (Guid)_id;
         }
     }
 
+    /// <summary>
+    /// Gets the Json representation of this object.
+    /// </summary>
     public string Json => this.ToJson();
 
     static Record()
@@ -45,24 +50,42 @@ public abstract class Record : IEqualityComparer<Record>
                 _types.Add(type.FullName, type);
     }
 
+    /// <summary>
+    /// Tries to retrieve a Record via a string.
+    /// </summary>
+    /// <typeparam name="R">The type of Record.</typeparam>
+    /// <param name="id">The Id of the Record to retrieve.</param>
+    /// <param name="record">The Retrieved record.</param>
+    /// <returns>true if Record was retrieved, otherwise false.</returns>
     public static bool TryGet<R>(string id, out R? record)
         where R : Record, new() =>
         TryGet(Guid.Parse(id), out record);
+
+    /// <summary>
+    /// Tries to retrieve a Record via a Guid.
+    /// </summary>
+    /// <typeparam name="R">The type of Record.</typeparam>
+    /// <param name="id">The Id of the Record to retrieve.</param>
+    /// <param name="record">The Retrieved record.</param>
+    /// <returns>true if Record was retrieved, otherwise false.</returns>
     public static bool TryGet<R>(Guid id, out R? record)
         where R : Record, new()
     {
         try
         {
             string path = Path.Combine(DatabasePath, typeof(R).FullName!, Rec, $"{id}.{Rec}");
-            record = new() { _id = id };
-            return true;
+            if (File.Exists(path))
+            {
+                record = new() { _id = id };
+                return true;
+            }
         }
         catch (Exception ex)
         {
             ex.Log();
-            record = null;
-            return false;
         }
+        record = null;
+        return false;
     }
 
     /// <summary>
@@ -71,6 +94,10 @@ public abstract class Record : IEqualityComparer<Record>
     /// <returns>A string array with the full name of available record types.</returns>
     public static string[] Types => _types.Values.Select(t => t.FullName).ToArray();
 
+    /// <summary>
+    /// Retrieves all property names for the current Record type.
+    /// </summary>
+    /// <returns>An array of property names for the Record type.</returns>
     public string[] PropertyNames()
     {
         Type type = GetType();
@@ -95,6 +122,12 @@ public abstract class Record : IEqualityComparer<Record>
             }
     }
 
+    /// <summary>
+    /// Retrieve Records with the specified values.
+    /// </summary>
+    /// <typeparam name="R">The type of Record.</typeparam>
+    /// <param name="columnMatches">Individual column matches obtained by WithValue() method.</param>
+    /// <returns>Enumerable of all </returns>
     public static IEnumerable<R> WithValues<R>(params IEnumerable<R>[] columnMatches)
         where R : Record, new()
     {
@@ -115,7 +148,7 @@ public abstract class Record : IEqualityComparer<Record>
         for (int i = 1; i < hashSets.Count; i++)
             result.IntersectWith(hashSets[i]);
 
-        return result.ToArray();
+        return result;
     }
 
     internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition)
@@ -126,7 +159,11 @@ public abstract class Record : IEqualityComparer<Record>
         _removeDefinitions.Add(type, removeDefinition);
     }
 
-    public bool TryRemove() => TryRemove(out _);
+    /// <summary>
+    /// Tries to remove a Record from the database.
+    /// </summary>
+    /// <param name="exception">Any exception which occurred.</param>
+    /// <returns>true if Record was removed, otherwise false.</returns>
     public bool TryRemove(out Exception? exception)
     {
         try
@@ -138,18 +175,33 @@ public abstract class Record : IEqualityComparer<Record>
         catch (Exception ex)
         {
             exception = ex;
-            if (Logging) Console.WriteLine(ex.Message);
+            ex.Log();
             return false;
         }
     }
 
-    public void Remove() => Remove(this);
-    public static void Remove<R>(R record) where R : Record
+    internal static void Remove<R>(R record) where R : Record
     {
         if (_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition) && removeDefinition is not null)
             removeDefinition(record);
     }
 
-    public bool Equals(Record x, Record y) => x.GetType() == y.GetType() && Equals(x.Id, y.Id);
-    public int GetHashCode(Record obj) => obj.Id.GetHashCode();
+    /// <summary>
+    /// Checks if two records of equal.
+    /// </summary>
+    /// <param name="x">The first Record to check.</param>
+    /// <param name="y">The second Record to check.</param>
+    /// <returns></returns>
+    public bool Equals(Record x, Record y)
+    {
+        if (x._id is null || y._id is null) return false;
+        return x.GetType() == y.GetType() && Equals(x._id, y._id);
+    }
+
+    /// <summary>
+    /// The hash code for the Record.
+    /// </summary>
+    /// <param name="obj">The Record to get the hash code for.</param>
+    /// <returns>The hash code.</returns>
+    public int GetHashCode(Record obj) => obj._id.GetHashCode();
 }
