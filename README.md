@@ -760,9 +760,9 @@ public sealed class Computer : Record
     { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
 
     // Contructor which explicitly sets properties upon construction
-    public Computer()
+    public Computer(Employee? employee = default)
     {
-        Employee = default;
+        Employee = employee;
     }
 }
 ```
