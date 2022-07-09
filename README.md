@@ -729,13 +729,12 @@ To turn on logging, set `BijouDB.Globals.Logging` to `true`.
 
 # Gotchas
 
-### New Records are only stored once accessed (either by reading a property, or setting a property)
+### New Records are only stored once accessed (either by getting a property, or setting a property)
 
 ```
 This prevents users from creating empty records and/or creating records which aren't used which
-will clutter up the database. This behavior though maybe undesireable in certain situations
-and in which case simply accessing the records Id property in a constructor will store the record
-in the database.
+will clutter up the database. This behavior though maybe undesireable in certain situations and
+in which case simply accessing any column related property will store the record in the database.
 ```
 
 ### Only explicitly set values are indexed (Values not set will not be visible in lookups)
@@ -743,10 +742,36 @@ in the database.
 ```
 This means that during lookups for default values like null, 0, "", '\0', etc will NOT contain any
 records which do not have the respective property set. This behavior will be remedied if/when
-'Required Properties' feature is out.
+'Required Properties' feature is out. For now you can create a constructor with parameters for
+properties which to explicitly set.
+```
+```cs
+// Exmaple
+
+public sealed class Employee : Record
+{
+    public static readonly Column<@string> NameColumn;
+
+    [Json] public string Name
+    { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
+
+    static Employee() => _ = ~SchemaBuilder<Employee>.Add(out NameColumn);
+
+    public Employee()
+    {
+        // Optionally throw if you dont want the default constructor to be used
+        throw new NotSupportedException();
+    }
+
+    // Constructor to explicitly set properties
+    public Employee(string name)
+    {
+        Name = name;
+    }
+}
 ```
 
-### Do NOT access column properties inside of the contructor of records.
+### ~~Do NOT access column properties inside of the contructor of records.~~ (FIXED)
 
 ```
 Because of how BijouDB is designed, normally a Record's Id is only set after the constructor has ran.

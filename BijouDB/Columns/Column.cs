@@ -123,7 +123,7 @@ public sealed class Column<D>
         {
             string dataMatchPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString(), index.ToString());
             foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
-                if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id) && Record.TryGet<R>(id, out _))
+                if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out _))
                     return true;
         }
         return false;
@@ -202,12 +202,6 @@ public sealed class Column<D>
         where R : Record
     {
         Guid id = record.Id;
-
-        if (id == Guid.Empty)
-        {
-            new Exception("Unexpected record state, Id is empty.").Log();
-            return;
-        }
 
         if (_check is not null && !_check(value)) throw new CheckContraintException();
 

@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.Serialization;
 using static BijouDB.Globals;
 
 namespace BijouDB;
@@ -37,11 +38,6 @@ public abstract class Record : IEqualityComparer<Record>
         }
     }
 
-    /// <summary>
-    /// Gets the Json representation of this object.
-    /// </summary>
-    public string Json => this.ToJson();
-
     static Record()
     {
         Type recordType = typeof(Record);
@@ -49,6 +45,11 @@ public abstract class Record : IEqualityComparer<Record>
             if (!type.IsAbstract && recordType.IsAssignableFrom(type) && !string.IsNullOrEmpty(type.FullName))
                 _types.Add(type.FullName, type);
     }
+
+    /// <summary>
+    /// Gets the Json representation of this object.
+    /// </summary>
+    public string Json => this.ToJson();
 
     /// <summary>
     /// Tries to retrieve a Record via a string.
@@ -76,7 +77,7 @@ public abstract class Record : IEqualityComparer<Record>
             string path = Path.Combine(DatabasePath, typeof(R).FullName!, Rec, $"{id}.{Rec}");
             if (File.Exists(path))
             {
-                record = new() { _id = id };
+                record = GetUninitializedRecord<R>(id);
                 return true;
             }
         }
@@ -118,7 +119,7 @@ public abstract class Record : IEqualityComparer<Record>
             foreach (string record in Directory.EnumerateFiles(path, RecPattern))
             {
                 string recordName = Path.GetFileNameWithoutExtension(record);
-                yield return new() { _id = Guid.Parse(recordName) };
+                yield return GetUninitializedRecord<R>(Guid.Parse(recordName));
             }
     }
 
@@ -151,14 +152,6 @@ public abstract class Record : IEqualityComparer<Record>
         return result;
     }
 
-    internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition)
-        where R : Record
-    {
-        Type type = typeof(R);
-        if (_removeDefinitions.ContainsKey(type)) return;
-        _removeDefinitions.Add(type, removeDefinition);
-    }
-
     /// <summary>
     /// Tries to remove a Record from the database.
     /// </summary>
@@ -180,12 +173,6 @@ public abstract class Record : IEqualityComparer<Record>
         }
     }
 
-    internal static void Remove<R>(R record) where R : Record
-    {
-        if (_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition) && removeDefinition is not null)
-            removeDefinition(record);
-    }
-
     /// <summary>
     /// Checks if two records of equal.
     /// </summary>
@@ -204,4 +191,28 @@ public abstract class Record : IEqualityComparer<Record>
     /// <param name="obj">The Record to get the hash code for.</param>
     /// <returns>The hash code.</returns>
     public int GetHashCode(Record obj) => obj._id.GetHashCode();
+
+    internal static void Remove<R>(R record) where R : Record
+    {
+        if (_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition) && removeDefinition is not null)
+            removeDefinition(record);
+    }
+
+    internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition)
+        where R : Record
+    {
+        Type type = typeof(R);
+        if (_removeDefinitions.ContainsKey(type)) return;
+        _removeDefinitions.Add(type, removeDefinition);
+    }
+
+    private static R GetUninitializedRecord<R>(Guid id) where R : Record, new()
+    {
+        if (id == Guid.Empty) throw new ArgumentException("Record id cannot be empty.");
+        object obj = FormatterServices.GetUninitializedObject(typeof(R));
+        Type type = obj.GetType();
+        FieldInfo field = type.GetField("_id", BindingFlags.NonPublic | BindingFlags.Instance);
+        field.SetValue(obj, id);
+        return (R)obj;
+    }
 }
