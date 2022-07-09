@@ -33,6 +33,131 @@ public static class Json
         _formatters.Add(typeof(Guid), o => $"\"{o}\"");
     }
 
+    /// <summary>
+    /// Tries to add a formatter for a spicified type to Json.
+    /// </summary>
+    /// <param name="type">The type to add a formatter for.</param>
+    /// <param name="formatter">The type formatter.</param>
+    /// <returns>true if formatter was successfully added, otherwise false.</returns>
+    public static bool TryAddFormatter(Type type, Func<object, string> formatter)
+    {
+        if (type is null) return false;
+        if (typeof(Record).Equals(type)) return false;
+        try
+        {
+            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
+            if (_formatters.ContainsKey(type)) return false;
+            _formatters.Add(type, formatter);
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _lock, 0);
+        }
+    }
+
+    /// <summary>
+    /// Gets the Json representation of a record give its type and id as strings.
+    /// </summary>
+    /// <param name="type">The Type name.</param>
+    /// <param name="id">The record's Id.</param>
+    /// <param name="depth">How deep should the serializer go.</param>
+    /// <param name="level">The access level of properties to represent.</param>
+    /// <returns>The Json string of the specified record.</returns>
+    public static string? GetRecord(string type, string id, int depth = 0, int level = 0)
+    {
+        try
+        {
+            Type t = Record._types[type];
+            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
+            dynamic obj = ci.Invoke(null);
+            obj._id = Guid.Parse(id);
+            string json = Json.ToJson(obj, depth, level);
+            return json;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the Json representation of a record give its type, id, and property name as strings.
+    /// </summary>
+    /// <param name="type">The Type name.</param>
+    /// <param name="id">The record's Id.</param>
+    /// <param name="property">The name of the property in the record.</param>
+    /// <param name="depth">How deep should the serializer go.</param>
+    /// <param name="level">The access level of properties to represent.</param>
+    /// <returns>The Json string of the specified record.</returns>
+    public static string? GetProperty(string type, string id, string property, int depth = 0, int level = 0)
+    {
+        if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(id) || string.IsNullOrEmpty(property)) return null;
+        try
+        {
+            Type t = Record._types[type];
+            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
+            dynamic obj = ci.Invoke(null);
+            obj._id = Guid.Parse(id);
+            string prop = Json.ToJson(t.GetProperty(property).GetValue(obj), depth, level);
+            return prop;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the Json representation of an object.
+    /// </summary>
+    /// <param name="this">The object to represent as Json.</param>
+    /// <param name="depth">How deep should the serializer go.</param>
+    /// <param name="level">The access level of properties to represent.</param>
+    /// <returns>The Json string of the specified object.</returns>
+    public static string ToJson(this object @this, int depth = 1, int level = 0)
+    {
+        try
+        {
+            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
+            _level = level;
+            _depth = depth;
+            _references.Clear();
+            return ToJson(@this);
+        }
+        catch (Exception)
+        {
+            return "null";
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _lock, 0);
+        }
+    }
+
+    private static string ToJson(object obj)
+    {
+        if (obj is null) return "null";
+
+        if (obj is Record record) return RecordToJson(record);
+
+        if (IsJunction(obj)) return JunctionToJson(obj);
+
+        if (_formatters.TryGetValue(obj.GetType(), out Func<object, string> formatter)) return formatter(obj);
+
+        if (obj.GetType().IsArray) return ArrayToJson(obj);
+
+        if (obj is IEnumerable) return EnumerableToJson(obj);
+
+        if (IsTuple(obj)) return TupleToJson(obj);
+
+        return $"\"{obj}\"";
+    }
+
     private static string ProcessString(object obj)
     {
         string input = (string)obj;
@@ -100,114 +225,6 @@ public static class Json
         }
         chars[i++] = '\"';
         return new string(chars, 0, i);
-    }
-
-    /// <summary>
-    /// Tries to add a formatter for a spicified type to Json.
-    /// </summary>
-    /// <param name="type">The type to add a formatter for.</param>
-    /// <param name="formatter">The type formatter.</param>
-    /// <returns>true if formatter was successfully added, otherwise false.</returns>
-    public static bool TryAddFormatter(Type type, Func<object, string> formatter)
-    {
-        if (type is null) return false;
-        if (typeof(Record).Equals(type)) return false;
-        try
-        {
-            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
-            if (_formatters.ContainsKey(type)) return false;
-            _formatters.Add(type, formatter);
-            return true;
-        }
-        catch (Exception)
-        {
-            return false;
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _lock, 0);
-        }
-    }
-
-    public static string? GetRecord(string type, string id, int depth = 0, int level = 0)
-    {
-        try
-        {
-            Type t = Record._types[type];
-            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
-            dynamic obj = ci.Invoke(null);
-            obj._id = Guid.Parse(id);
-            string json = Json.ToJson(obj, depth, level);
-            return json;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    public static string? GetProperty(string type, string id, string property, int depth = 0, int level = 0)
-    {
-        if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(id) || string.IsNullOrEmpty(property)) return null;
-        try
-        {
-            Type t = Record._types[type];
-            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
-            dynamic obj = ci.Invoke(null);
-            obj._id = Guid.Parse(id);
-            string prop = Json.ToJson(t.GetProperty(property).GetValue(obj), depth, level);
-            return prop;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
-
-    // Gets the Json representation of an object which has a formatter.
-    public static string ToJson(this object @this, int depth = 1, int level = 0)
-    {
-        try
-        {
-            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
-            _level = level;
-            _depth = depth;
-            _references.Clear();
-            return ToJson(@this);
-        }
-        catch (Exception)
-        {
-            return "null";
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _lock, 0);
-        }
-    }
-
-    private static string ToJson(object obj)
-    {
-        if (obj is null) return "null";
-
-        // if record
-        if (obj is Record record) return RecordToJson(record);
-
-        // if junction
-        if (IsJunction(obj)) return JunctionToJson(obj);
-
-        if (_formatters.TryGetValue(obj.GetType(), out Func<object, string> formatter))
-            return formatter(obj);
-
-        // if array
-        if (obj.GetType().IsArray) return ArrayToJson(obj);
-
-        // if IEnumerable
-        if (obj is IEnumerable) return EnumerableToJson(obj);
-
-        // if tuple
-        if (IsTuple(obj)) return TupleToJson(obj);
-
-        return $"\"{obj}\"";
     }
 
     private static string JunctionToJson(object obj)
