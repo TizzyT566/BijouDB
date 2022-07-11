@@ -25,5 +25,6 @@ Console.WriteLine(TimeSpan.FromTicks(stop - start).TotalMilliseconds);
 foreach (Employee e in Record.GetAll<Employee>())
 {
     e.TryRemove(out _);
+    e.Name = "Test";
     Console.WriteLine(e.Json);
 }

@@ -166,8 +166,8 @@ public sealed class Column<D>
             // check for cache
             if (_cache is not null && _cache.TryGet(id, out D? value)) return value!;
 
-            string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
-            if (!File.Exists(recordPath)) throw new FileNotFoundException("Record is missing");
+            string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
+            if (!File.Exists(recordPath)) throw new FileNotFoundException($"Record {id} does not exist.");
             using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             fs.Position = _offset;
             if (fs.ReadHashValue(out ulong crntHash, out Guid crntValue))
@@ -205,6 +205,9 @@ public sealed class Column<D>
 
         if (_check is not null && !_check(value)) throw new CheckContraintException();
 
+        string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
+        if (!File.Exists(recordPath)) throw new FileNotFoundException($"Record {id} does not exist.");
+
         string baseDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec);
         Directory.CreateDirectory(baseDir);
 
@@ -213,7 +216,7 @@ public sealed class Column<D>
         ulong newHash = value.Hash(ms);
 
         // Read previous value
-        using FileStream fs = new(Path.Combine(baseDir, $"{id}.{Globals.Rec}"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+        using FileStream fs = new(recordPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
 
         // Old hash/value exists, read it and delete its reference
         fs.Position = _offset;
