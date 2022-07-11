@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Serialization;
+using BijouDB.Exceptions;
 using static BijouDB.Globals;
 
 namespace BijouDB;
@@ -43,7 +44,7 @@ public abstract class Record : IEqualityComparer<Record>
         Type recordType = typeof(Record);
         foreach (Type type in Assembly.GetEntryAssembly().GetTypes())
             if (!type.IsAbstract && recordType.IsAssignableFrom(type) && !string.IsNullOrEmpty(type.FullName))
-                _types.Add(type.FullName, type);
+                _types.Add(type.FullName, type.IsPublic ? type : throw new NotPublicRecordException(type));
     }
 
     /// <summary>

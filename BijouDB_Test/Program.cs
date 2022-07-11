@@ -3,18 +3,9 @@ using BijouDB_Test.Tables;
 
 int iterations = 100000;
 
-Employee tz1 = new()
-{
-    Name = "TizzyT1"
-};
-Employee tz2 = new()
-{
-    Name = "TizzyT2"
-};
-Employee tz3 = new()
-{
-    Name = "TizzyT3"
-};
+Employee tz1 = new("TizzyT1"); ;
+Employee tz2 = new("");
+Employee tz3 = new("TizzyT3");
 
 long start = System.Diagnostics.Stopwatch.GetTimestamp();
 
@@ -31,7 +22,8 @@ long stop = System.Diagnostics.Stopwatch.GetTimestamp();
 
 Console.WriteLine(TimeSpan.FromTicks(stop - start).TotalMilliseconds);
 
-foreach(Employee e in Record.GetAll<Employee>())
+foreach (Employee e in Record.GetAll<Employee>())
 {
+    e.TryRemove(out _);
     Console.WriteLine(e.Json);
 }
