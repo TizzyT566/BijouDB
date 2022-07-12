@@ -217,7 +217,7 @@ public class MyRecord : Record
 }
 ```
 
-Caching is enabled by default with 128 cache size. To disable caching set this to 0 or under.
+Caching is enabled by default with 128 cache size. To disable caching set it less than or equal to 0.
 
 ```csharp
 using BijouDB;
