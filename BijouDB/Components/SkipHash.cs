@@ -2,7 +2,7 @@
 
 namespace BijouDB;
 
-internal static class SkipHash
+public static class SkipHash
 {
     /// <summary>
     /// Generates a hash that skip portions of the data for speed.
