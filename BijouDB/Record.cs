@@ -94,7 +94,7 @@ public abstract class Record : IEqualityComparer<Record>
     /// Gets all available Record types in the current application.
     /// </summary>
     /// <returns>A string array with the full name of available record types.</returns>
-    public static string[] Types => _types.Values.Select(t => t.FullName).ToArray();
+    public static string[] Types => _types.Keys.ToArray();
 
     /// <summary>
     /// Retrieves all property names for the current Record type.
@@ -137,7 +137,7 @@ public abstract class Record : IEqualityComparer<Record>
             return columnMatches[0] is null ? Array.Empty<R>() : columnMatches[0];
         if (columnMatches.Length == 0) return Array.Empty<R>();
 
-        // Turn all arrays into hashsets for fast lookup
+        // Turn all enumerables into hashsets for fast lookup
         List<HashSet<R>> hashSets = new();
         foreach (IEnumerable<R> arr in columnMatches)
             if (arr is not null) hashSets.Add(new HashSet<R>(arr));
