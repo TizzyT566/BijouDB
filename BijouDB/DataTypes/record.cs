@@ -20,7 +20,7 @@ public struct @record<R> : IDataType
             Guid guid = new(bytes);
             TryGet(guid, out _value!);
         }
-        else throw new CorruptedException<@record<R>.nullable>();
+        else throw new CorruptedException<@record<R>.nullable>().Log();
     }
 
     public void Serialize(Stream stream) =>
@@ -46,7 +46,7 @@ public struct @record<R> : IDataType
             {
                 case < 0:
                     {
-                        throw new CorruptedException<nullable>();
+                        throw new CorruptedException<nullable>().Log();
                     }
                 case 0:
                     {
@@ -57,7 +57,7 @@ public struct @record<R> : IDataType
                     {
                         byte[] bytes = new byte[16];
                         if (stream.TryFill(bytes)) TryGet(new Guid(bytes), out _value);
-                        else throw new CorruptedException<nullable>();
+                        else throw new CorruptedException<nullable>().Log();
                         break;
                     }
             }

@@ -22,7 +22,7 @@ public struct @decimal : IDataType
             ints[3] = BitConverter.ToInt32(bytes, 12);
             _value = new(ints);
         }
-        else throw new CorruptedException<@decimal>();
+        else throw new CorruptedException<@decimal>().Log();
     }
 
     public void Serialize(Stream stream)
@@ -51,7 +51,7 @@ public struct @decimal : IDataType
             {
                 case < 0:
                     {
-                        throw new CorruptedException<nullable>();
+                        throw new CorruptedException<nullable>().Log();
                     }
                 case 0:
                     {
@@ -70,7 +70,7 @@ public struct @decimal : IDataType
                             ints[3] = BitConverter.ToInt32(bytes, 12);
                             _value = new(ints);
                         }
-                        else throw new CorruptedException<nullable>();
+                        else throw new CorruptedException<nullable>().Log();
                         break;
                     }
             }

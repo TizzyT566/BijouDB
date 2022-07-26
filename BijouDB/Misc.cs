@@ -9,10 +9,10 @@ internal static class Misc
         long? s1Length = null, s2Length = null;
 
         try { s1Length = s1.Length; }
-        catch (Exception) { }
+        catch (Exception ex) { ex.Log(); }
 
         try { s2Length = s2.Length; }
-        catch (Exception) { }
+        catch (Exception ex) { ex.Log(); }
 
         if (s1Length != s2Length || s1Length is null) return false;
 
@@ -193,7 +193,7 @@ internal static class Misc
     public static T WriteValueSize<T>(this T @this, in long valLen)
         where T : Stream
     {
-        if (valLen < 0) throw new ArgumentOutOfRangeException(nameof(valLen));
+        if (valLen < 0) throw new ArgumentOutOfRangeException(nameof(valLen)).Log();
         byte[] bytes = BitConverter.GetBytes(valLen);
         switch (valLen)
         {

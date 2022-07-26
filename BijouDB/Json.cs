@@ -50,8 +50,9 @@ public static class Json
             _formatters.Add(type, formatter);
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            ex.Log();
             return false;
         }
         finally
@@ -79,8 +80,9 @@ public static class Json
             string json = Json.ToJson(obj, depth, level);
             return json;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            ex.Log();
             return null;
         }
     }
@@ -106,8 +108,9 @@ public static class Json
             string prop = Json.ToJson(t.GetProperty(property).GetValue(obj), depth, level);
             return prop;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            ex.Log();
             return null;
         }
     }
@@ -129,8 +132,9 @@ public static class Json
             _references.Clear();
             return ToJson(@this);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            ex.Log();
             return "null";
         }
         finally

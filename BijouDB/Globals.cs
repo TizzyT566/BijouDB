@@ -45,24 +45,4 @@ public static class Globals
         }
         return @this;
     }
-
-    public static string Log(this string @this, LogLevel level = LogLevel.Information)
-    {
-        if (Logging)
-        {
-            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _consoleLock, 1) == 0);
-            ConsoleColor prev = Console.ForegroundColor;
-            Console.ForegroundColor = level switch
-            {
-                LogLevel.Success => ConsoleColor.Green,
-                LogLevel.Warning => ConsoleColor.Yellow,
-                LogLevel.Error => ConsoleColor.Red,
-                _ => ConsoleColor.White
-            };
-            Console.WriteLine(@this);
-            Console.ForegroundColor = prev;
-            Interlocked.Exchange(ref _consoleLock, 0);
-        }
-        return @this;
-    }
 }

@@ -14,7 +14,7 @@ public struct @string : IDataType
     public void Deserialize(Stream stream)
     {
         if (stream.TryReadDynamicData(out byte[] data)) _value = Encoding.UTF8.GetString(data);
-        else throw new CorruptedException<@string>();
+        else throw new CorruptedException<@string>().Log();
     }
 
     public void Serialize(Stream stream) => stream.WriteDynamicData(Encoding.UTF8.GetBytes(_value ?? ""));
@@ -39,7 +39,7 @@ public struct @string : IDataType
             {
                 case < 0:
                     {
-                        throw new CorruptedException<nullable>();
+                        throw new CorruptedException<nullable>().Log();
                     }
                 case 0:
                     {
@@ -49,7 +49,7 @@ public struct @string : IDataType
                 default:
                     {
                         if (stream.TryReadDynamicData(out byte[] data)) _value = Encoding.UTF8.GetString(data);
-                        else throw new CorruptedException<nullable>();
+                        else throw new CorruptedException<nullable>().Log();
                         break;
                     }
             }

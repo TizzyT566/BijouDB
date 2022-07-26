@@ -14,7 +14,7 @@ public struct @time : IDataType
     {
         byte[] bytes = new byte[8];
         if (stream.TryFill(bytes)) _value = new DateTime(BitConverter.ToInt64(bytes, 0));
-        else throw new CorruptedException<@time>();
+        else throw new CorruptedException<@time>().Log();
     }
 
     public void Serialize(Stream stream) =>
@@ -40,7 +40,7 @@ public struct @time : IDataType
             {
                 case < 0:
                     {
-                        throw new CorruptedException<nullable>();
+                        throw new CorruptedException<nullable>().Log();
                     }
                 case 0:
                     {
@@ -51,7 +51,7 @@ public struct @time : IDataType
                     {
                         byte[] bytes = new byte[8];
                         if (stream.TryFill(bytes)) _value = new(BitConverter.ToInt64(bytes, 0));
-                        else throw new CorruptedException<nullable>();
+                        else throw new CorruptedException<nullable>().Log();
                         break;
                     }
             }

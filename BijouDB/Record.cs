@@ -32,7 +32,8 @@ public abstract class Record : IEqualityComparer<Record>
                 }
                 catch (Exception ex)
                 {
-                    throw ex.Log();
+                    ex.Log();
+                    throw;
                 }
             }
             return (Guid)_id;
@@ -44,7 +45,7 @@ public abstract class Record : IEqualityComparer<Record>
         Type recordType = typeof(Record);
         foreach (Type type in Assembly.GetEntryAssembly().GetTypes())
             if (!type.IsAbstract && recordType.IsAssignableFrom(type) && !string.IsNullOrEmpty(type.FullName))
-                _types.Add(type.FullName, type.IsPublic ? type : throw new NotPublicRecordException(type));
+                _types.Add(type.FullName, type.IsPublic ? type : throw new NotPublicRecordException(type).Log());
     }
 
     /// <summary>
@@ -209,7 +210,7 @@ public abstract class Record : IEqualityComparer<Record>
 
     private static R GetUninitializedRecord<R>(Guid id) where R : Record, new()
     {
-        if (id == Guid.Empty) throw new ArgumentException("Record id cannot be empty.");
+        if (id == Guid.Empty) throw new ArgumentException("Record id cannot be empty.").Log();
         object obj = FormatterServices.GetUninitializedObject(typeof(R));
         Type type = obj.GetType();
         FieldInfo field = type.GetField("_id", BindingFlags.NonPublic | BindingFlags.Instance);

@@ -167,7 +167,7 @@ public sealed class Column<D>
             if (_cache is not null && _cache.TryGet(id, out D? value)) return value!;
 
             string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-            if (!File.Exists(recordPath)) throw new FileNotFoundException($"Record {id} does not exist.");
+            if (!File.Exists(recordPath)) throw new FileNotFoundException($"Record {id} does not exist.").Log();
             using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             fs.Position = _offset;
             if (fs.ReadHashValue(out ulong crntHash, out Guid crntValue))
@@ -203,10 +203,10 @@ public sealed class Column<D>
     {
         Guid id = record.Id;
 
-        if (_check is not null && !_check(value)) throw new CheckContraintException();
+        if (_check is not null && !_check(value)) throw new CheckContraintException().Log();
 
         string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-        if (!File.Exists(recordPath)) throw new FileNotFoundException($"Record {id} does not exist.");
+        if (!File.Exists(recordPath)) throw new FileNotFoundException($"Record {id} does not exist.").Log();
 
         string baseDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec);
         Directory.CreateDirectory(baseDir);
@@ -262,7 +262,7 @@ public sealed class Column<D>
                     }
                     catch (Exception ex)
                     {
-                        if (Globals.Logging) Console.WriteLine(ex.ToString());
+                        ex.Log();
                     }
                 }
             }
@@ -285,7 +285,7 @@ public sealed class Column<D>
                         // Uniqueness check
                         if (_unique)
                             foreach (string match in Directory.EnumerateFiles(hashCollision, Globals.RefPattern))
-                                throw new UniqueConstraintException<D>();
+                                throw new UniqueConstraintException<D>().Log();
 
                         File.Create(Path.Combine(hashCollision, $"{id}.{Globals.Ref}")).Dispose();
                         string crntValue = Path.GetFileName(hashCollision);

@@ -14,7 +14,7 @@ public struct @bint : IDataType
     public void Deserialize(Stream stream)
     {
         if (stream.TryReadDynamicData(out byte[] data)) _value = new(data);
-        else throw new CorruptedException<@bint>();
+        else throw new CorruptedException<@bint>().Log();
     }
 
     public void Serialize(Stream stream) => stream.WriteDynamicData(_value.ToByteArray());
@@ -39,7 +39,7 @@ public struct @bint : IDataType
             {
                 case < 0:
                     {
-                        throw new CorruptedException<nullable>();
+                        throw new CorruptedException<nullable>().Log();
                     }
                 case 0:
                     {
@@ -49,7 +49,7 @@ public struct @bint : IDataType
                 default:
                     {
                         if (stream.TryReadDynamicData(out byte[] data)) _value = new(data);
-                        else throw new CorruptedException<nullable>();
+                        else throw new CorruptedException<nullable>().Log();
                         break;
                     }
             }

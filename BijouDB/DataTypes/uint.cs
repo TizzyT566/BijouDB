@@ -14,7 +14,7 @@ public struct @uint : IDataType
     {
         byte[] bytes = new byte[4];
         if (stream.TryFill(bytes)) _value = BitConverter.ToUInt32(bytes, 0);
-        else throw new CorruptedException<@uint>();
+        else throw new CorruptedException<@uint>().Log();
     }
 
     public void Serialize(Stream stream) =>
@@ -40,7 +40,7 @@ public struct @uint : IDataType
             {
                 case < 0:
                     {
-                        throw new CorruptedException<nullable>();
+                        throw new CorruptedException<nullable>().Log();
                     }
                 case 0:
                     {
@@ -51,7 +51,7 @@ public struct @uint : IDataType
                     {
                         byte[] bytes = new byte[4];
                         if (stream.TryFill(bytes)) _value = BitConverter.ToUInt32(bytes, 0);
-                        else throw new CorruptedException<nullable>();
+                        else throw new CorruptedException<nullable>().Log();
                         break;
                     }
             }

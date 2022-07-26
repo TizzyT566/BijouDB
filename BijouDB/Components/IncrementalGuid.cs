@@ -18,7 +18,7 @@ internal static class IncrementalGuid
         catch (Exception ex)
         {
             ex.Log();
-            throw ex;
+            throw;
         }
 
         if (File.Exists(SavePath))
@@ -26,11 +26,7 @@ internal static class IncrementalGuid
             _saveStream = new(SavePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
             _guidBytes = new byte[16];
             if (!_saveStream.TryFill(_guidBytes))
-            {
-                Exception ex = new($"{nameof(SavePath)} must be 16 bytes in size.");
-                ex.Log();
-                throw ex;
-            }
+                throw new Exception($"{nameof(SavePath)} must be 16 bytes in size.").Log();
             Increment(SPACING);
         }
         else

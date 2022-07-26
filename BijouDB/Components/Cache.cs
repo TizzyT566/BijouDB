@@ -7,7 +7,7 @@ internal class Cache<D> where D : IDataType
     private Node? _head;
     private int _lock;
 
-    public Cache(int count) => _count = count > 0 ? count : throw new InvalidOperationException("Unexpected Error, Cache must be greater than 0.");
+    public Cache(int count) => _count = count > 0 ? count : throw new InvalidOperationException("Unexpected Error, Cache must be greater than 0.").Log();
 
     public bool TryGet(Guid key, out D? value)
     {

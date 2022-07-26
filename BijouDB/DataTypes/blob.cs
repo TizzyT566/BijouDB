@@ -24,7 +24,7 @@ public struct @blob : IDataType
     public void Deserialize(Stream stream)
     {
         if (stream.TryReadDynamicData(out byte[] data)) _value = data;
-        else throw new CorruptedException<@bint>();
+        else throw new CorruptedException<@bint>().Log();
     }
 
     public void Serialize(Stream stream) => stream.WriteDynamicData(_value ?? Array.Empty<byte>());
@@ -60,7 +60,7 @@ public struct @blob : IDataType
             {
                 case < 0:
                     {
-                        throw new CorruptedException<nullable>();
+                        throw new CorruptedException<nullable>().Log();
                     }
                 case 0:
                     {
@@ -70,7 +70,7 @@ public struct @blob : IDataType
                 default:
                     {
                         if (stream.TryReadDynamicData(out byte[] data)) _value = data;
-                        else throw new CorruptedException<nullable>();
+                        else throw new CorruptedException<nullable>().Log();
                         break;
                     }
             }

@@ -81,7 +81,7 @@ public sealed class Reference<D, R>
         }
         catch (Exception ex)
         {
-            ex?.Log();
+            ex.Log();
         }
         return false;
     }

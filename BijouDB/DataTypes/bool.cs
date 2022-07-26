@@ -14,7 +14,7 @@ public struct @bool : IDataType
     {
         byte[] bytes = new byte[1];
         if (stream.TryFill(bytes)) _value = bytes[0] != 0;
-        else throw new CorruptedException<@bool>();
+        else throw new CorruptedException<@bool>().Log();
     }
 
     public void Serialize(Stream stream) => stream.WriteByte(_value ? byte.MaxValue : byte.MinValue);
@@ -37,7 +37,7 @@ public struct @bool : IDataType
         {
             switch (stream.ReadByte())
             {
-                case < 0: throw new CorruptedException<nullable>();
+                case < 0: throw new CorruptedException<nullable>().Log();
                 case 0:
                     {
                         _value = null;
@@ -47,7 +47,7 @@ public struct @bool : IDataType
                     {
                         byte[] bytes = new byte[1];
                         if (stream.TryFill(bytes)) _value = bytes[0] != 0;
-                        else throw new CorruptedException<nullable>();
+                        else throw new CorruptedException<nullable>().Log();
                         break;
                     }
             }

@@ -14,7 +14,7 @@ public struct @sbyte : IDataType
     {
         byte[] bytes = new byte[1];
         if (stream.TryFill(bytes)) _value = (sbyte)bytes[0];
-        else throw new CorruptedException<@sbyte>();
+        else throw new CorruptedException<@sbyte>().Log();
     }
 
     public void Serialize(Stream stream) => stream.WriteByte((byte)_value);
@@ -39,7 +39,7 @@ public struct @sbyte : IDataType
             {
                 case < 0:
                     {
-                        throw new CorruptedException<nullable>();
+                        throw new CorruptedException<nullable>().Log();
                     }
                 case 0:
                     {
@@ -50,7 +50,7 @@ public struct @sbyte : IDataType
                     {
                         byte[] bytes = new byte[1];
                         if (stream.TryFill(bytes)) _value = (sbyte)bytes[0];
-                        else throw new CorruptedException<nullable>();
+                        else throw new CorruptedException<nullable>().Log();
                         break;
                     }
             }
