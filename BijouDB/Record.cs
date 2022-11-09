@@ -139,19 +139,19 @@ public abstract class Record : IEqualityComparer<Record>
         if (columnMatches.Length == 0) return Array.Empty<R>();
 
         // Turn all enumerables into hashsets for fast lookup
-        List<HashSet<R>> hashSets = new();
+        List<HashSet<Guid>> hashSets = new();
         foreach (IEnumerable<R> arr in columnMatches)
-            if (arr is not null) hashSets.Add(new HashSet<R>(arr));
+            if (arr is not null) hashSets.Add(new HashSet<Guid>(arr.Select(obj => obj.Id)));
 
         // start with the smallest collection
         hashSets.Sort((x, y) => x.Count.CompareTo(y.Count));
 
-        HashSet<R> result = hashSets[0];
+        HashSet<Guid> result = hashSets[0];
 
         for (int i = 1; i < hashSets.Count; i++)
             result.IntersectWith(hashSets[i]);
 
-        return result;
+        return result.Select(guid => GetUninitializedRecord<R>(guid));
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ public abstract class Record : IEqualityComparer<Record>
     /// </summary>
     /// <param name="obj">The Record to get the hash code for.</param>
     /// <returns>The hash code.</returns>
-    public int GetHashCode(Record obj) => obj._id.GetHashCode();
+    public virtual int GetHashCode(Record obj) => obj._id.GetHashCode();
 
     internal static void Remove<R>(R record) where R : Record
     {
