@@ -1,4 +1,6 @@
-﻿namespace BijouDB;
+﻿using System.Reflection;
+
+namespace BijouDB;
 
 public static class Globals
 {
@@ -10,7 +12,7 @@ public static class Globals
     internal static readonly string RecPattern = $"*.{Rec}";
     internal static readonly string BinFile = "value.bin";
 
-    public static readonly string DefaultPath = Path.GetFullPath("DB");
+    public static readonly string DefaultPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "DB");
     public static string DatabasePath { get; set; } = DefaultPath;
 
     public static bool Logging { get; set; } = false;

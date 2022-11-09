@@ -192,7 +192,9 @@ public abstract class Record : IEqualityComparer<Record>
     /// </summary>
     /// <param name="obj">The Record to get the hash code for.</param>
     /// <returns>The hash code.</returns>
-    public virtual int GetHashCode(Record obj) => obj._id.GetHashCode();
+    public int GetHashCode(Record obj) => obj._id.GetHashCode();
+
+    public override int GetHashCode() => _id.GetHashCode();
 
     internal static void Remove<R>(R record) where R : Record
     {
