@@ -1,10 +1,10 @@
-﻿using BijouDB.Components;
+using BijouDB.Components;
 using BijouDB.Exceptions;
 
 namespace BijouDB;
 
 /// <summary>
-/// A column for adding to custom table implementations.
+/// An indexed, constrained column belonging to one record schema.
 /// </summary>
 /// <typeparam name="D">The IDataType.</typeparam>
 public sealed class Column<D>
@@ -15,8 +15,8 @@ public sealed class Column<D>
     private readonly long _offset;
     private readonly bool _unique;
     private readonly Type _type;
-    private readonly Func<D> _default;
-    private readonly Func<D, bool> _check;
+    private readonly Func<D>? _default;
+    private readonly Func<D, bool>? _check;
     private readonly Cache<D>? _cache;
 
     internal Column(long offset, string columnName, Type type, bool unique, Func<D> @default, Func<D, bool> check, int cache)
@@ -27,70 +27,103 @@ public sealed class Column<D>
         _unique = unique;
         _default = @default;
         _check = check;
-        if (cache > 0) _cache = new(cache);
+        if (cache > 0)
+            _cache = new(cache);
+    }
+
+    private string ColumnDirectory => Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name);
+
+    private string ValueDirectory(ulong hash, Guid index) => Path.Combine(ColumnDirectory, hash.PaddedString(), index.ToString());
+
+    private void ValidateRecord(Record record)
+    {
+        if (record is null) throw new ArgumentNullException(nameof(record));
+        if (record.GetType() != _type) throw new ArgumentException($"This column belongs to {_type.FullName}.", nameof(record));
+    }
+
+    private void ValidateQuery<R>()
+        where R : Record
+    {
+        if (typeof(R) != _type) throw new ArgumentException($"This column belongs to {_type.FullName}.");
+    }
+
+    private (ulong Hash, Guid Index) ReadSlot(string recordPath)
+    {
+        using FileStream stream = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (stream.Length % 24 != 0) throw new InvalidDataException($"Truncated record: {recordPath}");
+        if (stream.Length <= _offset) return (0, Guid.Empty);
+        stream.Position = _offset;
+        if (!stream.ReadHashValue(out ulong hash, out Guid index)) throw new InvalidDataException($"Truncated column pointer: {recordPath}");
+        if (index == Guid.Empty && hash != 0) throw new InvalidDataException($"Invalid column pointer: {recordPath}");
+        return (hash, index);
+    }
+
+    private List<Guid> MatchingIndexes(Stream serialized, ulong hash)
+    {
+        List<Guid> matches = new();
+        string directory = Path.Combine(ColumnDirectory, hash.PaddedString());
+        if (!Directory.Exists(directory)) return matches;
+        foreach (string candidate in Directory.GetDirectories(directory))
+        {
+            if (!Guid.TryParse(Path.GetFileName(candidate), out Guid index) || index == Guid.Empty) continue;
+
+            string path = Path.Combine(candidate, Globals.BinFile);
+            if (!File.Exists(path))
+            {
+                // Undo removes staged files; an empty directory can remain after a failed write.
+                if (!Directory.EnumerateFileSystemEntries(candidate).Any()) continue;
+                throw new InvalidDataException($"Indexed value is missing: {path}");
+            }
+
+            using FileStream stored = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            serialized.Position = 0;
+            if (Misc.StreamCompare(serialized, stored))
+                matches.Add(index);
+        }
+
+        return matches;
+    }
+
+    private IEnumerable<Guid> LiveReferences(ulong hash, Guid index)
+    {
+        string directory = ValueDirectory(hash, index);
+        foreach (string reference in Directory.GetFiles(directory, Globals.RefPattern))
+        {
+            if (!Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id) || id == Guid.Empty) continue;
+
+            string recordPath = Storage.RecordPath(_type, id);
+            if (!File.Exists(recordPath)) continue;
+
+            (ulong Hash, Guid Index) slot = ReadSlot(recordPath);
+            if (slot.Hash == hash && slot.Index == index)
+                yield return id;
+        }
     }
 
     /// <summary>
     /// Checks if a value is already present in an indexed column,
     /// true if found and presents the hash and value of the existing entry.
-    /// false if the value was not found, the hash and a value candidate is presented.
+    /// false if the value was not found, with an empty index.
     /// </summary>
-    /// <param name="data">The value to check the index for.</param>
+    /// <param name="value">The value to check the index for.</param>
     /// <param name="hash">The hash of the value.</param>
-    /// <param name="index">The index of the value if found, and a candidate if not.</param>
+    /// <param name="index">The index of the value if found, otherwise Guid.Empty.</param>
     /// <returns>true if the value was found, false otherwise.</returns>
-    internal bool ValueIndex<R>(D data, out ulong hash, out Guid index)
+    internal bool ValueIndex<R>(D value, out ulong hash, out Guid index)
         where R : Record
     {
-        // Generate hash for new value
-        using FileBackedStream ms = new();
-        hash = data.Hash(ms);
+        ValidateQuery<R>();
+        if (value is null) throw new ArgumentNullException(nameof(value));
 
-        try
+        lock (Storage.SyncRoot)
         {
-            // hash lookup
-            string hashDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString());
-            if (Directory.Exists(hashDir))
-            {
-                foreach (string hashCollision in Directory.EnumerateDirectories(hashDir))
-                {
-                    string collisionName = Path.GetFileNameWithoutExtension(hashCollision);
-                    string binFilePath = Path.Combine(hashCollision, Globals.BinFile);
-                    if (Guid.TryParse(collisionName, out index) && File.Exists(binFilePath))
-                    {
-                        FileStream? fs = null;
-
-                        if (SpinWait.SpinUntil(() =>
-                        {
-                            try
-                            {
-                                fs = new(binFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                                return true;
-                            }
-                            catch (Exception ex)
-                            {
-                                ex.Log();
-                                return false;
-                            }
-                        }, 10000))
-                        {
-                            ms.Position = 0;
-                            if (Misc.StreamCompare(ms, fs!)) return true;
-                        }
-
-                        fs?.Dispose();
-
-                        return false;
-                    }
-                }
-            }
+            Storage.EnsureInitialized();
+            using FileBackedStream serialized = new();
+            hash = value.Hash(serialized);
+            List<Guid> matches = MatchingIndexes(serialized, hash);
+            index = matches.Count == 0 ? Guid.Empty : matches[0];
+            return matches.Count != 0;
         }
-        catch (Exception ex)
-        {
-            ex.Log();
-        }
-        index = IncrementalGuid.NextGuid();
-        return false;
     }
 
     /// <summary>
@@ -102,12 +135,21 @@ public sealed class Column<D>
     public IEnumerable<R> WithValue<R>(D value)
         where R : Record, new()
     {
-        if (ValueIndex<R>(value, out ulong hash, out Guid index))
+        ValidateQuery<R>();
+        if (value is null) throw new ArgumentNullException(nameof(value));
+
+        lock (Storage.SyncRoot)
         {
-            string dataMatchPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString(), index.ToString());
-            foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
-                if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id) && Record.TryGet(id, out R? record))
-                    yield return record!;
+            Storage.EnsureInitialized();
+            using FileBackedStream serialized = new();
+            ulong hash = value.Hash(serialized);
+            List<R> records = new();
+            HashSet<Guid> ids = new();
+            foreach (Guid index in MatchingIndexes(serialized, hash))
+                foreach (Guid id in LiveReferences(hash, index))
+                    if (ids.Add(id)) records.Add((R)Record.Materialize(_type, id));
+
+            return records.ToArray();
         }
     }
 
@@ -117,17 +159,8 @@ public sealed class Column<D>
     /// <param name="data">The value to check for.</param>
     /// <returns>true if a record exists with the value specified, false otherwise.</returns>
     public bool Contains<R>(D data)
-        where R : Record, new()
-    {
-        if (ValueIndex<R>(data, out ulong hash, out Guid index))
-        {
-            string dataMatchPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString(), index.ToString());
-            foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
-                if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out _))
-                    return true;
-        }
-        return false;
-    }
+        where R : Record, new() =>
+        WithValue<R>(data).Any();
 
     /// <summary>
     /// Gets an array of unique values stored in the column.
@@ -135,18 +168,41 @@ public sealed class Column<D>
     /// <returns>An enumerable of unique values stored in the column.</returns>
     public IEnumerable<D> UniqueValues()
     {
-        string colDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name);
-        if (Directory.Exists(colDir))
+        lock (Storage.SyncRoot)
         {
-            foreach (string uniqueValue in Directory.EnumerateFiles(colDir, Globals.BinFile, SearchOption.AllDirectories))
+            Storage.EnsureInitialized();
+            List<D> values = new();
+            if (!Directory.Exists(ColumnDirectory)) return values;
+            foreach (string hashDirectory in Directory.GetDirectories(ColumnDirectory))
             {
-                using FileStream fs = new(uniqueValue, FileMode.Open, FileAccess.Read, FileShare.Read);
-                using MaskedStream ms = new(fs, Globals.BitMaskSeed);
-                D newValue = new();
-                newValue.Deserialize(ms);
-                yield return newValue;
+                if (!ulong.TryParse(Path.GetFileName(hashDirectory), out ulong hash)) continue;
+                foreach (string directory in Directory.GetDirectories(hashDirectory))
+                    if (Guid.TryParse(Path.GetFileName(directory), out Guid index) && LiveReferences(hash, index).Any())
+                        values.Add(Deserialize(Path.Combine(directory, Globals.BinFile)));
             }
+
+            return values.ToArray();
         }
+    }
+
+    private static D Deserialize(string path)
+    {
+        using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using MaskedStream masked = new(stream, Globals.BitMaskSeed);
+        D value = new();
+        value.Deserialize(masked);
+        if (stream.Position != stream.Length) throw new InvalidDataException($"Trailing bytes in stored value: {path}");
+        return value;
+    }
+
+    private static D Clone(D value)
+    {
+        using FileBackedStream stream = new();
+        value.Serialize(stream);
+        stream.Position = 0;
+        D clone = new();
+        clone.Deserialize(stream);
+        return clone;
     }
 
     /// <summary>
@@ -159,35 +215,31 @@ public sealed class Column<D>
     public D Get<R>(R record)
         where R : Record
     {
-        Guid id = record.Id;
+        ValidateRecord(record);
 
-        if (id != Guid.Empty)
+        lock (Storage.SyncRoot)
         {
-            // check for cache
-            if (_cache is not null && _cache.TryGet(id, out D? value)) return value!;
+            Storage.EnsureInitialized();
+            Guid id = record.Id;
+            string path = Storage.RecordPath(_type, id);
+            if (!File.Exists(path)) throw new FileNotFoundException($"Record {id} does not exist.", path);
+            if (_cache is not null && _cache.TryGet(id, out D? cached)) return Clone(cached!);
 
-            string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-            if (!File.Exists(recordPath)) throw new FileNotFoundException($"Record {id} does not exist.").Log();
-            using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            fs.Position = _offset;
-            if (fs.ReadHashValue(out ulong crntHash, out Guid crntValue))
+            (ulong Hash, Guid Index) slot = ReadSlot(path);
+            if (slot.Index == Guid.Empty) return _default is null ? new D() : _default();
+
+            string valuePath = Path.Combine(ValueDirectory(slot.Hash, slot.Index), Globals.BinFile);
+            if (!File.Exists(valuePath)) throw new InvalidDataException($"Stored column value is missing: {valuePath}");
+
+            D value = Deserialize(valuePath);
+            if (_cache is not null)
             {
-                string crntBinPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, crntHash.PaddedString(), crntValue.ToString(), Globals.BinFile);
-                if (File.Exists(crntBinPath))
-                {
-                    using FileStream fs2 = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    D newValue = new();
-                    using MaskedStream ms = new(fs2, Globals.BitMaskSeed);
-                    newValue.Deserialize(ms);
-
-                    // set for cache
-                    if (_cache is not null) _cache.Set(id, newValue);
-
-                    return newValue;
-                }
+                _cache.Set(id, value);
+                return Clone(value);
             }
+
+            return value;
         }
-        return _default is null ? default! : _default();
     }
 
     /// <summary>
@@ -201,179 +253,93 @@ public sealed class Column<D>
     public void Set<R>(R record, D value)
         where R : Record
     {
-        Guid id = record.Id;
+        ValidateRecord(record);
+        if (value is null) throw new ArgumentNullException(nameof(value));
 
-        if (_check is not null && !_check(value)) throw new CheckContraintException().Log();
-
-        string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-        if (!File.Exists(recordPath)) throw new FileNotFoundException($"Record {id} does not exist.").Log();
-
-        string baseDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec);
-        Directory.CreateDirectory(baseDir);
-
-        // Generate hash for new value
-        using FileBackedStream ms = new();
-        ulong newHash = value.Hash(ms);
-
-        // Read previous value
-        using FileStream fs = new(recordPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
-
-        // Old hash/value exists, read it and delete its reference
-        fs.Position = _offset;
-        if (fs.Length - _offset >= 24 && fs.ReadHashValue(out ulong oldHash, out Guid oldValue))
+        lock (Storage.SyncRoot)
         {
-            // check if old hash/value is valid
-            if (oldValue != Guid.Empty)
+            Storage.EnsureInitialized();
+            if (_check is not null && !_check(value)) throw new CheckContraintException();
+
+            Guid id = record.Id;
+            string recordPath = Storage.RecordPath(_type, id);
+            if (!File.Exists(recordPath)) throw new FileNotFoundException($"Record {id} does not exist.", recordPath);
+
+            // Generate the new value's hash without changing its contents.
+            using FileBackedStream serialized = new();
+            ulong hash = value.Hash(serialized);
+            (ulong Hash, Guid Index) old = ReadSlot(recordPath);
+            List<Guid> matches = MatchingIndexes(serialized, hash);
+
+            // Validate before removing any previous value or reference.
+            if (_unique && matches.Any(index => LiveReferences(hash, index).Any(other => other != id))) throw new UniqueConstraintException<D>();
+            if (old.Hash == hash && matches.Contains(old.Index)) return;
+
+            Guid target = matches.Count == 0 ? IncrementalGuid.NextGuid() : matches[0];
+            while (matches.Count == 0 && Directory.Exists(ValueDirectory(hash, target)))
+                target = IncrementalGuid.NextGuid();
+
+            string targetDirectory = ValueDirectory(hash, target);
+            _cache?.Remove(id);
+
+            Storage.RunTransaction(() =>
             {
-                string hashFolder = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, oldHash.PaddedString());
-                string oldBinDir = Path.Combine(hashFolder, oldValue.ToString());
-                string oldBinPath = Path.Combine(oldBinDir, Globals.BinFile);
-
-                // Hash matches, check with value
-                if (oldHash == newHash)
+                if (matches.Count == 0)
                 {
-                    if (File.Exists(oldBinPath))
-                    {
-                        using FileStream fs2 = new(oldBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        ms.Position = 0;
-                        if (Misc.StreamCompare(ms, fs2))
-                        {
-                            // values match so no need to continue
-                            if (Globals.Logging) Console.WriteLine("value is the same, skipping.");
-                            return;
-                        }
-                    }
+                    serialized.Position = 0;
+                    Storage.WriteFile(Path.Combine(targetDirectory, Globals.BinFile), serialized);
                 }
-                else
+
+                Storage.CreateEmptyFile(Path.Combine(targetDirectory, $"{id}.{Globals.Ref}"));
+
+                // Commit the record pointer before cleaning up the previous reference.
+                using (MemoryStream updated = new())
                 {
-                    try
-                    {
-                        // values differ, delete reference
-                        File.Delete(Path.Combine(oldBinDir, $"{id}.{Globals.Ref}"));
-
-                        // if value has no more references, delete it
-                        if (Directory.GetFiles(oldBinDir, Globals.RefPattern).Length == 0)
-                        {
-                            Directory.Delete(oldBinDir, true);
-
-                            // if hash has no more values, delete it
-                            if (Directory.GetDirectories(hashFolder).Length == 0) Directory.Delete(hashFolder, true);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        ex.Log();
-                    }
+                    byte[] original = File.ReadAllBytes(recordPath);
+                    updated.Write(original, 0, original.Length);
+                    updated.Position = _offset;
+                    updated.WriteHashValue(hash, target);
+                    updated.Position = 0;
+                    Storage.WriteFile(recordPath, updated);
                 }
-            }
+
+                if (old.Index != Guid.Empty)
+                    RemoveReference(id, old.Hash, old.Index);
+            });
         }
+    }
 
-        // check if hash already exist
-        string hashDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, newHash.PaddedString());
-        if (Directory.Exists(hashDir))
+    private void RemoveReference(Guid id, ulong hash, Guid index)
+    {
+        string directory = ValueDirectory(hash, index);
+        if (!Directory.Exists(directory)) throw new InvalidDataException($"Indexed value directory is missing: {directory}");
+        Storage.DeleteFile(Path.Combine(directory, $"{id}.{Globals.Ref}"));
+        if (!Directory.EnumerateFiles(directory, Globals.RefPattern).Any())
         {
-            string[] hashCollisions = Directory.GetDirectories(hashDir);
-            foreach (string hashCollision in hashCollisions)
-            {
-                string crntBinPath = Path.Combine(hashCollision, Globals.BinFile);
-                if (File.Exists(crntBinPath))
-                {
-                    using FileStream fsCollision = new(crntBinPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    ms.Position = 0;
-                    if (Misc.StreamCompare(ms, fsCollision))
-                    {
-                        // Uniqueness check
-                        if (_unique)
-                            foreach (string match in Directory.EnumerateFiles(hashCollision, Globals.RefPattern))
-                                throw new UniqueConstraintException<D>().Log();
-
-                        File.Create(Path.Combine(hashCollision, $"{id}.{Globals.Ref}")).Dispose();
-                        string crntValue = Path.GetFileName(hashCollision);
-                        fs.Position = _offset;
-                        fs.WriteHashValue(newHash, Guid.Parse(crntValue));
-
-                        // set for cache
-                        if (_cache is not null) _cache.Set(id, value);
-
-                        return;
-                    }
-                }
-            }
+            Storage.DeleteDirectory(directory);
+            string hashDirectory = Path.GetDirectoryName(directory)!;
+            if (!Directory.EnumerateFileSystemEntries(hashDirectory).Any())
+                Storage.DeleteDirectory(hashDirectory);
         }
-
-        Guid newValue = IncrementalGuid.NextGuid();
-
-        // write bin file
-        string newBinDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, newHash.PaddedString(), newValue.ToString());
-        Directory.CreateDirectory(newBinDir);
-        string newBinPath = Path.Combine(newBinDir, Globals.BinFile);
-        using FileStream fs3 = new(newBinPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
-        ms.Position = 0;
-        ms.CopyTo(fs3);
-        fs3.Flush();
-
-        // set for cache
-        if (_cache is not null) _cache.Set(id, value);
-
-        // add reference
-        string newRef = Path.Combine(newBinDir, $"{id}.{Globals.Ref}");
-        File.Create(newRef).Dispose();
-        if (Globals.Logging) Console.WriteLine($"Created new reference: {newRef}");
-
-        // write new info to record
-        fs.Position = _offset;
-        fs.WriteHashValue(newHash, newValue);
-        fs.Flush();
     }
 
     internal void Remove(Record record)
     {
-        Guid id = record.Id;
+        ValidateRecord(record);
 
-        // Read record file
-        string recordPath = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Rec, $"{id}.{Globals.Rec}");
-
-        if (!File.Exists(recordPath)) return;
-
-        using FileStream fs = new(recordPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        fs.Position = _offset;
-
-        if (fs.Length - _offset >= 24 && fs.ReadHashValue(out ulong hash, out Guid index))
+        lock (Storage.SyncRoot)
         {
-            // Go to indexed location, delete reference file
-            string hashDir = Path.Combine(Globals.DatabasePath, _type.FullName!, Globals.Index, _name, hash.PaddedString());
-            string indexedDir = Path.Combine(hashDir, index.ToString());
-            string refPath = Path.Combine(indexedDir, $"{id}.{Globals.Ref}");
+            Storage.EnsureInitialized();
+            if (!record._id.HasValue) return;
 
-            if (File.Exists(refPath))
-                File.Delete(refPath);
+            Guid id = record._id.Value;
+            string path = Storage.RecordPath(_type, id);
+            if (!File.Exists(path)) return;
 
-            // remove from cache
+            (ulong Hash, Guid Index) slot = ReadSlot(path);
             _cache?.Remove(id);
-
-            // If no more references delete indexed folder
-            if (Directory.Exists(indexedDir))
-            {
-                bool empty = true;
-                foreach (string refernce in Directory.EnumerateFiles(indexedDir, Globals.RefPattern))
-                {
-                    empty = false;
-                    break;
-                }
-                if (empty) Directory.Delete(indexedDir, true);
-            }
-
-            // If no more values delete hash folder
-            if (Directory.Exists(hashDir))
-            {
-                bool empty = true;
-                foreach (string indexes in Directory.EnumerateDirectories(hashDir))
-                {
-                    empty = false;
-                    break;
-                }
-                if (empty) Directory.Delete(hashDir, true);
-            }
+            if (slot.Index != Guid.Empty)
+                RemoveReference(id, slot.Hash, slot.Index);
         }
     }
 }

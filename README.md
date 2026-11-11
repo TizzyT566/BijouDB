@@ -1,782 +1,203 @@
-> :bangbang: **BijouDB 4.0.0.0 is NOT backwards compatible** :bangbang:
-
-![alt text](https://raw.githubusercontent.com/TizzyT566/BijouDB/master/BijouDB/Icon.png "BijouDB")
-
 # BijouDB
 
-A small C# database
+A small, file-backed C# database with typed columns, indexed values, constraints, record references, and many-to-many relationships.
 
-Nuget: [BijouDB Package](https://www.nuget.org/packages/BijouDB/)
+The library targets .NET Standard 2.0. The regression executable uses .NET 10. Package: [BijouDB on NuGet](https://www.nuget.org/packages/BijouDB/).
 
-# Features
+This checkout includes storage correctness fixes and new storage metadata. Read [storage behavior and compatibility](docs/STORAGE.md) before opening an existing database or upgrading an application.
 
-## DataTypes => Synonymous Wrapper
+The [fix and verification checklist](docs/FIXES.md) maps all 22 review findings to their implementations and regression coverage.
 
-```
-                                 BigInteger => @bint
+## Getting started
 
-                                     byte[] => @blob
-
-                                       bool => @bool
-
-                                       byte => @byte
-
-                                       char => @char
-
-                                   DateTime => @time
-
-                                    decimal => @decimal
-
-                                     double => @double
-
-                                      float => @float
-
-                                        int => @int
-
-                                       long => @long
-
-                         R : BijouDB.Record => @record<R>
-
-                                      sbyte => @sbyte
-
-                                      short => @short
-
-                                     string => @string
-
-                                       uint => @uint
-
-                                      ulong => @ulong
-
-                                     ushort => @ushort
-
-                              Tuple<T1, T2> => @tuple<D1, D2>
-
-                          Tuple<T1, T2, T3> => @tuple<D1, D2, D3>
-
-                      Tuple<T1, T2, T3, T4> => @tuple<D1, D2, D3, D4>
-
-                  Tuple<T1, T2, T3, T4, T5> => @tuple<D1, D2, D3, D4, D5>
-
-              Tuple<T1, T2, T3, T4, T5, T6> => @tuple<D1, D2, D3, D4, D5, D6>
-
-          Tuple<T1, T2, T3, T4, T5, T6, T7> => @tuple<D1, D2, D3, D4, D5, D6, D7>
-
-   Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> => @tuple<D1, D2, D3, D4, D5, D6, D7, DRest>
-```
-
-Nullable Types:
-
-```
-                                 BigInteger? => @bint.nullable
-
-                                     byte[]? => @blob.nullable
-
-                                       bool? => @bool.nullable
-
-                                       byte? => @byte.nullable
-
-                                       char? => @char.nullable
-
-                                   DateTime? => @time.nullable
-
-                                    decimal? => @decimal.nullable
-
-                                     double? => @double.nullable
-
-                                      float? => @float.nullable
-
-                                        int? => @int.nullable
-
-                                       long? => @long.nullable
-
-                         R? : BijouDB.Record => @record<R>.nullable
-
-                                      sbyte? => @sbyte.nullable
-
-                                      short? => @short.nullable
-
-                                     string? => @string.nullable
-
-                                       uint? => @uint.nullable
-
-                                      ulong? => @ulong.nullable
-
-                                     ushort? => @ushort.nullable
-
-                              Tuple<T1, T2>? => @tuple<D1, D2>.nullable
-
-                          Tuple<T1, T2, T3>? => @tuple<D1, D2, D3>.nullable
-
-                      Tuple<T1, T2, T3, T4>? => @tuple<D1, D2, D3, D4>.nullable
-
-                  Tuple<T1, T2, T3, T4, T5>? => @tuple<D1, D2, D3, D4, D5>.nullable
-
-              Tuple<T1, T2, T3, T4, T5, T6>? => @tuple<D1, D2, D3, D4, D5, D6>.nullable
-
-          Tuple<T1, T2, T3, T4, T5, T6, T7>? => @tuple<D1, D2, D3, D4, D5, D6, D7>.nullable
-
-   Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>? => @tuple<D1, D2, D3, D4, D5, D6, D7, DRest>.nullable
-```
-
-## Constraints
-
-> Unique `Ensures that a column has all unique values`
-
-> Default `Specifies a default for unset values`
-
-> Check `Specifies a condition for a value to be set`
-
-> NotNull is the default, use a `IDataType.nullable` to explicitly use null
-
-> PRIMARY KEY and FOREIGN KEY is replicated loosely with `Reference`
-
-> Cache `Caches a record's property for quicker retrieval`
-
-## Custom DataTypes
-
-You can create your own data types by implementing the interface `BijouDB.IDataType`
-
-```csharp
-public interface IDataType
-{
-    // The logic to convert from bytes
-    public void Deserialize(Stream stream);
-    // The logic to convert to bytes
-    public void Serialize(Stream stream);
-}
-```
-
-Refer to the source for some examples: [Built-in DataTypes](https://github.com/TizzyT566/BijouDB/tree/master/BijouDB/DataTypes)
-
-# Usage
-
-To get started simply create a new class which inherits from `BijouDB.Record`.
-
-Create a static readonly field to act as a column, specify a BijouDB datatype.
-
-As a convention, the column should end in `Column`.
-
-Create a new property with the respective type of the column (check the datatypes chart above).
-
-The get accessor should call the column you just made's `Get()` method, passing in `this` as an argument.
-
-The set accessor should call the column's `Set()` method, passing in `this` and `value` as arguments.
-
-Create a static contructor, its needed to instantiate the columns.
-
-Use the SchemaBuilder to generate the columns via the `Add()` method.
-
-Do this for each of your columns and finally preceed the SchemaBuilder with `_ = ~`.
-
-This pattern automatically disposes the SchemaBuilder at the end and ensures proper init and disposal.
-
-## Example
+Set the database directory and, if required, the mask seed before the first data access:
 
 ```csharp
 using BijouDB;
 
-public class MyRecord : Record
-{
-    public static readonly Column<@int> AgeColumn;
+Globals.DatabasePath = Path.Combine(AppContext.BaseDirectory, "DB");
+Globals.BitMaskSeed = 712247; // Default; this is obfuscation, not encryption.
 
-    [Json] public int Age
-    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-
-    static MyRecord() => _ = ~SchemaBuilder<MyRecord>
-        .Add(out AgeColumn);
-}
+var person = new Person { Name = "Ada", Age = 30 };
+Console.WriteLine(person.Json);
 ```
 
-## Specifying Constraints
-
-Use the SchemaBuilder to add constraints to your columns.
-
-Place the constraints on columns by passing arguments to the `Add()` method.
-
-Provide the label of the constraint `Unique:` or `Default:` or `Check:` or `Cache:`
-
-followed by the value for the constraint.
-
-The order does't matter and you don't have to provide every constraint.
+Record classes must be publicly visible and have a public parameterless constructor to satisfy the generic APIs. Retrieval does not execute that constructor.
 
 ```csharp
 using BijouDB;
 
-public class MyRecord : Record
-{
-    public static readonly Column<@int> AgeColumn;
-
-    [Json] public int Age
-    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-
-    static MyRecord() => _ = ~SchemaBuilder<MyRecord>
-        // Specify that the column is NOT unique
-        // Specify that valid values must be 18 or larger
-        // Specify that the default value is 18
-        .Add(out AgeColumn, Unique: false, Check: value => value >= 18, Default: () => 18);
-}
-```
-
-Caching is enabled by default with 128 cache size. To disable caching set it less than or equal to 0.
-
-```csharp
-using BijouDB;
-
-public class MyRecord : Record
-{
-    public static readonly Column<@int> AgeColumn;
-
-    [Json] public int Age
-    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-
-    static MyRecord() => _ = ~SchemaBuilder<MyRecord>
-        // Specify that the column is NOT unique
-        // Specify that valid values must be 18 or larger
-        // Specify that the default value is 18
-        // Disable caching
-        .Add(out AgeColumn, Unique: false, Check: value => value >= 18, Default: () => 18, Cache: 0);
-}
-```
-
-## References
-
-In SQL we have `PRIMARY KEY` and `FOREIGN KEY` to link relationships between tables.
-
-Here we have the concept of  references. Its very similar in concept but is a one-many relationship.
-
-References prevent a Record from being deleted if it has child references.
-
-You can keep the relationship but allow deleting even if references exist by setting the `restricted`
-
-parameter to false in the `Add( ... , bool restricted)` method for references, default is true.
-
-You can create a `Reference` specifying the Column type you want to reference and the `Record`
-
-that column exists in.
-
-As a convention you should end the field with `References`.
-
-Create a property with the type of the referenced Record. This property should be an `IEnumerable<T>`.
-
-Use the `To()` method passing in `this`.
-
-You then use an overload for the `Add()` method for references. References do NOT have contraints.
-
-Instead you have to specifically point it to the column in the referenced Record.
-
-```csharp
-using BijouDB;
-
-public class Employee : Record
+public sealed class Person : Record
 {
     public static readonly Column<@string> NameColumn;
     public static readonly Column<@int> AgeColumn;
-    // A Reference to 'Computer' Record
-    public static readonly Reference<@record<Employee>, Computer> ComputerReferences;
 
     [Json] public string Name
     { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
 
     [Json] public int Age
     { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-    
-    [Json] public IEnumerable<Computer> Computers => ComputerReferences.To(this);
 
-    static Employee() => _ = ~SchemaBuilder<Employee>
-        .Add(out NameColumn)
-        .Add(out AgeColumn, Unique: false, Check: value => value >= 18, Default: () => 18)
-        // Generates the Referennce, and points it to the 'EmployeeColumn' in 'Computer' Record
-        .Add(out ComputerReferences, () => Computer.EmployeeColumn);
-}
-
-public class Computer : Record
-{
-    public static readonly Column<@record<Employee>> EmployeeColumn;
-
-    [Json] public Employee Employee 
-    { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
-
-    static Computer() => _ = ~SchemaBuilder<Computer>
-        .Add(out EmployeeColumn);
+    static Person() => _ = ~SchemaBuilder<Person>
+        .Add(out NameColumn, Unique: true)
+        .Add(out AgeColumn, Check: age => age >= 18, Default: () => 18);
 }
 ```
 
-To access references of a record, call its respective property.
+The `~` operator disposes the builder and declares the schema. Stored schema manifests are validated on data access. Keep column declarations and their order stable once data exists; the manifests reject subsequent incompatible changes and do not perform migrations.
 
-```cs
-Employee employee = new()
-{
-    Age = 30
-};
+## Datatypes and constraints
 
-Computer comp1 = new()
-{
-    Employee = employee
-};
+| C# value | BijouDB wrapper |
+| --- | --- |
+| `BigInteger` | `@bint` |
+| `byte[]` | `@blob` |
+| `bool`, `byte`, `sbyte`, `char` | `@bool`, `@byte`, `@sbyte`, `@char` |
+| `short`, `ushort`, `int`, `uint` | `@short`, `@ushort`, `@int`, `@uint` |
+| `long`, `ulong`, `float`, `double`, `decimal` | `@long`, `@ulong`, `@float`, `@double`, `@decimal` |
+| `string`, `DateTime` | `@string`, `@time` |
+| A record `R` | `@record<R>` |
+| Value tuples with two through eight components | `@tuple<D1, D2, ...>` |
 
-foreach (Computer computer in employee.Computers)
+Each wrapper also has a nested `.nullable` wrapper. Tuple component types are BijouDB datatypes, including nullable wrappers and custom datatypes. Blob conversions return independent arrays so caller edits do not change cached values.
+
+`SchemaBuilder.Add` accepts these optional column arguments:
+
+- `Unique`: rejects a value already set on another record in that column.
+- `Default`: computes the value returned for an unset column.
+- `Check`: validates explicitly assigned values.
+- `Cache`: maximum cached entries, default `128`; use `0` to disable caching.
+
+Only explicitly assigned values are indexed. Defaults are returned without running `Check` and do not appear in value lookups until assigned. A record is persisted when its `Id` is first accessed, including through a column or relationship operation. Constructing an unused object alone does not persist it.
+
+Implement `IDataType.Serialize(Stream)` and `IDataType.Deserialize(Stream)` to add a custom datatype. Read complete values, reject corrupt input, and use a stable encoding. Built-in dynamic values such as strings and blobs are limited to 256 MiB of encoded payload.
+
+## Finding and removing records
+
+```csharp
+if (Record.TryGet<Person>(savedId, out var retrieved))
+    Console.WriteLine(retrieved!.Name);
+
+IEnumerable<Person> all = Record.GetAll<Person>();
+IEnumerable<Person> named = Person.NameColumn.WithValue<Person>("Ada");
+IEnumerable<Person> matches = Record.WithValues(
+    Person.NameColumn.WithValue<Person>("Ada"),
+    Person.AgeColumn.WithValue<Person>(30));
+
+foreach (int age in Person.AgeColumn.UniqueValues())
+    Console.WriteLine(age);
+```
+
+`TryGet` accepts a `Guid` or its string representation; invalid IDs return `false`. Storage and schema errors remain observable. Collection lookups return snapshots of matching handles; later property reads access current values.
+
+```csharp
+person.Remove(); // Throws if restricted children exist or deletion fails.
+
+if (!person.TryRemove(out Exception? error))
+    Console.Error.WriteLine(error!.Message);
+```
+
+`TryRemove()` is also available when the error is not needed. It returns `true` only after successful deletion. Removing a record also removes its indexed values and relationship links as appropriate.
+
+Records in loaded class libraries are discoverable through `Record.Types`. `Record.RegisterAssembly(typeof(Person).Assembly)` explicitly registers an assembly when needed.
+
+## One-to-many references
+
+A child stores a record value in a column. The parent's reference queries that column. Restricted references prevent deletion while children still refer to the parent.
+
+```csharp
+public sealed class Department : Record
 {
-    // Manipulate the record here
+    public static readonly Reference<@record<Department>, Worker> WorkerReferences;
+    public IEnumerable<Worker> Workers => WorkerReferences.To(this);
+
+    static Department() => _ = ~SchemaBuilder<Department>
+        .Add(out WorkerReferences, () => Worker.DepartmentColumn);
+}
+
+public sealed class Worker : Record
+{
+    public static readonly Column<@record<Department>> DepartmentColumn;
+    public Department Department
+    { get => DepartmentColumn.Get(this); set => DepartmentColumn.Set(this, value); }
+
+    static Worker() => _ = ~SchemaBuilder<Worker>.Add(out DepartmentColumn);
 }
 ```
 
-## Relational
+Pass `restricted: false` to the reference's `Add` call to permit parent deletion. These references are a lightweight relationship mechanism; they do not implement all SQL foreign-key semantics.
 
-If you want many-to-many relationships than the `Relational` column might be what you want.
+## Many-to-many relationships
 
-It doesn't store values like `Column` nor is it based on values in another table like `Reference`.
+Give both directions the same relationship name. Their schema positions can differ. Use distinct names for different relationships between the same record types.
 
-It simply creates links between records.
-
-To create a 'Relational' you define a Relational of the current record type and the related record type.
-
-You then add a property of type `Junc` which is nested inside of the Relational column you just made.
-
-The getter should call the relational column you just made's `To()` method passing in `this`.
-
-The setter should be left empty.
-
-Like the other columns you use the SchemaBuilder to instantiate a relational column as well.
-
-Its similar to reference columns but intead of pointing to a `Column<>` you will be pointing
-
-to another `Relational<,>`.
-
-In the other record you will be doing the same thing, so in the end you will have the two
-
-relational columns point to each other.
-
-```cs
-// Example
-
+```csharp
 public sealed class Employee : Record
 {
     public static readonly Column<@string> NameColumn;
-    public static readonly Column<@int> NumberColumn;
-    public static readonly Column<@long> AgeColumn;
-    public static readonly Column<@bint> PointsColumn;
-    public static readonly Column<@record<Employee>> ManagerColumn;
-    public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
-    // Relational Many-To-Many
     public static readonly Relational<Employee, Computer> ComputerRelational;
 
-    [Json] public string Name
+    public string Name
     { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
-
-    [Json] public int Number 
-    { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
-
-    [Json] public long Age
-    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-        
-    [Json] public BigInteger Points
-    { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
-        
-    [Json] public Employee Manager
-    { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
-
-    [Json, TupleObject("Area", "Exchange", "Subscriber")]
-    public (int, int, int) PhoneNumber
-    { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
-        
-    // The junction between this record and 'Computer' records
-    [Json] public Relational<Employee, Computer>.Junc Computers
+    public Relational<Employee, Computer>.Junc Computers
     { get => ComputerRelational.To(this); set { } }
 
     static Employee() => _ = ~SchemaBuilder<Employee>
-        .Add(out NameColumn, Unique: false)
-        .Add(out NumberColumn, Default: () => 5555555)
-        .Add(out AgeColumn, Check: value => value >= 18)
-        .Add(out PointsColumn)
-        .Add(out ManagerColumn)
-        .Add(out PhoneNumberColumn)
-        .Add(out ComputerRelational, Computer.EmployeeRelational);
+        .Add(out NameColumn)
+        .Add(out ComputerRelational, "computers");
 }
 
 public sealed class Computer : Record
 {
-    // Relational Many-To-Many
     public static readonly Relational<Computer, Employee> EmployeeRelational;
-    public static readonly Column<@string> TypeColumn;
-
-    [Json] public string Type
-    { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
-        
-    // The junction between this record and employee records
-    [Json] public Relational<Computer, Employee>.Junc Employees
+    public Relational<Computer, Employee>.Junc Employees
     { get => EmployeeRelational.To(this); set { } }
 
     static Computer() => _ = ~SchemaBuilder<Computer>
-        .Add(out EmployeeRelational, Employee.ComputerRelational)
-        .Add(out TypeColumn, Check: value => value != "" && value != "Dell");
+        .Add(out EmployeeRelational, "computers");
 }
 
-// Usage
-
-Employee employee = new();
-employee.Computers += new Computer() { Type = "Alienware" };
-
-Computer computer = new() { Type = "Origin" };
-computer.Employees += employee;
-
-foreach (Computer comp in employee.Computers.All)
-    Console.WriteLine(comp.Type);
+// In application code:
+// employee.Computers += computer;
+// computer.Employees.Remove(employee);
+// employee.Computers.Clear();
+// foreach (Computer item in employee.Computers.All) { ... }
 ```
 
-## Removing Records
+The reciprocal-field overload remains supported, for example `.Add(out ComputerRelational, Computer.EmployeeRelational)`. Named initialization avoids circular field access. Fresh targets receive persistent IDs when linked. Deleted targets cannot be linked again.
 
-All Records have the following methods to be removed from the database.
-```cs
-// Removes the Record from the database with no exception handling (you have to do so manually)
-public void Remove();
-```
-```cs
-// Tries the remove the Record from the database while suppressing any exceptions.
-// true if successfully removed, otherwise false.
-public bool TryRemove(); 
-```
-```cs
-// Tries the remove the Record from the database.
-// Exposes any Exception that might've thrown.
-// true if successfully removed, otherwise false.
-public bool TryRemove(out Exception? exception); 
+## JSON
+
+Mark record properties with `[Json]` to include them in `record.Json` or `record.ToJson(depth: 2, level: 0)`. Use `[TupleObject("Area", "Exchange", "Subscriber")]` to label tuple components. Depth limits record traversal; the level limits attributed properties. Cyclic record references are abbreviated.
+
+Built-in output escapes strings and characters and formats numbers independently of the current culture. `BigInteger` is a JSON number, `decimal` retains its string representation, `DateTime` is represented as ticks, and `byte[]` is base64. A JSON consumer can still lose precision when it parses large numbers into floating point. NaN and infinity throw rather than produce invalid JSON.
+
+`Json.GetRecord(typeName, id, depth, level)` and `Json.GetProperty(typeName, id, propertyName, depth, level)` read existing records without running their constructors. Missing records return null. Serializer errors, failing getters, and invalid storage propagate.
+
+Add a custom formatter with `Json.TryAddFormatter(type, formatter)`. The callback must return a complete, valid JSON value. For example:
+
+```csharp
+Json.TryAddFormatter(typeof(TimeSpan), value =>
+    ((TimeSpan)value).Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture));
 ```
 
-## Getting Records
+## Storage, logging, and integrity
 
-If you know the `Type` and `Id` (represented as a `Guid`) use the `BijouDB.Record.TryGet<R>( ... )` method.
+One process owns the configured database directory. Threads in that process are serialized for storage operations. The directory and `Globals.BitMaskSeed` freeze at the first data access; pure schema declaration does not freeze configuration. Masking is deterministic XOR obfuscation. It does not provide confidentiality, authentication, or protection from malicious file contents.
 
-```cs
-public static bool TryGet<R>(Guid id, out R? record) { }
-public static bool TryGet<R>(string id, out R? record) { }
+Set `Globals.Logging = true` for console error output, or assign `Globals.Logger` to receive exceptions and log levels through your own logger.
 
-// Example
-// Get a single record via its Id
-if (BijouDB.Record.TryGet("0e758669-33ee-847e-d0e8-f5e89cc2b5c2", out Employee? employee))
-{
-    // Manipulate the record here
-}
+`Database.CheckIntegrity()` inspects record pointers and indexes. `Database.CheckIntegrity(repair: true)` can repair safe reference/index inconsistencies; it cannot recover missing binary values. Back up an existing database before migration or repair. See [STORAGE.md](docs/STORAGE.md) for the format, recovery limits, and upgrade details.
+
+Lookup cost includes serialization, hashing, equality comparisons, filesystem operations, and result enumeration. ID retrieval addresses a known file; value lookup checks a hash bucket and enumerates its matching references. Relationship queries scan link directories. No constant-time or logarithmic filesystem performance guarantee is made.
+
+## Building and testing
+
+Install the .NET 10 SDK, then run from the repository directory:
+
+```text
+dotnet build BijouDB.sln --configuration Release
+dotnet run --project BijouDB_Test --configuration Release
 ```
 
-If you know only the `Type` and wish to get all Records of that type you can use `BijouDB.Record.GetAll<R>()` method.
-
-```cs
-public static IEnumerable<R> GetAll<R>() { }
-
-// Example
-// Gets all Employee records
-foreach (Employee employee in BijouDB.Record.GetAll<Employee>())
-{
-    // Manipulate the record here
-}
-```
-
-If you know the `Type` of the Record and the value to one of its columns you can call the Column's
-
-`WithValue<R>( ... )` method.
-
-```cs
-public IEnumerable<R> WithValue<R>(D data) { }
-
-// Example
-// Gets all Employee records where the age is 19
-foreach (Employee employee in Employee.AgeColumn.WithValue<Employee>(19))
-{
-    // Manipulate the record here
-}
-```
-
-If you know the Type and value of multiple columns then you use the previous method along side `BijouDB.Record.WithValues()` to get all records matching the values you know.
-
-```cs
-public static IEnumerable<R> WithValues<R>(params IEnumerabl<R>[] columnMatches) { }
-
-// Example
-// Find Employees with the name 'TizzyT' and that are 30 years old
-foreach(Employee employee in Record.WithValues<Employee>(
-    Employee.NameColumn.WithValue<Employee>("TizzyT"), // Get all records with Name 'TizzyT'
-    Employee.AgeColumn.WithValue<Employee>(30) // Get all records with age 30
-))
-{
-    // Manipulate record here
-}
-```
-
-If you want to know what unique values a column has you can call the respective column's `UniqueValues()` method.
-
-This will give you an Enumerable of all unique values found in that column.
-
-```cs
-public IEnumerable<D> UniqueValues()
-
-// Example
-// Get a list of all unique ages in Employee.AgeColumn
-foreach (int age in Employee.AgeColumn.UniqueValues())
-{
-    // Manipulate the age here
-}
-```
-
-## Json
-
-Records can be presented in Json format by calling the `Json` property.
-
-Columns must be marked with the `JsonAttribute` to be included in the resulting json.
-
-For records with tuple properties you can assign labels by marking the property with the 
-
-`TupleObjectAttribute` and passing in the label names as arguments.
-
-The property will be presented as an object instead of the default for tuples which is an array.
-
-For user defined types you can add formatters via `Json.TryAddFormatter( ... )`.
-
-```cs
-public static bool TryAddFormatter(Type type, Func<object, string> formater) { }
-
-// Example
-
-if (Json.TryAddFormatter(typeof(TimeSpan), obj => $"{{TimeSpan:\"{obj}\"}}"))
-    Console.WriteLine("Successfully added formatter.");
-else
-    Console.WriteLine("Failed to add formatter.");
-```
-
-```cs
-// Example
-
-public sealed class Employee : Record
-{
-    public static readonly Column<@string> NameColumn;
-    public static readonly Column<@int> NumberColumn;
-    public static readonly Column<@long> AgeColumn;
-    public static readonly Column<@bint> PointsColumn;
-    public static readonly Column<@record<Employee>> ManagerColumn;
-    public static readonly Column<tuple<@int, @int, @int>> PhoneNumberColumn;
-    public static readonly Reference<@record<Employee>.nullable, Computer> ComputerReferences;
-
-    // Marked with 'JsonAttribute'
-    [Json] public string Name
-    { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
-    [Json] public int Number
-    { get => NumberColumn.Get(this); set => NumberColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
-    [Json] public long Age
-    { get => AgeColumn.Get(this); set => AgeColumn.Set(this, value); }
-        
-    // Marked with 'JsonAttribute'
-    [Json] public BigInteger Points
-    { get => PointsColumn.Get(this); set => PointsColumn.Set(this, value); }
-        
-    // Marked with 'JsonAttribute'
-    [Json] public Employee Manager
-    { get => ManagerColumn.Get(this); set => ManagerColumn.Set(this, value!); }
-
-    // Marked with 'JsonAttribute' and 'TupleObjectAttribute'    
-    [TupleObject("Area", "Exchange", "Subscriber")]
-    [Json] public (int, int, int) PhoneNumber
-    { get => PhoneNumberColumn.Get(this); set => PhoneNumberColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
-    [Json] public IEnumerable<Computer?> Computers => ComputerReferences.For(this);
-
-    static Employee() => _ = ~SchemaBuilder<Employee>
-        .Add(out NameColumn, Unique: false)
-        .Add(out NumberColumn, Default: () => 5555555)
-        .Add(out AgeColumn, Check: value => value >= 18)
-        .Add(out PointsColumn)
-        .Add(out ManagerColumn)
-        .Add(out PhoneNumberColumn)
-        .Add(out ComputerReferences, () => Computer.EmployeeColumn);
-}
-
-public sealed class Computer : Record
-{
-    public static readonly Column<@record<Employee>.nullable> EmployeeColumn;
-    public static readonly Column<@string> TypeColumn;
-
-    // Marked with 'JsonAttribute'
-    [Json] public Employee? Employee
-    { get => EmployeeColumn.Get(this); set => EmployeeColumn.Set(this, value); }
-
-    // Marked with 'JsonAttribute'
-    [Json] public string Type
-    { get => TypeColumn.Get(this); set => TypeColumn.Set(this, value); }
-
-    static Computer() => _ = ~SchemaBuilder<Computer>
-        .Add(out EmployeeColumn)
-        .Add(out TypeColumn, Check: value => value != "" && value != "Dell");
-}
-
-// Usage
-
-Employee test = new()
-{
-    Name = "TizzyT",
-    Points = BigInteger.Parse("672387164454987434695431591434216"),
-    PhoneNumber = (555, 856, 8153)
-};
-
-Computer com1 = new()
-{
-    Employee = test,
-    Type = "Alienware"
-};
-
-Computer com2 = new()
-{
-    Employee = test,
-    Type = "HP"
-};
-
-Computer com3 = new()
-{
-    Employee = test,
-    Type = "Origin"
-};
-
-Console.WriteLine(test.Json);
-```
-
-Output (formatted, actual output is minimal):
-
-```json
-{
-	"Id": "00004844-0000-0000-0000-000000000000",
-	"BijouDB_Test.Tables.Employee": {
-		"Name": "TizzyT",
-		"Number": 5555555,
-		"Age": 0,
-		"Points": 672387164454987434695431591434216,
-		"Manager": null,
-		"PhoneNumber": {
-			"Area": 555,
-			"Exchange": 856,
-			"Subscriber": 8153
-		},
-		"Computers": [{
-			"Id": "00004846-0000-0000-0000-000000000000",
-			"BijouDB_Test.Tables.Computer": {
-				"Employee": {
-					"Id": "00004844-0000-0000-0000-000000000000",
-					"BijouDB_Test.Tables.Employee": {}
-				},
-				"Type": "Alienware"
-			}
-		}, {
-			"Id": "00004848-0000-0000-0000-000000000000",
-			"BijouDB_Test.Tables.Computer": {
-				"Employee": {
-					"Id": "00004844-0000-0000-0000-000000000000",
-					"BijouDB_Test.Tables.Employee": {}
-				},
-				"Type": "HP"
-			}
-		}, {
-			"Id": "00004849-0000-0000-0000-000000000000",
-			"BijouDB_Test.Tables.Computer": {
-				"Employee": {
-					"Id": "00004844-0000-0000-0000-000000000000",
-					"BijouDB_Test.Tables.Employee": {}
-				},
-				"Type": "Origin"
-			}
-		}]
-	}
-}
-```
-
-If you require more control over how much and what data to show then you can use the 'ToJson()' method.
-
-It has two parameters.
-
-1) Depth : How deep should the json serialization go when returning data.
-
-2) Level : What is the maximum level for properties to be included in the serialization.
-
-## Storing Data
-
-The database can be made to store arbitrary data.
-
-To mitigate a vulnerability due to malicious data being stored, data is stored with a random bitmask.
-
-The mask is generated using a seed. The seed can be changed at `BijouDB.Globals.SeedMask`, default is 712247. 
-
-## Logging
-
-There was very minimal effor put into logging. It is disabled by default.
-
-To turn on logging, set `BijouDB.Globals.Logging` to `true`.
-
-# Operations Complexity
-
-> Getting a Record via its Id `O(1)`
-
-> Getting all Records of a Type `O(1) - O(n)`
-
-> Getting all Records of a Type by value `O(1) - O(n)`
-
-> Adding a Record `O(1)`
-
-> Removing a Record `O(1)`
-
-> Getting References `O(1) - O(n)`
-
-> Getting Relationals `O(log n) - O(n)`
-
-# Gotchas
-
-### New Records are only stored once accessed (either by getting a property, or setting a property)
-
-```
-This prevents users from creating empty records and/or creating records which aren't used which
-will clutter up the database. This behavior though maybe undesireable in certain situations and
-in which case simply accessing any column related property will store the record in the database.
-```
-
-### Only explicitly set values are indexed (Values not set will not be visible in lookups)
-
-```
-This means that during lookups for default values like null, 0, "", '\0', etc will NOT contain any
-records which do not have the respective property set. This behavior will be remedied if/when
-'Required Properties' feature is out. For now you can create a constructor with parameters for
-properties which to explicitly set.
-```
-```cs
-// Exmaple
-
-public sealed class Employee : Record
-{
-    public static readonly Column<@string> NameColumn;
-
-    [Json] public string Name
-    { get => NameColumn.Get(this); set => NameColumn.Set(this, value); }
-
-    static Employee() => _ = ~SchemaBuilder<Employee>.Add(out NameColumn);
-
-    public Employee()
-    {
-        // Optionally throw if you dont want the default constructor to be used
-        throw new NotSupportedException();
-    }
-
-    // Constructor to explicitly set properties
-    public Employee(string name)
-    {
-        Name = name;
-    }
-}
-```
-
-### ~~Do NOT access column properties inside of the contructor of records.~~ (FIXED)
-<details><summary>Show description</summary>
-Because of how BijouDB is designed, normally a Record's Id is only set after the constructor has ran.
-Except when setting a column on a Record that has yet to have an Id set. To be able to ensure that
-Records always have an Id, the Get/Set methods sets the Id to a newly generated one. This is normally
-fine except for when you are trying to retrieve a Record. This causes BijouDB to generate a new Record
-and return that newly generated Record instead of specified one. Only Get/Set properties outside of the
-constructor.
-</details>
+`BijouDB_Test` is a regression console executable. It reports assertions and exits with a nonzero code if any test fails. It needs no external test-framework packages. Child-process cases cover reopening and bounded recovery/hang scenarios. CI builds and runs the suite on Windows and Linux.

@@ -1,5 +1,3 @@
-﻿using BijouDB.Components;
-
 namespace BijouDB;
 
 public sealed class Reference<D, R>
@@ -8,19 +6,26 @@ public sealed class Reference<D, R>
 {
     private readonly Func<Column<D>> _sourceColumn;
 
-    internal Column<D> SourceColumn => _sourceColumn();
+    internal Column<D> SourceColumn => _sourceColumn() ?? throw new InvalidOperationException("The referenced column has not been initialized.");
 
-    internal Reference(Func<Column<D>> sourceColumn) => _sourceColumn = sourceColumn;
+    internal Reference(Func<Column<D>> sourceColumn) => _sourceColumn = sourceColumn ?? throw new ArgumentNullException(nameof(sourceColumn));
 
     /// <summary>
-    /// Gets all child records referenced by this column.
+    /// Gets child records whose referenced column matches the supplied value.
     /// </summary>
     /// <param name="value">The parent record.</param>
     /// <returns>A collection with all child records.</returns>
-    public IEnumerable<R> To(D value) => _sourceColumn().WithValue<R>(value);
+    public IEnumerable<R> To(D value)
+    {
+        lock (Storage.SyncRoot)
+        {
+            Storage.EnsureInitialized();
+            return SourceColumn.WithValue<R>(value).ToArray();
+        }
+    }
 
     /// <summary>
-    /// Checks to see if a record has any child references.
+    /// Checks whether any existing child record refers to this parent.
     /// </summary>
     /// <typeparam name="S">The child column type.</typeparam>
     /// <param name="record">The parent record to check for references.</param>
@@ -28,61 +33,14 @@ public sealed class Reference<D, R>
     public bool HasRecords<S>(Record record)
         where S : Record, new()
     {
-        Type target = typeof(D);
+        if (record is not S parent) throw new ArgumentException("The parent record has an incompatible type.", nameof(record));
 
-        using FileBackedStream ms = new();
-
-        ulong hash;
-
-        // ugly check, refactor in the future ...
-        if (typeof(@record<S>) == target)
+        lock (Storage.SyncRoot)
         {
-            @record<S> r = (@record<S>)record!;
-            hash = r.Hash(ms);
-        }
-        else if (typeof(@record<S>.nullable) == target)
-        {
-            @record<S>.nullable r = (@record<S>.nullable)record!;
-            hash = r.Hash(ms);
-        }
-        else return false;
-
-        // hash lookup
-        string hashDir;
-        try
-        {
-            hashDir = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Index, _sourceColumn()._name, hash.PaddedString());
-        }
-        catch (Exception ex)
-        {
-            ex.Log();
+            Storage.EnsureInitialized();
+            if (typeof(D) == typeof(@record<S>)) return SourceColumn.WithValue<R>((D)(object)(@record<S>)parent).Any();
+            if (typeof(D) == typeof(@record<S>.nullable)) return SourceColumn.WithValue<R>((D)(object)(@record<S>.nullable)parent).Any();
             return false;
         }
-
-        try
-        {
-            foreach (string hashCollision in Directory.EnumerateDirectories(hashDir))
-            {
-                string collisionName = Path.GetFileNameWithoutExtension(hashCollision);
-                string binFilePath = Path.Combine(hashCollision, Globals.BinFile);
-                if (Guid.TryParse(collisionName, out Guid index) && File.Exists(binFilePath))
-                {
-                    using FileStream fs = new(binFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    ms.Position = 0;
-                    if (Misc.StreamCompare(ms, fs))
-                    {
-                        string dataMatchPath = Path.Combine(hashDir, index.ToString());
-                        foreach (string reference in Directory.EnumerateFiles(dataMatchPath, Globals.RefPattern))
-                            if (Guid.TryParse(Path.GetFileNameWithoutExtension(reference), out Guid id) && Record.TryGet<R>(id, out _))
-                                return true;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.Log();
-        }
-        return false;
     }
 }

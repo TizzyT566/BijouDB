@@ -1,68 +1,58 @@
-﻿using System.Collections;
+using System.Collections;
+using System.Globalization;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace BijouDB;
 
 public static class Json
 {
-    private static readonly Dictionary<Type, Func<object, string>> _formatters = new();
-    private static readonly HashSet<Guid> _references = new();
-    private static int _level, _depth, _lock;
-
-    static Json()
+    private static readonly object _formatterLock = new();
+    private static readonly Dictionary<Type, Func<object, string>> _formatters = new()
     {
-        _formatters.Add(typeof(BigInteger), o => $"{o}n");
-        _formatters.Add(typeof(byte[]), o => $"\"{Convert.ToBase64String((byte[])o)}\"");
-        _formatters.Add(typeof(bool), o => (bool)o ? "true" : "false");
-        _formatters.Add(typeof(byte), o => o.ToString());
-        _formatters.Add(typeof(char), o => $"\"{o}\"");
-        _formatters.Add(typeof(decimal), o => $"\"{o}\"");
-        _formatters.Add(typeof(double), o => o.ToString());
-        _formatters.Add(typeof(float), o => o.ToString());
-        _formatters.Add(typeof(int), o => o.ToString());
-        _formatters.Add(typeof(long), o => o.ToString());
-        _formatters.Add(typeof(sbyte), o => o.ToString());
-        _formatters.Add(typeof(short), o => o.ToString());
-        _formatters.Add(typeof(string), o => ProcessString(o));
-        _formatters.Add(typeof(DateTime), o => ((DateTime)o).Ticks.ToString());
-        _formatters.Add(typeof(uint), o => o.ToString());
-        _formatters.Add(typeof(ulong), o => o.ToString());
-        _formatters.Add(typeof(ushort), o => o.ToString());
-        _formatters.Add(typeof(Guid), o => $"\"{o}\"");
-    }
+        [typeof(BigInteger)] = o => ((BigInteger)o).ToString(CultureInfo.InvariantCulture),
+        [typeof(byte[])] = o => Quote(Convert.ToBase64String((byte[])o)),
+        [typeof(bool)] = o => (bool)o ? "true" : "false",
+        [typeof(byte)] = InvariantNumber,
+        [typeof(char)] = o => Quote(o.ToString()!),
+        // Preserve the existing decimal-as-string public representation.
+        [typeof(decimal)] = o => Quote(((decimal)o).ToString(CultureInfo.InvariantCulture)),
+        [typeof(double)] = o => FormatDouble((double)o),
+        [typeof(float)] = o => FormatSingle((float)o),
+        [typeof(int)] = InvariantNumber,
+        [typeof(long)] = InvariantNumber,
+        [typeof(sbyte)] = InvariantNumber,
+        [typeof(short)] = InvariantNumber,
+        [typeof(string)] = o => Quote((string)o),
+        [typeof(DateTime)] = o => ((DateTime)o).Ticks.ToString(CultureInfo.InvariantCulture),
+        [typeof(uint)] = InvariantNumber,
+        [typeof(ulong)] = InvariantNumber,
+        [typeof(ushort)] = InvariantNumber,
+        [typeof(Guid)] = o => Quote(o.ToString()!)
+    };
 
     /// <summary>
-    /// Tries to add a formatter for a spicified type to Json.
+    /// Adds a formatter. The callback must return a valid JSON value.
     /// </summary>
     /// <param name="type">The type to add a formatter for.</param>
     /// <param name="formatter">The type formatter.</param>
     /// <returns>true if formatter was successfully added, otherwise false.</returns>
     public static bool TryAddFormatter(Type type, Func<object, string> formatter)
     {
-        if (type is null) return false;
-        if (typeof(Record).Equals(type)) return false;
-        try
+        if (type is null || formatter is null || typeof(Record).IsAssignableFrom(type)) return false;
+
+        lock (_formatterLock)
         {
-            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
             if (_formatters.ContainsKey(type)) return false;
             _formatters.Add(type, formatter);
             return true;
         }
-        catch (Exception ex)
-        {
-            ex.Log();
-            return false;
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _lock, 0);
-        }
     }
 
     /// <summary>
-    /// Gets the Json representation of a record give its type and id as strings.
+    /// Retrieves and serializes an existing record without running its constructor.
     /// </summary>
     /// <param name="type">The Type name.</param>
     /// <param name="id">The record's Id.</param>
@@ -71,24 +61,12 @@ public static class Json
     /// <returns>The Json string of the specified record.</returns>
     public static string? GetRecord(string type, string id, int depth = 0, int level = 0)
     {
-        try
-        {
-            Type t = Record._types[type];
-            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
-            dynamic obj = ci.Invoke(null);
-            obj._id = Guid.Parse(id);
-            string json = Json.ToJson(obj, depth, level);
-            return json;
-        }
-        catch (Exception ex)
-        {
-            ex.Log();
-            return null;
-        }
+        if (string.IsNullOrEmpty(type) || !Guid.TryParse(id, out Guid guid) || !Record.TryResolveType(type, out Type? recordType) || recordType is null) return null;
+        return Record.TryGet(recordType, guid, out Record? record) ? ToJson(record, depth, level) : null;
     }
 
     /// <summary>
-    /// Gets the Json representation of a record give its type, id, and property name as strings.
+    /// Retrieves and serializes a public property of an existing record.
     /// </summary>
     /// <param name="type">The Type name.</param>
     /// <param name="id">The record's Id.</param>
@@ -98,259 +76,205 @@ public static class Json
     /// <returns>The Json string of the specified record.</returns>
     public static string? GetProperty(string type, string id, string property, int depth = 0, int level = 0)
     {
-        if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(id) || string.IsNullOrEmpty(property)) return null;
-        try
-        {
-            Type t = Record._types[type];
-            ConstructorInfo ci = t.GetConstructor(Array.Empty<Type>());
-            dynamic obj = ci.Invoke(null);
-            obj._id = Guid.Parse(id);
-            string prop = Json.ToJson(t.GetProperty(property).GetValue(obj), depth, level);
-            return prop;
-        }
-        catch (Exception ex)
-        {
-            ex.Log();
+        if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(property) || !Guid.TryParse(id, out Guid guid) || !Record.TryResolveType(type, out Type? recordType) || recordType is null || !Record.TryGet(recordType, guid, out Record? record))
             return null;
-        }
+
+        PropertyInfo? info = recordType.GetProperty(property, BindingFlags.Instance | BindingFlags.Public);
+        if (info?.GetMethod is null || !info.GetMethod.IsPublic || info.GetIndexParameters().Length != 0) return null;
+        if (JsonAttribute.HasAttribute(info, out int propertyLevel) && propertyLevel > level) return null;
+        return ToJson(info.GetValue(record), depth, level);
     }
 
     /// <summary>
-    /// Gets the Json representation of an object.
+    /// Serializes using per-call traversal state. Unsupported values or failing getters/formatters
+    /// throw instead of being silently replaced with null. Custom formatters can call ToJson.
     /// </summary>
-    /// <param name="this">The object to represent as Json.</param>
-    /// <param name="depth">How deep should the serializer go.</param>
-    /// <param name="level">The access level of properties to represent.</param>
-    /// <returns>The Json string of the specified object.</returns>
-    public static string ToJson(this object @this, int depth = 1, int level = 0)
+    public static string ToJson(this object? @this, int depth = 1, int level = 0)
     {
-        try
-        {
-            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _lock, 1) == 0);
-            _level = level;
-            _depth = depth;
-            _references.Clear();
-            return ToJson(@this);
-        }
-        catch (Exception ex)
-        {
-            ex.Log();
-            return "null";
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _lock, 0);
-        }
+        if (depth < 0) throw new ArgumentOutOfRangeException(nameof(depth));
+
+        Dictionary<Type, Func<object, string>> formatters;
+
+        lock (_formatterLock)
+            formatters = new(_formatters);
+        return new SerializationContext(formatters, level).Write(@this, depth);
     }
 
-    private static string ToJson(object obj)
+    private static string InvariantNumber(object value) => ((IFormattable)value).ToString(null, CultureInfo.InvariantCulture);
+
+    private static string FormatDouble(double value)
     {
-        if (obj is null) return "null";
-
-        if (obj is Record record) return RecordToJson(record);
-
-        if (IsJunction(obj)) return JunctionToJson(obj);
-
-        if (_formatters.TryGetValue(obj.GetType(), out Func<object, string> formatter)) return formatter(obj);
-
-        if (obj.GetType().IsArray) return ArrayToJson(obj);
-
-        if (obj is IEnumerable) return EnumerableToJson(obj);
-
-        if (IsTuple(obj)) return TupleToJson(obj);
-
-        return $"\"{obj}\"";
+        if (double.IsNaN(value) || double.IsInfinity(value)) throw new InvalidOperationException("Non-finite numbers cannot be represented as JSON numbers.");
+        return value.ToString("R", CultureInfo.InvariantCulture);
     }
 
-    private static string ProcessString(object obj)
+    private static string FormatSingle(float value)
     {
-        string input = (string)obj;
-        char[] chars = new char[2 + input.Length * 2];
-        chars[0] = '\"';
-        int i = 1;
+        if (float.IsNaN(value) || float.IsInfinity(value)) throw new InvalidOperationException("Non-finite numbers cannot be represented as JSON numbers.");
+        return value.ToString("R", CultureInfo.InvariantCulture);
+    }
+
+    private static string Quote(string input)
+    {
+        StringBuilder result = new();
+        result.Append('"');
         foreach (char c in input)
         {
             switch (c)
             {
-                case '\"':
-                    {
-                        chars[i++] = '\\';
-                        chars[i++] = '\"';
-                        break;
-                    }
+                case '"':
+                    result.Append("\\\"");
+                    break;
                 case '\\':
-                    {
-                        chars[i++] = '\\';
-                        chars[i++] = '\\';
-                        break;
-                    }
-                case '/':
-                    {
-                        chars[i++] = '\\';
-                        chars[i++] = '/';
-                        break;
-                    }
+                    result.Append("\\\\");
+                    break;
                 case '\b':
-                    {
-                        chars[i++] = '\\';
-                        chars[i++] = 'b';
-                        break;
-                    }
+                    result.Append("\\b");
+                    break;
                 case '\f':
-                    {
-                        chars[i++] = '\\';
-                        chars[i++] = 'f';
-                        break;
-                    }
+                    result.Append("\\f");
+                    break;
                 case '\n':
-                    {
-                        chars[i++] = '\\';
-                        chars[i++] = 'n';
-                        break;
-                    }
+                    result.Append("\\n");
+                    break;
                 case '\r':
-                    {
-                        chars[i++] = '\\';
-                        chars[i++] = 'r';
-                        break;
-                    }
+                    result.Append("\\r");
+                    break;
                 case '\t':
-                    {
-                        chars[i++] = '\\';
-                        chars[i++] = 't';
-                        break;
-                    }
+                    result.Append("\\t");
+                    break;
                 default:
-                    {
-                        chars[i++] = c;
-                        break;
-                    }
+                    if (c < ' ' || char.IsSurrogate(c))
+                        result.Append("\\u").Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+                    else
+                        result.Append(c);
+                    break;
             }
         }
-        chars[i++] = '\"';
-        return new string(chars, 0, i);
+
+        return result.Append('"').ToString();
     }
 
-    private static string JunctionToJson(object obj)
+    private sealed class SerializationContext
     {
-        dynamic objDyn = obj;
-        StringBuilder sb = new("[");
-        List<string> parts = new();
-        foreach (object item in objDyn.All) parts.Add(ToJson(item));
-        return sb.Append($"{string.Join(",", parts)}]").ToString();
-    }
+        private readonly Dictionary<Type, Func<object, string>> _formatters;
+        private readonly int _level;
+        private readonly HashSet<(Type, Guid)> _records = new();
+        private readonly HashSet<object> _collections = new(ReferenceComparer.Instance);
 
-    private static string ArrayToJson(object obj)
-    {
-        object[] arr = (object[])obj;
-        StringBuilder sb = new("[");
-        List<string> parts = new();
-        foreach (object item in arr) parts.Add(ToJson(item));
-        return sb.Append($"{string.Join(",", parts)}]").ToString();
-    }
-
-    private static string EnumerableToJson(object obj)
-    {
-        StringBuilder sb = new("[");
-        List<string> parts = new();
-        foreach (object item in (IEnumerable<object>)obj)
-            parts.Add(ToJson(item));
-        return sb.Append($"{string.Join(",", parts)}]").ToString();
-    }
-
-    private static string RecordToJson(Record record)
-    {
-        StringBuilder sb = new("{");
-        Type t = record.GetType();
-
-        sb.Append($"\"{nameof(record.Id)}\":\"{record.Id}\",\"{t.FullName}\":{{");
-
-        List<string> parts = new();
-
-        if (_depth > 0 && !_references.Contains(record.Id))
+        internal SerializationContext(Dictionary<Type, Func<object, string>> formatters, int level)
         {
-            Interlocked.Decrement(ref _depth);
-            _references.Add(record.Id);
+            _formatters = formatters;
+            _level = level;
+        }
 
-            PropertyInfo[] properties = t.GetProperties();
-            foreach (PropertyInfo property in properties)
-                if (JsonAttribute.HasAttribute(property, out int level))
+        internal string Write(object? value, int depth)
+        {
+            if (value is null) return "null";
+            if (value is Record record) return WriteRecord(record, depth);
+
+            Type type = value.GetType();
+            if (_formatters.TryGetValue(type, out Func<object, string>? formatter))
+                return formatter(value) ?? throw new InvalidOperationException("A JSON formatter returned null instead of a JSON value.");
+            if (IsJunction(type)) return WriteCollection((IEnumerable)type.GetProperty("All")!.GetValue(value)!, depth);
+            if (value is IEnumerable enumerable) return WriteCollection(enumerable, depth);
+            if (IsTuple(type)) return WriteTuple(value, depth, null);
+            return Quote(value.ToString() ?? "");
+        }
+
+        private string WriteRecord(Record record, int depth)
+        {
+            Type type = record.GetType();
+            Guid id = record.Id;
+            List<string> parts = new();
+            (Type type, Guid id) key = (type, id);
+            if (depth > 0 && _records.Add(key))
+            {
+                try
                 {
-                    if (level > _level) continue;
-                    if (IsTuple(property) && TupleObjectAttribute.HasAttribute(property, out string[] labels))
-                        parts.Add($"\"{property.Name}\":{TupleObjectToJson(property.GetValue(record), labels)}");
-                    else
-                        parts.Add($"\"{property.Name}\":{ToJson(property.GetValue(record))}");
+                    foreach (PropertyInfo property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+                    {
+                        if (property.GetMethod is null || !property.GetMethod.IsPublic || property.GetIndexParameters().Length != 0 || !JsonAttribute.HasAttribute(property, out int level) || level > _level)
+                            continue;
+
+                        object? value = property.GetValue(record);
+                        string json = value is not null && IsTuple(value.GetType()) && TupleObjectAttribute.HasAttribute(property, out string[] labels) ? WriteTuple(value, depth - 1, labels) : Write(value, depth - 1);
+                        parts.Add(Quote(property.Name) + ":" + json);
+                    }
                 }
+                finally
+                {
+                    _records.Remove(key);
+                }
+            }
 
-            _references.Remove(record.Id);
-            Interlocked.Increment(ref _depth);
+            return "{" + Quote(nameof(Record.Id)) + ":" + Quote(id.ToString()) + "," + Quote(type.FullName ?? type.Name) + ":{" + string.Join(",", parts) + "}}";
         }
 
-        return sb.Append($"{string.Join(",", parts)}}}}}").ToString();
-    }
-
-    private static string TupleToJson(object obj)
-    {
-        StringBuilder sb = new("[");
-
-        List<string> parts = new();
-
-        foreach (object item in ValueTupleValues(obj))
-            parts.Add(ToJson(item));
-
-        return sb.Append($"{string.Join(",", parts)}]").ToString();
-    }
-
-    private static string TupleObjectToJson(object obj, string[] labels)
-    {
-        StringBuilder sb = new("{");
-
-        List<string> parts = new();
-
-        int i = 0;
-        foreach (object item in ValueTupleValues(obj))
+        private string WriteCollection(IEnumerable value, int depth)
         {
-            string name = i < labels.Length ? labels[i++] : i++.ToString();
-            parts.Add($"{ToJson(name)}:{ToJson(item)}");
+            if (!_collections.Add(value)) throw new InvalidOperationException("A collection contains a reference cycle.");
+
+            try
+            {
+                List<string> parts = new();
+                foreach (object? item in value)
+                    parts.Add(Write(item, depth));
+
+                return "[" + string.Join(",", parts) + "]";
+            }
+            finally
+            {
+                _collections.Remove(value);
+            }
         }
 
-        return sb.Append($"{string.Join(",", parts)}}}").ToString();
-    }
-
-    private static IEnumerable ValueTupleValues(object tuple) =>
-        tuple.GetType().GetFields().Select(feild => feild.GetValue(tuple));
-
-    private static bool IsTuple(object obj)
-    {
-        Type type;
-
-        if (obj is PropertyInfo prop) type = prop.PropertyType;
-        else if (obj is FieldInfo field) type = field.FieldType;
-        else type = obj.GetType();
-
-        if (!type.IsGenericType) return false;
-        Type? def = type.GetGenericTypeDefinition();
-        for (int i = 2; ; ++i)
+        private string WriteTuple(object value, int depth, string[]? labels)
         {
-            Type? tupleType = Type.GetType("System.ValueTuple`" + i);
-            if (tupleType is null) return false;
-            if (def == tupleType) return true;
+            List<string> parts = new();
+            int i = 0;
+            foreach (object? item in TupleValues(value))
+            {
+                string json = Write(item, depth);
+                if (labels is not null)
+                    json = Quote(i < labels.Length ? labels[i] : i.ToString(CultureInfo.InvariantCulture)) + ":" + json;
+                parts.Add(json);
+                i++;
+            }
+
+            return labels is null ? "[" + string.Join(",", parts) + "]" : "{" + string.Join(",", parts) + "}";
         }
     }
 
-    private static bool IsJunction(object obj)
+    private static bool IsTuple(Type type) => type.IsGenericType && (type.GetGenericTypeDefinition().FullName?.StartsWith("System.ValueTuple`", StringComparison.Ordinal) == true || type.GetGenericTypeDefinition().FullName?.StartsWith("System.Tuple`", StringComparison.Ordinal) == true);
+
+    private static IEnumerable<object?> TupleValues(object tuple)
     {
-        Type type = obj.GetType();
-        if (!type.IsGenericType) return false;
-        Type genType = type.GetGenericTypeDefinition();
-        return genType.FullName == "BijouDB.Relational`2+Junc";
+        Type type = tuple.GetType();
+        for (int i = 1; i <= 7; i++)
+        {
+            string name = "Item" + i;
+            FieldInfo? field = type.GetField(name);
+            PropertyInfo? property = type.GetProperty(name);
+            if (field is null && property is null)
+                yield break;
+            yield return field is not null ? field.GetValue(tuple) : property!.GetValue(tuple);
+        }
+
+        object? rest = type.GetField("Rest")?.GetValue(tuple) ?? type.GetProperty("Rest")?.GetValue(tuple);
+        if (rest is not null)
+            foreach (object? item in TupleValues(rest))
+                yield return item;
     }
 
-    private static bool IsRecord(object obj)
+    private static bool IsJunction(Type type) => type.IsGenericType && type.GetGenericTypeDefinition().FullName == "BijouDB.Relational`2+Junc";
+
+    private sealed class ReferenceComparer : IEqualityComparer<object>
     {
-        if (obj is PropertyInfo prop) return prop.PropertyType.IsSubclassOf(typeof(Record));
-        if (obj is FieldInfo field) return field.FieldType.IsSubclassOf(typeof(Record));
-        return obj is Record;
+        internal static readonly ReferenceComparer Instance = new();
+
+        public new bool Equals(object? left, object? right) => ReferenceEquals(left, right);
+
+        public int GetHashCode(object value) => RuntimeHelpers.GetHashCode(value);
     }
 }

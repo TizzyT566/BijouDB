@@ -1,16 +1,19 @@
-﻿using System.Reflection;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using BijouDB.Exceptions;
-using static BijouDB.Globals;
 
 namespace BijouDB;
 
 public abstract class Record : IEqualityComparer<Record>
 {
+    private static readonly object _typeLock = new();
     private static readonly Dictionary<Type, Action<Record>> _removeDefinitions = new();
+
     internal static readonly Dictionary<string, Type> _types = new();
 
     internal Guid? _id;
+
     /// <summary>
     /// The Record's Id.
     /// </summary>
@@ -18,34 +21,33 @@ public abstract class Record : IEqualityComparer<Record>
     {
         get
         {
-            if (_id is null)
+            RegisterType(GetType());
+
+            lock (Storage.SyncRoot)
             {
-                try
+                Storage.EnsureInitialized();
+                if (_id.HasValue) return _id.Value;
+
+                string directory = Path.Combine(Globals.DatabasePath, GetType().FullName!, Globals.Rec);
+                Directory.CreateDirectory(directory);
+                while (true)
                 {
-                    _id = IncrementalGuid.NextGuid();
-                    string baseDir = Path.Combine(DatabasePath, GetType().FullName!, Rec);
-                    Directory.CreateDirectory(baseDir);
-                    string path = Path.Combine(baseDir, $"{Id}.{Rec}");
-                    while (File.Exists(path))
-                        _id = IncrementalGuid.NextGuid();
-                    File.Create(path).Dispose();
-                }
-                catch (Exception ex)
-                {
-                    ex.Log();
-                    throw;
+                    Guid candidate = IncrementalGuid.NextGuid();
+                    string path = Path.Combine(directory, $"{candidate}.{Globals.Rec}");
+
+                    try
+                    {
+                        new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read).Dispose();
+                        _id = candidate;
+                        return candidate;
+                    }
+                    catch (IOException) when (File.Exists(path))
+                    {
+                        // Try another Id if this filename already exists.
+                    }
                 }
             }
-            return (Guid)_id;
         }
-    }
-
-    static Record()
-    {
-        Type recordType = typeof(Record);
-        foreach (Type type in Assembly.GetEntryAssembly().GetTypes())
-            if (!type.IsAbstract && recordType.IsAssignableFrom(type) && !string.IsNullOrEmpty(type.FullName))
-                _types.Add(type.FullName, type.IsPublic ? type : throw new NotPublicRecordException(type).Log());
     }
 
     /// <summary>
@@ -61,8 +63,12 @@ public abstract class Record : IEqualityComparer<Record>
     /// <param name="record">The Retrieved record.</param>
     /// <returns>true if Record was retrieved, otherwise false.</returns>
     public static bool TryGet<R>(string id, out R? record)
-        where R : Record, new() =>
-        TryGet(Guid.Parse(id), out record);
+        where R : Record, new()
+    {
+        if (Guid.TryParse(id, out Guid guid)) return TryGet(guid, out record);
+        record = null;
+        return false;
+    }
 
     /// <summary>
     /// Tries to retrieve a Record via a Guid.
@@ -74,28 +80,99 @@ public abstract class Record : IEqualityComparer<Record>
     public static bool TryGet<R>(Guid id, out R? record)
         where R : Record, new()
     {
+        bool found = TryGet(typeof(R), id, out Record? result);
+        record = (R?)result;
+        return found;
+    }
+
+    internal static bool TryGet(Type type, Guid id, out Record? record)
+    {
+        record = null;
+        if (id == Guid.Empty) return false;
+        RegisterType(type);
+        RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+
+        lock (Storage.SyncRoot)
+        {
+            Storage.EnsureInitialized();
+            if (!File.Exists(Storage.RecordPath(type, id))) return false;
+            record = Materialize(type, id);
+            return true;
+        }
+    }
+
+    internal static Record Materialize(Type type, Guid id)
+    {
+        Record record = (Record)FormatterServices.GetUninitializedObject(type);
+        record._id = id;
+        return record;
+    }
+
+    internal static void RegisterType(Type type)
+    {
+        if (type.IsAbstract || !typeof(Record).IsAssignableFrom(type) || type.ContainsGenericParameters || type.FullName is null)
+            throw new ArgumentException("A concrete record type is required.", nameof(type));
+        if (!type.IsVisible) throw new NotPublicRecordException(type);
+
+        lock (_typeLock)
+        {
+            if (_types.TryGetValue(type.FullName, out Type? existing) && existing != type)
+                throw new InvalidOperationException($"Multiple record types use the name '{type.FullName}'.");
+            _types[type.FullName] = type;
+        }
+    }
+
+    /// <summary>
+    /// Register models in another assembly, including dynamically loaded plugins.
+    /// </summary>
+    public static void RegisterAssembly(Assembly assembly)
+    {
+        if (assembly is null) throw new ArgumentNullException(nameof(assembly));
+
+        IEnumerable<Type> types;
+
         try
         {
-            string path = Path.Combine(DatabasePath, typeof(R).FullName!, Rec, $"{id}.{Rec}");
-            if (File.Exists(path))
-            {
-                record = GetUninitializedRecord<R>(id);
-                return true;
-            }
+            types = assembly.GetTypes();
         }
-        catch (Exception ex)
+        catch (ReflectionTypeLoadException ex)
         {
-            ex.Log();
+            types = ex.Types.Where(t => t is not null).Cast<Type>();
         }
-        record = null;
-        return false;
+        catch (NotSupportedException)
+        {
+            return;
+        }
+
+        foreach (Type type in types)
+            if (!type.IsAbstract && !type.ContainsGenericParameters && type.IsVisible && typeof(Record).IsAssignableFrom(type))
+                RegisterType(type);
+    }
+
+    internal static bool TryResolveType(string name, out Type? type)
+    {
+        foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            RegisterAssembly(assembly);
+
+        lock (_typeLock)
+            return _types.TryGetValue(name, out type);
     }
 
     /// <summary>
     /// Gets all available Record types in the current application.
     /// </summary>
     /// <returns>A string array with the full name of available record types.</returns>
-    public static string[] Types => _types.Keys.ToArray();
+    public static string[] Types
+    {
+        get
+        {
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                RegisterAssembly(assembly);
+
+            lock (_typeLock)
+                return _types.Keys.OrderBy(n => n, StringComparer.Ordinal).ToArray();
+        }
+    }
 
     /// <summary>
     /// Retrieves all property names for the current Record type.
@@ -116,13 +193,25 @@ public abstract class Record : IEqualityComparer<Record>
     public static IEnumerable<R> GetAll<R>()
         where R : Record, new()
     {
-        string path = Path.Combine(DatabasePath, typeof(R).FullName!, Rec);
-        if (Directory.Exists(path))
-            foreach (string record in Directory.EnumerateFiles(path, RecPattern))
+        RegisterType(typeof(R));
+        RuntimeHelpers.RunClassConstructor(typeof(R).TypeHandle);
+
+        lock (Storage.SyncRoot)
+        {
+            Storage.EnsureInitialized();
+            string directory = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec);
+            if (!Directory.Exists(directory)) return Array.Empty<R>();
+            List<R> records = new();
+            foreach (string path in Directory.GetFiles(directory, Globals.RecPattern))
             {
-                string recordName = Path.GetFileNameWithoutExtension(record);
-                yield return GetUninitializedRecord<R>(Guid.Parse(recordName));
+                string recordName = Path.GetFileNameWithoutExtension(path);
+                if (!Guid.TryParse(recordName, out Guid id) || id == Guid.Empty)
+                    throw new InvalidDataException($"Invalid record filename: {path}");
+
+                records.Add((R)Materialize(typeof(R), id));
             }
+            return records.ToArray();
+        }
     }
 
     /// <summary>
@@ -134,25 +223,26 @@ public abstract class Record : IEqualityComparer<Record>
     public static IEnumerable<R> WithValues<R>(params IEnumerable<R>[] columnMatches)
         where R : Record, new()
     {
-        if (columnMatches.Length == 1)
-            return columnMatches[0] is null ? Array.Empty<R>() : columnMatches[0];
-        if (columnMatches.Length == 0) return Array.Empty<R>();
+        if (columnMatches is null) throw new ArgumentNullException(nameof(columnMatches));
+        if (columnMatches.Length == 0 || columnMatches.Any(matches => matches is null)) return Array.Empty<R>();
+        if (columnMatches.Length == 1) return columnMatches[0];
 
-        // Turn all enumerables into hashsets for fast lookup
-        List<HashSet<Guid>> hashSets = new();
-        foreach (IEnumerable<R> arr in columnMatches)
-            if (arr is not null) hashSets.Add(new HashSet<Guid>(arr.Select(obj => obj.Id)));
+        // Start with the smallest collection.
+        HashSet<Guid>[] sets = columnMatches
+            .Select(matches => new HashSet<Guid>(matches.Select(row => row.Id)))
+            .OrderBy(set => set.Count)
+            .ToArray();
 
-        // start with the smallest collection
-        hashSets.Sort((x, y) => x.Count.CompareTo(y.Count));
+        HashSet<Guid> result = sets[0];
+        foreach (HashSet<Guid> set in sets.Skip(1))
+            result.IntersectWith(set);
 
-        HashSet<Guid> result = hashSets[0];
-
-        for (int i = 1; i < hashSets.Count; i++)
-            result.IntersectWith(hashSets[i]);
-
-        return result.Select(guid => GetUninitializedRecord<R>(guid));
+        return result.Select(id => (R)Materialize(typeof(R), id)).ToArray();
     }
+
+    public void Remove() => Remove(this);
+
+    public bool TryRemove() => TryRemove(out _);
 
     /// <summary>
     /// Tries to remove a Record from the database.
@@ -163,7 +253,7 @@ public abstract class Record : IEqualityComparer<Record>
     {
         try
         {
-            Remove(this);
+            Remove();
             exception = null;
             return true;
         }
@@ -183,40 +273,40 @@ public abstract class Record : IEqualityComparer<Record>
     /// <returns></returns>
     public bool Equals(Record x, Record y)
     {
-        if (x._id is null || y._id is null) return false;
-        return x.GetType() == y.GetType() && Equals(x._id, y._id);
+        if (ReferenceEquals(x, y)) return true;
+        if (x is null || y is null) return false;
+
+        lock (Storage.SyncRoot)
+            return x._id.HasValue && y._id.HasValue && x.GetType() == y.GetType() && x._id == y._id;
     }
 
     /// <summary>
-    /// The hash code for the Record.
+    /// Hashing establishes a persistent ID so the hash remains stable after property access.
     /// </summary>
     /// <param name="obj">The Record to get the hash code for.</param>
     /// <returns>The hash code.</returns>
-    public int GetHashCode(Record obj) => obj._id.GetHashCode();
+    public int GetHashCode(Record obj) => obj is null ? throw new ArgumentNullException(nameof(obj)) : obj.Id.GetHashCode();
 
-    public override int GetHashCode() => _id.GetHashCode();
+    public override int GetHashCode() => Id.GetHashCode();
 
-    internal static void Remove<R>(R record) where R : Record
+    internal static void Remove<R>(R record)
+        where R : Record
     {
-        if (_removeDefinitions.TryGetValue(record.GetType(), out Action<Record>? removeDefinition) && removeDefinition is not null)
-            removeDefinition(record);
+        RuntimeHelpers.RunClassConstructor(record.GetType().TypeHandle);
+        Action<Record>? definition;
+
+        lock (_typeLock)
+            _removeDefinitions.TryGetValue(record.GetType(), out definition);
+        if (definition is null) throw new InvalidOperationException($"No schema is registered for {record.GetType().FullName}.");
+        definition(record);
     }
 
     internal static void AddRemoveDefinition<R>(Action<Record> removeDefinition)
         where R : Record
     {
-        Type type = typeof(R);
-        if (_removeDefinitions.ContainsKey(type)) return;
-        _removeDefinitions.Add(type, removeDefinition);
-    }
+        RegisterType(typeof(R));
 
-    private static R GetUninitializedRecord<R>(Guid id) where R : Record, new()
-    {
-        if (id == Guid.Empty) throw new ArgumentException("Record id cannot be empty.").Log();
-        object obj = FormatterServices.GetUninitializedObject(typeof(R));
-        Type type = obj.GetType();
-        FieldInfo field = type.GetField("_id", BindingFlags.NonPublic | BindingFlags.Instance);
-        field.SetValue(obj, id);
-        return (R)obj;
+        lock (_typeLock)
+            _removeDefinitions[typeof(R)] = removeDefinition;
     }
 }

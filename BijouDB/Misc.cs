@@ -1,269 +1,285 @@
-﻿using BijouDB.Components;
+using BijouDB.Components;
+using System.Globalization;
 
 namespace BijouDB;
 
 internal static class Misc
 {
-    public static bool StreamCompare(Stream s1, Stream s2)
+    internal const int MaxDynamicDataLength = 256 * 1024 * 1024;
+
+    public static bool StreamCompare(Stream firstStream, Stream secondStream)
     {
-        long? s1Length = null, s2Length = null;
+        if (firstStream is null) throw new ArgumentNullException(nameof(firstStream));
+        if (secondStream is null) throw new ArgumentNullException(nameof(secondStream));
 
-        try { s1Length = s1.Length; }
-        catch (Exception ex) { ex.Log(); }
-
-        try { s2Length = s2.Length; }
-        catch (Exception ex) { ex.Log(); }
-
-        if (s1Length != s2Length || s1Length is null) return false;
-
-        int bufferLength = 8192;
-        byte[] s1Buffer = new byte[bufferLength], s2Buffer = new byte[bufferLength];
-
-        long s1Total = 0, s2Total = 0;
-        int s1Read = 0, s2Read = 0;
-
+        byte[] first = new byte[8192], second = new byte[8192];
         while (true)
         {
-            while (((s1Total += s1Read = s1.Read(s1Buffer, s1Read, bufferLength - s1Read)) < bufferLength) && s1Read != 0) ;
-            while (((s2Total += s2Read = s2.Read(s2Buffer, s2Read, bufferLength - s2Read)) < bufferLength) && s2Read != 0) ;
-            if (s1Total != s2Total) return false;
-            for (int i = 0; i < s1Length; i++) if (s1Buffer[i] != s2Buffer[i]) return false;
-            if (s1Read == 0 || s2Read == 0) return true;
+            int firstCount = ReadChunk(firstStream, first), secondCount = ReadChunk(secondStream, second);
+            if (firstCount != secondCount) return false;
+            for (int i = 0; i < firstCount; i++)
+                if (first[i] != second[i]) return false;
+
+            if (firstCount == 0) return true;
         }
     }
 
-    public static string PaddedString(this ulong @this) => @this.ToString().PadLeft(20, '0');
+    private static int ReadChunk(Stream stream, byte[] buffer)
+    {
+        int total = 0;
+        while (total < buffer.Length)
+        {
+            int read = stream.Read(buffer, total, buffer.Length - total);
+            if (read == 0) break;
+            total += read;
+        }
+
+        return total;
+    }
+
+    public static string PaddedString(this ulong value) => value.ToString("D20", CultureInfo.InvariantCulture);
 
     public static ulong Hash(this IDataType value, Stream stream)
     {
-        long pos = stream.Position;
-        using MaskedStream ms = new(stream, Globals.BitMaskSeed);
-        value.Serialize(ms);
-        stream.Position = 0;
-        ulong ret = stream.GetSkipHash();
-        stream.Position = pos;
-        return ret;
+        long position = stream.Position;
+
+        try
+        {
+            using MaskedStream masked = new(stream, Globals.BitMaskSeed);
+            value.Serialize(masked);
+            stream.Position = 0;
+            return stream.GetSkipHash();
+        }
+        finally
+        {
+            stream.Position = position;
+        }
     }
 
     public static FileStream GetTemporaryFileStream(int bufferSize = 4096)
     {
-        FileStream fs = null!;
+        if (bufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+        for (int attempt = 0; attempt < 8; attempt++)
+        {
+            string path = Path.Combine(Path.GetTempPath(), $"BijouDB-{Guid.NewGuid():N}.tmp");
 
-        SpinWait.SpinUntil(() =>
+            try
             {
-                try
-                {
-                    string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), ".tmp");
-                    fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Read, bufferSize, FileOptions.DeleteOnClose);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    ex.Log();
-                    return false;
-                }
-            });
+                return new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, bufferSize, FileOptions.DeleteOnClose);
+            }
+            catch (IOException) when (File.Exists(path))
+            {
+            }
+        }
 
-        return fs;
+        throw new IOException("Could not allocate a unique temporary file.");
     }
 
-    public static bool ReadHashValue(this Stream @this, out ulong hash, out Guid value)
+    public static bool ReadHashValue(this Stream stream, out ulong hash, out Guid value)
     {
-        byte[] prevHashBytes = new byte[8];
-        byte[] prevValueBytes = new byte[16];
-        if (@this.TryFill(prevHashBytes) && @this.TryFill(prevValueBytes))
+        byte[] hashBytes = new byte[8], valueBytes = new byte[16];
+        if (stream.TryFill(hashBytes) && stream.TryFill(valueBytes))
         {
-            hash = BitConverter.ToUInt64(prevHashBytes, 0);
-            value = new(prevValueBytes);
+            hash = BitConverter.ToUInt64(hashBytes, 0);
+            value = new(valueBytes);
             return true;
         }
+
         hash = default;
         value = default;
         return false;
     }
 
-    public static void WriteHashValue(this Stream @this, in ulong newHash, in Guid newValue)
+    public static void WriteHashValue(this Stream stream, in ulong hash, in Guid value)
     {
-        @this.Write(BitConverter.GetBytes(newHash), 0, 8);
-        @this.Write(newValue.ToByteArray(), 0, 16);
+        stream.Write(BitConverter.GetBytes(hash), 0, 8);
+        stream.Write(value.ToByteArray(), 0, 16);
     }
 
-    public static bool TryFill(this Stream @this, byte[] buffer, int offset = 0, int length = -1)
+    public static bool TryFill(this Stream stream, byte[] buffer, int offset = 0, int length = -1)
     {
-        if (length < 1) length = buffer.Length;
-        int total = 0, read;
-        while ((total += read = @this.Read(buffer, total + offset, length - total)) < length)
+        if (stream is null) throw new ArgumentNullException(nameof(stream));
+        if (buffer is null) throw new ArgumentNullException(nameof(buffer));
+        if (offset < 0 || offset > buffer.Length) throw new ArgumentOutOfRangeException(nameof(offset));
+        if (length == -1)
+            length = buffer.Length - offset;
+        if (length < 0 || length > buffer.Length - offset) throw new ArgumentOutOfRangeException(nameof(length));
+
+        int total = 0;
+        while (total < length)
+        {
+            int read = stream.Read(buffer, offset + total, length - total);
             if (read == 0) return false;
-        return total == length;
-    }
-
-    public static bool TryReadValueSize<T>(this T @this, out long valLen)
-        where T : Stream
-    {
-        int temp = @this.ReadByte();
-
-        if (temp < 0)
-        {
-            valLen = 0;
-            return false;
-        }
-        valLen = temp;
-        if (temp == 0)
-        {
-            valLen = 0;
-            return true;
+            total += read;
         }
 
-        byte[] bits = new byte[8];
-
-        switch (valLen)
-        {
-            case >= 0b1111_1111: // Length occupies next 8 bytes
-                {
-                    @this.TryFill(bits);
-                    valLen = BitConverter.ToInt64(bits, 0);
-                    break;
-                }
-            case >= 0b1111_1110: // Length occupies next 7 bytes
-                {
-                    @this.TryFill(bits, 0, 7);
-                    valLen = BitConverter.ToInt64(bits, 0);
-                    break;
-                }
-            case >= 0b1111_1100: // Length occupies next 6 bytes
-                {
-                    @this.TryFill(bits, 0, 6);
-                    bits[6] += (byte)(temp & 0b1);
-                    valLen = BitConverter.ToInt64(bits, 0);
-                    break;
-                }
-            case >= 0b1111_1000: // Length occupies next 5 bytes
-                {
-                    @this.TryFill(bits, 0, 5);
-                    bits[5] += (byte)(temp & 0b11);
-                    valLen = BitConverter.ToInt64(bits, 0);
-                    break;
-                }
-            case >= 0b1111_0000: // Length occupies next 4 bytes
-                {
-                    @this.TryFill(bits, 0, 4);
-                    bits[4] += (byte)(temp & 0b111);
-                    valLen = BitConverter.ToInt64(bits, 0);
-                    break;
-                }
-            case >= 0b1110_0000: // Length occupies next 3 bytes
-                {
-                    @this.TryFill(bits, 0, 3);
-                    bits[3] += (byte)(temp & 0b1111);
-                    valLen = BitConverter.ToInt64(bits, 0);
-                    break;
-                }
-            case >= 0b1100_0000: // Length occupies next 2 bytes
-                {
-                    @this.TryFill(bits, 0, 2);
-                    bits[2] += (byte)(temp & 0b11111);
-                    valLen = BitConverter.ToInt64(bits, 0);
-                    break;
-                }
-            case >= 0b1000_0000: // Length occupies next 1 bytes
-                {
-                    @this.TryFill(bits, 0, 1);
-                    bits[1] += (byte)(temp & 0b111111);
-                    valLen = BitConverter.ToInt64(bits, 0);
-                    break;
-                }
-            default:
-                break;
-        }
         return true;
     }
 
-    public static bool TryReadDynamicData<T>(this T @this, out byte[] data)
+    public static bool TryReadValueSize<T>(this T stream, out long valueLength)
         where T : Stream
     {
-        if (@this.TryReadValueSize(out long size))
+        int prefix = stream.ReadByte();
+        valueLength = 0;
+        if (prefix < 0) return false;
+        if (prefix < 128)
         {
-            data = new byte[size];
-            return @this.TryFill(data);
+            valueLength = prefix;
+            return true;
         }
+
+        int bytes, mask;
+        if (prefix < 192)
+        {
+            bytes = 1;
+            mask = 63;
+        }
+        else if (prefix < 224)
+        {
+            bytes = 2;
+            mask = 31;
+        }
+        else if (prefix < 240)
+        {
+            bytes = 3;
+            mask = 15;
+        }
+        else if (prefix < 248)
+        {
+            bytes = 4;
+            mask = 7;
+        }
+        else if (prefix < 252)
+        {
+            bytes = 5;
+            mask = 3;
+        }
+        else if (prefix < 254)
+        {
+            bytes = 6;
+            mask = 1;
+        }
+        else if (prefix == 254)
+        {
+            bytes = 7;
+            mask = 0;
+        }
+        else
+        {
+            bytes = 8;
+            mask = 0;
+        }
+
+        byte[] bits = new byte[8];
+        if (!stream.TryFill(bits, 0, bytes)) return false;
+        if (bytes < 8)
+            bits[bytes] = (byte)(prefix & mask);
+        long decoded = BitConverter.ToInt64(bits, 0);
+        if (decoded < 0) return false;
+        valueLength = decoded;
+        return true;
+    }
+
+    public static bool TryReadDynamicData<T>(this T stream, out byte[] data)
+        where T : Stream
+    {
         data = Array.Empty<byte>();
-        return false;
+        if (!stream.TryReadValueSize(out long size) || size > MaxDynamicDataLength) return false;
+        if (size == 0) return true;
+        if (stream.CanSeek && size > stream.Length - stream.Position) return false;
+
+        byte[] value = new byte[(int)size];
+        if (!stream.TryFill(value)) return false;
+        data = value;
+        return true;
     }
 
     public static T WriteValueSize<T>(this T @this, in long valLen)
         where T : Stream
     {
         if (valLen < 0) throw new ArgumentOutOfRangeException(nameof(valLen)).Log();
+
         byte[] bytes = BitConverter.GetBytes(valLen);
         switch (valLen)
         {
             case < 128:
-                {
-                    @this.WriteByte(bytes[0]);
-                    break;
-                }
+            {
+                @this.WriteByte(bytes[0]);
+                break;
+            }
+
             case < 16384:
-                {
-                    bytes[1] += 0b1000_0000;
-                    @this.WriteByte(bytes[1]);
-                    @this.Write(bytes, 0, 1);
-                    break;
-                }
+            {
+                bytes[1] += 0b1000_0000;
+                @this.WriteByte(bytes[1]);
+                @this.Write(bytes, 0, 1);
+                break;
+            }
+
             case < 1048576:
-                {
-                    bytes[2] += 0b1100_0000;
-                    @this.WriteByte(bytes[2]);
-                    @this.Write(bytes, 0, 2);
-                    break;
-                }
+            {
+                bytes[2] += 0b1100_0000;
+                @this.WriteByte(bytes[2]);
+                @this.Write(bytes, 0, 2);
+                break;
+            }
+
             case < 268435456:
-                {
-                    bytes[3] += 0b1110_0000;
-                    @this.WriteByte(bytes[3]);
-                    @this.Write(bytes, 0, 3);
-                    break;
-                }
+            {
+                bytes[3] += 0b1110_0000;
+                @this.WriteByte(bytes[3]);
+                @this.Write(bytes, 0, 3);
+                break;
+            }
+
             case < 34359738368:
-                {
-                    bytes[4] += 0b1111_0000;
-                    @this.WriteByte(bytes[4]);
-                    @this.Write(bytes, 0, 4);
-                    break;
-                }
+            {
+                bytes[4] += 0b1111_0000;
+                @this.WriteByte(bytes[4]);
+                @this.Write(bytes, 0, 4);
+                break;
+            }
+
             case < 4398046511104:
-                {
-                    bytes[5] += 0b1111_1000;
-                    @this.WriteByte(bytes[5]);
-                    @this.Write(bytes, 0, 5);
-                    break;
-                }
+            {
+                bytes[5] += 0b1111_1000;
+                @this.WriteByte(bytes[5]);
+                @this.Write(bytes, 0, 5);
+                break;
+            }
+
             case < 562949953421312:
-                {
-                    bytes[6] += 0b1111_1100;
-                    @this.WriteByte(bytes[6]);
-                    @this.Write(bytes, 0, 6);
-                    break;
-                }
+            {
+                bytes[6] += 0b1111_1100;
+                @this.WriteByte(bytes[6]);
+                @this.Write(bytes, 0, 6);
+                break;
+            }
+
             case < 72057594037927936:
-                {
-                    bytes[7] += 0b1111_1110;
-                    @this.WriteByte(bytes[7]);
-                    @this.Write(bytes, 0, 7);
-                    break;
-                }
+            {
+                bytes[7] += 0b1111_1110;
+                @this.WriteByte(bytes[7]);
+                @this.Write(bytes, 0, 7);
+                break;
+            }
+
             default:
-                {
-                    @this.WriteByte(255);
-                    @this.Write(bytes, 0, 8);
-                    break;
-                }
+            {
+                @this.WriteByte(255);
+                @this.Write(bytes, 0, 8);
+                break;
+            }
         }
+
         return @this;
     }
 
     public static void WriteDynamicData<T>(this T @this, in byte[] data)
         where T : Stream
     {
+        if (data is null) throw new ArgumentNullException(nameof(data));
+        if (data.Length > MaxDynamicDataLength) throw new ArgumentOutOfRangeException(nameof(data), "Dynamic values cannot exceed 256 MiB.");
         @this.WriteValueSize(data.LongLength);
         @this.Write(data, 0, data.Length);
     }

@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 
 namespace BijouDB;
 
@@ -12,13 +12,53 @@ public static class Globals
     internal static readonly string RecPattern = $"*.{Rec}";
     internal static readonly string BinFile = "value.bin";
 
-    public static readonly string DefaultPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "DB");
-    public static string DatabasePath { get; set; } = DefaultPath;
+    public static readonly string DefaultPath = Path.Combine(
+        string.IsNullOrEmpty(typeof(Globals).Assembly.Location) ? AppContext.BaseDirectory : Path.GetDirectoryName(typeof(Globals).Assembly.Location)!, "DB");
 
-    public static bool Logging { get; set; } = false;
-    public static int BitMaskSeed { get; set; } = 712247;
+    private static string _databasePath = DefaultPath;
+    private static int _bitMaskSeed = 712247;
 
-    private static int _consoleLock = 0;
+    /// <summary>
+    /// Configure before first database access. Settings freeze after initialization.
+    /// </summary>
+    public static string DatabasePath
+    {
+        get => _databasePath;
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("A database path is required.", nameof(value));
+
+            lock (Storage.SyncRoot)
+            {
+                string path = Path.GetFullPath(value);
+                if (Storage.IsInitialized && !string.Equals(path, _databasePath, Storage.PathComparison))
+                    throw new InvalidOperationException("DatabasePath cannot change after database initialization.");
+                _databasePath = path;
+            }
+        }
+    }
+
+    public static int BitMaskSeed
+    {
+        get => _bitMaskSeed;
+        set
+        {
+            lock (Storage.SyncRoot)
+            {
+                if (Storage.IsInitialized && value != _bitMaskSeed) throw new InvalidOperationException("BitMaskSeed cannot change after database initialization.");
+                _bitMaskSeed = value;
+            }
+        }
+    }
+
+    public static bool Logging { get; set; }
+
+    /// <summary>
+    /// Optional callback; logging failures never replace the original database error.
+    /// </summary>
+    public static Action<Exception, LogLevel>? Logger { get; set; }
+
+    private static readonly object _consoleLock = new();
 
     public enum LogLevel
     {
@@ -28,23 +68,20 @@ public static class Globals
         Warning = 2
     }
 
-    public static Exception Log(this Exception @this, LogLevel level = LogLevel.Error)
+    public static Exception Log(this Exception exception, LogLevel level = LogLevel.Error)
     {
-        if (Logging)
+        try
         {
-            SpinWait.SpinUntil(() => Interlocked.Exchange(ref _consoleLock, 1) == 0);
-            ConsoleColor prev = Console.ForegroundColor;
-            Console.ForegroundColor = level switch
-            {
-                LogLevel.Success => ConsoleColor.Green,
-                LogLevel.Warning => ConsoleColor.Yellow,
-                LogLevel.Error => ConsoleColor.Red,
-                _ => ConsoleColor.White
-            };
-            Console.WriteLine(@this.Message);
-            Console.ForegroundColor = prev;
-            Interlocked.Exchange(ref _consoleLock, 0);
+            if (Logger is not null)
+                Logger(exception, level);
+            else if (Logging)
+                lock (_consoleLock)
+                    Console.Error.WriteLine(exception.Message);
         }
-        return @this;
+        catch
+        { /* Diagnostics must not replace the error being reported. */
+        }
+
+        return exception;
     }
 }

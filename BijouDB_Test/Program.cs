@@ -1,40 +1,29 @@
-﻿using BijouDB;
-using BijouDB_Test.Tables;
+using BijouDB;
+using BijouDB_Test;
 
-foreach(string type in Record.Types)
+if (args.Length == 3 && args[0] == "--child") return StorageTests.RunChild(args[1], args[2]);
+Globals.DatabasePath = Path.Combine(Path.GetTempPath(), "bijoudb-regression-" + Guid.NewGuid().ToString("N"));
+List<(string Name, Action Run)> cases = new();
+void Register(string name, Action run) => cases.Add((name, run));
+StreamTests.Register(Register);
+SerializationTests.Register(Register);
+RelationshipTests.Register(Register);
+StorageTests.Register(Register);
+CompatibilityTests.Register(Register);
+int failures = 0;
+foreach ((string Name, Action Run) test in cases)
 {
-    Console.WriteLine(type);
+    try
+    {
+        test.Run();
+        Console.WriteLine("PASS " + test.Name);
+    }
+    catch (Exception error)
+    {
+        failures++;
+        Console.Error.WriteLine("FAIL " + test.Name + Environment.NewLine + error);
+    }
 }
 
-//int iterations = 100000;
-
-//Employee tz1 = new("TizzyT1"); ;
-//Employee tz2 = new("");
-//Employee tz3 = new("TizzyT3");
-
-//long start = System.Diagnostics.Stopwatch.GetTimestamp();
-
-//string name1 = null!, name2 = null!, name3 = null!;
-
-//for (int i = 0; i < iterations; i++)
-//{
-//    name1 = tz1.Name;
-//    name2 = tz2.Name;
-//    name3 = tz3.Name;
-//}
-
-//long stop = System.Diagnostics.Stopwatch.GetTimestamp();
-
-//Console.WriteLine(TimeSpan.FromTicks(stop - start).TotalMilliseconds);
-
-//foreach (Employee e in Record.GetAll<Employee>())
-//{
-//    e.TryRemove(out _);
-//    try
-//    {
-//        e.Name = "Test";
-//        Console.WriteLine(e.Json);
-//    }
-//    catch (Exception)
-//    { }
-//}
+Console.WriteLine($"{cases.Count - failures}/{cases.Count} regression tests passed.");
+return failures == 0 ? 0 : 1;

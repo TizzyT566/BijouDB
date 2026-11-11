@@ -1,132 +1,176 @@
-﻿namespace BijouDB;
+using System.Reflection;
+
+namespace BijouDB;
 
 public sealed class SchemaBuilder<R> : IDisposable
     where R : Record, new()
 {
-    private bool disposedValue;
-    internal long Length = 0;
-    internal int _count = 0;
+    private bool _disposed;
+
+    internal long Length;
+    internal int _count;
+
     internal readonly List<Func<Record, bool>> _references = new();
     internal readonly List<Action<Record>> _columns = new();
 
+    private readonly List<Func<string>> _definitions = new();
+
     /// <summary>
-    /// Adds a Column to the record.
+    /// Adds an indexed column with optional value constraints and caching.
     /// </summary>
     /// <typeparam name="D">The IDataType of the Column.</typeparam>
     /// <param name="column">The Column to build.</param>
     /// <param name="Unique">Specifies whether values set in the column are unique.</param>
     /// <param name="Default">Specifies a default value for the column if a record doesn't have a value set.</param>
     /// <param name="Check">Value constraint logic.</param>
-    /// <param name="BeforeGet">Specifies a trigger before getting a value.</param>
-    /// <param name="AfterGet">Specifies a trigger after getting a value.</param>
-    /// <param name="BeforeSet">Specifies a trigger before setting a value.</param>
-    /// <param name="AfterSet">Specifies a trigger after setting a value.</param>
     /// <returns></returns>
     public static SchemaBuilder<R> Add<D>(out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!, int Cache = 128)
         where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();
-
-        column = new(builder.Length, $"{Globals.ColName}_{builder._count++}", typeof(R), Unique, Default, Check, Cache);
-        builder._columns.Add(column.Remove);
-        builder.Length += 24;
-        return builder;
+        return builder.Append(out column, Unique, Default, Check, Cache);
     }
 
-    // column which references other records which are related
+    /// <summary>
+    /// Adds a reference to a column in another record schema.
+    /// </summary>
     public static SchemaBuilder<R> Add<RSource, D>(out Reference<D, RSource> column, Func<Column<D>> referenceColumn, bool restricted = true)
         where RSource : Record, new()
         where D : IDataType, new()
     {
         SchemaBuilder<R> builder = new();
-        builder._count++;
-        column = new(referenceColumn);
-        if (restricted) builder._references.Add(column.HasRecords<R>);
-        return builder;
+        return builder.Append(out column, referenceColumn, restricted);
     }
 
-    // relational column
-    public static SchemaBuilder<R> Add<R2>(out Relational<R, R2> column, Relational<R2, R> _)
+    /// <summary>
+    /// Adds one end of a reciprocal relationship, preserving the original two-argument API.
+    /// </summary>
+    public static SchemaBuilder<R> Add<R2>(out Relational<R, R2> column, Relational<R2, R>? _)
         where R2 : Record, new()
     {
         SchemaBuilder<R> builder = new();
-        column = new($"_{builder._count++}");
-        builder._columns.Add(column.Remove);
-        return builder;
+        return builder.Append(out column, _, null);
     }
 
-    private void Dispose(bool disposing)
+    /// <summary>
+    /// Adds a named reciprocal relationship. Both ends must use the same name.
+    /// </summary>
+    public static SchemaBuilder<R> Add<R2>(out Relational<R, R2> column, Relational<R2, R>? reciprocal, string? name)
+        where R2 : Record, new()
     {
-        if (!disposedValue)
-        {
-            if (disposing)
-                Record.AddRemoveDefinition<R>(record =>
-                {
-                    foreach (Func<Record, bool> referenceCheck in _references)
-                        if (referenceCheck(record))
-                            return;
+        SchemaBuilder<R> builder = new();
+        return builder.Append(out column, reciprocal, name);
+    }
 
-                    try
-                    {
-                        foreach (Action<Record> remove in _columns) remove(record);
-                        string recordPath = Path.Combine(Globals.DatabasePath, typeof(R).FullName!, Globals.Rec, $"{record.Id}.{Globals.Rec}");
-                        File.Delete(recordPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        ex.Log();
-                    }
-                });
+    /// <summary>
+    /// Adds a named relationship without requiring circular field access.
+    /// </summary>
+    public static SchemaBuilder<R> Add<R2>(out Relational<R, R2> column, string name)
+        where R2 : Record, new()
+    {
+        SchemaBuilder<R> builder = new();
+        return builder.Append(out column, null, name);
+    }
 
-            disposedValue = true;
-        }
+    internal SchemaBuilder<R> Append<D>(out Column<D> column, bool unique, Func<D> @default, Func<D, bool> check, int cache)
+        where D : IDataType, new()
+    {
+        ThrowIfDisposed();
+        int ordinal = _count++;
+        long offset = Length;
+        column = new(offset, $"{Globals.ColName}_{ordinal}", typeof(R), unique, @default, check, cache);
+        Column<D> declared = column;
+        _columns.Add(column.Remove);
+        _definitions.Add(() => $"column|{ordinal}|{FieldName(declared)}|{offset}|{TypeName(typeof(D))}|unique={unique}");
+        Length += 24;
+        return this;
+    }
+
+    internal SchemaBuilder<R> Append<RSource, D>(out Reference<D, RSource> column, Func<Column<D>> referenceColumn, bool restricted)
+        where RSource : Record, new()
+        where D : IDataType, new()
+    {
+        ThrowIfDisposed();
+        int ordinal = _count++;
+        column = new(referenceColumn);
+        Reference<D, RSource> declared = column;
+        if (restricted)
+            _references.Add(column.HasRecords<R>);
+        _definitions.Add(() => $"reference|{ordinal}|{FieldName(declared)}|{TypeName(typeof(RSource))}|{TypeName(typeof(D))}|restricted={restricted}");
+        return this;
+    }
+
+    internal SchemaBuilder<R> Append<R2>(out Relational<R, R2> column, Relational<R2, R>? reciprocal, string? name)
+        where R2 : Record, new()
+    {
+        ThrowIfDisposed();
+        int ordinal = _count++;
+        column = new($"_{ordinal}", reciprocal, name);
+        Relational<R, R2> declared = column;
+        _columns.Add(column.Remove);
+        _definitions.Add(() => $"relationship|{ordinal}|{FieldName(declared)}|{TypeName(typeof(R2))}|{declared.Name}");
+        return this;
+    }
+
+    private static string FieldName(object column)
+    {
+        foreach (FieldInfo field in typeof(R).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+            if (ReferenceEquals(field.GetValue(null), column)) return field.Name;
+
+        return "<unbound>";
+    }
+
+    private static string TypeName(Type type) => type.IsGenericType ? type.GetGenericTypeDefinition().FullName + "[" + string.Join(",", type.GetGenericArguments()
+        .Select(TypeName)) + "]" : type.FullName!;
+
+    private void ThrowIfDisposed()
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(SchemaBuilder<R>));
     }
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        if (_disposed) return;
+        // Class initialization must not wait on the storage lock: another thread can
+        // already hold it while waiting for this record's class constructor.
+        Storage.DeclareSchema(typeof(R), _definitions.Select(describe => describe()).ToArray());
+        Record.AddRemoveDefinition<R>(record => Storage.RemoveRecord(record, _columns, _references));
+        _disposed = true;
         GC.SuppressFinalize(this);
     }
 
-    public static SchemaBuilder<R> operator ~(SchemaBuilder<R> a)
+    public static SchemaBuilder<R> operator ~(SchemaBuilder<R> builder)
     {
-        a?.Dispose();
-        return a!;
+        builder?.Dispose();
+        return builder!;
     }
 }
 
 public static class SchemaBuilderExtensions
 {
-    // indexed column
-    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> @this, out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!, int Cache = 128)
+    public static SchemaBuilder<R> Add<R, D>(this SchemaBuilder<R> builder, out Column<D> column, bool Unique = false, Func<D> Default = default!, Func<D, bool> Check = null!, int Cache = 128)
         where R : Record, new()
-        where D : IDataType, new()
-    {
-        column = new(@this.Length, $"{Globals.ColName}_{@this._count++}", typeof(R), Unique, Default, Check, Cache);
-        @this._columns.Add(column.Remove);
-        @this.Length += 24;
-        return @this;
-    }
+        where D : IDataType, new() =>
+        builder.Append(out column, Unique, Default, Check, Cache);
 
-    // column which references other records which are related
-    public static SchemaBuilder<R> Add<R, RSource, D>(this SchemaBuilder<R> @this, out Reference<D, RSource> column, Func<Column<D>> referenceColumn, bool restricted = true)
+    public static SchemaBuilder<R> Add<R, RSource, D>(this SchemaBuilder<R> builder, out Reference<D, RSource> column, Func<Column<D>> referenceColumn, bool restricted = true)
         where R : Record, new()
         where RSource : Record, new()
-        where D : IDataType, new()
-    {
-        column = new(referenceColumn);
-        @this._count++;
-        if (restricted) @this._references.Add(column.HasRecords<R>);
-        return @this;
-    }
+        where D : IDataType, new() =>
+        builder.Append(out column, referenceColumn, restricted);
 
-    // relational column
-    public static SchemaBuilder<R> Add<R, R2>(this SchemaBuilder<R> @this, out Relational<R, R2> column, Relational<R2, R> _)
+    public static SchemaBuilder<R> Add<R, R2>(this SchemaBuilder<R> builder, out Relational<R, R2> column, Relational<R2, R>? _)
         where R : Record, new()
-        where R2 : Record, new()
-    {
-        column = new($"_{@this._count++}");
-        @this._columns.Add(column.Remove);
-        return @this;
-    }
+        where R2 : Record, new() =>
+        builder.Append(out column, _, null);
+
+    public static SchemaBuilder<R> Add<R, R2>(this SchemaBuilder<R> builder, out Relational<R, R2> column, Relational<R2, R>? reciprocal, string? name)
+        where R : Record, new()
+        where R2 : Record, new() =>
+        builder.Append(out column, reciprocal, name);
+
+    public static SchemaBuilder<R> Add<R, R2>(this SchemaBuilder<R> builder, out Relational<R, R2> column, string name)
+        where R : Record, new()
+        where R2 : Record, new() =>
+        builder.Append(out column, null, name);
 }

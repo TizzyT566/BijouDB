@@ -1,4 +1,4 @@
-﻿#pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable IDE1006 // Naming Styles
 
 using BijouDB.Exceptions;
 
@@ -19,32 +19,37 @@ public struct @tuple<D1, D2, D3, D4, D5, D6, D7> : IDataType
 
     public void Deserialize(Stream stream)
     {
-        _value.Item1.Deserialize(stream);
-        _value.Item2.Deserialize(stream);
-        _value.Item3.Deserialize(stream);
-        _value.Item4.Deserialize(stream);
-        _value.Item5.Deserialize(stream);
-        _value.Item6.Deserialize(stream);
-        _value.Item7.Deserialize(stream);
+        D1 item1 = new();
+        item1.Deserialize(stream);
+        D2 item2 = new();
+        item2.Deserialize(stream);
+        D3 item3 = new();
+        item3.Deserialize(stream);
+        D4 item4 = new();
+        item4.Deserialize(stream);
+        D5 item5 = new();
+        item5.Deserialize(stream);
+        D6 item6 = new();
+        item6.Deserialize(stream);
+        D7 item7 = new();
+        item7.Deserialize(stream);
+        _value = (item1, item2, item3, item4, item5, item6, item7);
     }
 
     public void Serialize(Stream stream)
     {
-        _value.Item1.Serialize(stream);
-        _value.Item2.Serialize(stream);
-        _value.Item3.Serialize(stream);
-        _value.Item4.Serialize(stream);
-        _value.Item5.Serialize(stream);
-        _value.Item6.Serialize(stream);
-        _value.Item7.Serialize(stream);
+        (_value.Item1 is null ? new D1() : _value.Item1).Serialize(stream);
+        (_value.Item2 is null ? new D2() : _value.Item2).Serialize(stream);
+        (_value.Item3 is null ? new D3() : _value.Item3).Serialize(stream);
+        (_value.Item4 is null ? new D4() : _value.Item4).Serialize(stream);
+        (_value.Item5 is null ? new D5() : _value.Item5).Serialize(stream);
+        (_value.Item6 is null ? new D6() : _value.Item6).Serialize(stream);
+        (_value.Item7 is null ? new D7() : _value.Item7).Serialize(stream);
     }
 
     public static implicit operator (D1, D2, D3, D4, D5, D6, D7)(@tuple<D1, D2, D3, D4, D5, D6, D7> value) => value._value;
     public static implicit operator @tuple<D1, D2, D3, D4, D5, D6, D7>((D1, D2, D3, D4, D5, D6, D7) value) => new(value);
 
-
-
-    // Nullable
     public sealed class nullable : IDataType
     {
         private (D1, D2, D3, D4, D5, D6, D7)? _value;
@@ -55,50 +60,51 @@ public struct @tuple<D1, D2, D3, D4, D5, D6, D7> : IDataType
 
         public void Deserialize(Stream stream)
         {
-            switch (stream.ReadByte())
+            int marker = stream.ReadByte();
+            if (marker < 0) throw new CorruptedException<nullable>().Log();
+            if (marker == 0)
             {
-                case < 0:
-                    {
-                        throw new CorruptedException<nullable>().Log();
-                    }
-                case 0:
-                    {
-                        _value = null;
-                        break;
-                    }
-                default:
-                    {
-                        _value = (new(), new(), new(), new(), new(), new(), new());
-                        _value.Value.Item1.Deserialize(stream);
-                        _value.Value.Item2.Deserialize(stream);
-                        _value.Value.Item3.Deserialize(stream);
-                        _value.Value.Item4.Deserialize(stream);
-                        _value.Value.Item5.Deserialize(stream);
-                        _value.Value.Item6.Deserialize(stream);
-                        _value.Value.Item7.Deserialize(stream);
-                        break;
-                    }
+                _value = null;
+                return;
             }
 
+            if (marker != byte.MaxValue) throw new CorruptedException<nullable>().Log();
+
+            D1 item1 = new();
+            item1.Deserialize(stream);
+            D2 item2 = new();
+            item2.Deserialize(stream);
+            D3 item3 = new();
+            item3.Deserialize(stream);
+            D4 item4 = new();
+            item4.Deserialize(stream);
+            D5 item5 = new();
+            item5.Deserialize(stream);
+            D6 item6 = new();
+            item6.Deserialize(stream);
+            D7 item7 = new();
+            item7.Deserialize(stream);
+            // Assign once: Nullable<T>.Value exposes a copy of a struct tuple.
+            _value = (item1, item2, item3, item4, item5, item6, item7);
         }
 
         public void Serialize(Stream stream)
         {
             if (_value is null)
             {
-                stream.WriteByte(byte.MinValue);
+                stream.WriteByte(0);
+                return;
             }
-            else
-            {
-                stream.WriteByte(byte.MaxValue);
-                _value.Value.Item1.Serialize(stream);
-                _value.Value.Item2.Serialize(stream);
-                _value.Value.Item3.Serialize(stream);
-                _value.Value.Item4.Serialize(stream);
-                _value.Value.Item5.Serialize(stream);
-                _value.Value.Item6.Serialize(stream);
-                _value.Value.Item7.Serialize(stream);
-            }
+
+            stream.WriteByte(byte.MaxValue);
+            (D1, D2, D3, D4, D5, D6, D7) value = _value.Value;
+            (value.Item1 is null ? new D1() : value.Item1).Serialize(stream);
+            (value.Item2 is null ? new D2() : value.Item2).Serialize(stream);
+            (value.Item3 is null ? new D3() : value.Item3).Serialize(stream);
+            (value.Item4 is null ? new D4() : value.Item4).Serialize(stream);
+            (value.Item5 is null ? new D5() : value.Item5).Serialize(stream);
+            (value.Item6 is null ? new D6() : value.Item6).Serialize(stream);
+            (value.Item7 is null ? new D7() : value.Item7).Serialize(stream);
         }
 
         public static implicit operator (D1, D2, D3, D4, D5, D6, D7)?(nullable value) => value?._value;

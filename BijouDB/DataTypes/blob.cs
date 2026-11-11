@@ -1,4 +1,4 @@
-﻿#pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable IDE1006 // Naming Styles
 
 using BijouDB.Exceptions;
 
@@ -23,16 +23,17 @@ public struct @blob : IDataType
 
     public void Deserialize(Stream stream)
     {
-        if (stream.TryReadDynamicData(out byte[] data)) _value = data;
-        else throw new CorruptedException<@bint>().Log();
+        if (stream.TryReadDynamicData(out byte[] data))
+            _value = data;
+        else
+            throw new CorruptedException<@blob>().Log();
     }
 
     public void Serialize(Stream stream) => stream.WriteDynamicData(_value ?? Array.Empty<byte>());
 
-    public static implicit operator byte[](@blob value) => value._value;
+    // A getter must not expose the backing array held by a cached value.
+    public static implicit operator byte[](@blob value) => value._value is null ? Array.Empty<byte>() : (byte[])value._value.Clone();
     public static implicit operator @blob(byte[] value) => new(value);
-
-
 
     // Nullable
     public sealed class nullable : IDataType
@@ -59,20 +60,24 @@ public struct @blob : IDataType
             switch (stream.ReadByte())
             {
                 case < 0:
-                    {
-                        throw new CorruptedException<nullable>().Log();
-                    }
+                {
+                    throw new CorruptedException<nullable>().Log();
+                }
+
                 case 0:
-                    {
-                        _value = null;
-                        break;
-                    }
+                {
+                    _value = null;
+                    break;
+                }
+
                 default:
-                    {
-                        if (stream.TryReadDynamicData(out byte[] data)) _value = data;
-                        else throw new CorruptedException<nullable>().Log();
-                        break;
-                    }
+                {
+                    if (stream.TryReadDynamicData(out byte[] data))
+                        _value = data;
+                    else
+                        throw new CorruptedException<nullable>().Log();
+                    break;
+                }
             }
         }
 
@@ -89,7 +94,7 @@ public struct @blob : IDataType
             }
         }
 
-        public static implicit operator byte[]?(nullable value) => value?._value;
+        public static implicit operator byte[]?(nullable value) => value?._value is null ? null : (byte[])value._value.Clone();
         public static implicit operator nullable(byte[]? value) => new(value);
     }
 }
